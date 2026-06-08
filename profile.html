@@ -1,0 +1,280 @@
+<div class="animate-slide-in space-y-8 pb-10">
+
+    <!-- Hero Header -->
+    <div class="adhd-hero-header rounded-[3rem] p-10">
+        <div class="relative z-10">
+            <div class="flex items-center gap-3 mb-2">
+                <span class="text-4xl">🧠</span>
+                <span class="adhd-badge">DEHB Dostu</span>
+            </div>
+            <h2 class="text-4xl font-extrabold text-white tracking-tight">Nöro-Profil Merkezi</h2>
+            <p class="text-purple-200 mt-2 text-base">Beynin nasıl çalışıyor? Sana özel planlar yapabilmem için ayarlarını kişiselleştir.</p>
+        </div>
+        <div class="hero-blob-1"></div>
+        <div class="hero-blob-2"></div>
+    </div>
+
+    <!-- Bugünkü Mod -->
+    <div class="glass-card p-6 bg-white shadow-sm">
+        <h4 class="font-bold text-slate-500 text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+            <span>⚡</span> Bugün Nasıl Hissediyorsun?
+        </h4>
+        <div class="flex gap-3 flex-wrap">
+            <button onclick="setMood('hyper')" id="mood-hyper" class="mood-btn">🚀 Hiper Modda</button>
+            <button onclick="setMood('focused')" id="mood-focused" class="mood-btn">🎯 Odaklıyım</button>
+            <button onclick="setMood('foggy')" id="mood-foggy" class="mood-btn">🌫️ Beyin Sisi</button>
+            <button onclick="setMood('anxious')" id="mood-anxious" class="mood-btn">😰 Kaygılı</button>
+            <button onclick="setMood('crash')" id="mood-crash" class="mood-btn">💤 Enerji Düşük</button>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+        <!-- 1. Odak Yönetimi -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-purple">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>💊</span> Odak Yönetimi
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">İlaç ve odak süren planlamayı şekillendirir</p>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">İlaç Kullanım Durumu</label>
+                <div class="flex gap-2">
+                    <button id="med-yes" onclick="setMed(true)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">✅ Evet</button>
+                    <button id="med-no" onclick="setMed(false)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">❌ Hayır</button>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">
+                    Odak Süresi: <span id="focus-display" class="text-purple-600 font-black">25 dk</span>
+                </label>
+                <input type="range" id="focus-period" value="25" min="10" max="90" step="5"
+                    oninput="document.getElementById('focus-display').textContent=this.value+' dk'"
+                    class="adhd-slider w-full">
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>10 dk</span><span>⚡ 25 Pomodoro</span><span>90 dk</span>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Hiperfokus Uyarısı</label>
+                <select id="hyperfocus-limit" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="none">⛔ Alarm Yok</option>
+                    <option value="60">⏰ 60 dk'da bir uyar</option>
+                    <option value="90">⏰ 90 dk'da bir uyar</option>
+                    <option value="120">⏰ 2 saatte bir uyar</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 2. Zaman Döngüsü -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-emerald">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>🕒</span> Zaman Döngüsü
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">Zaman körlüğüne karşı düzenin sınırları</p>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase">Mesai Başlangıç</label>
+                    <input type="time" id="work-start" value="09:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none">
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] font-black text-slate-400 uppercase">Mesai Bitiş</label>
+                    <input type="time" id="work-end" value="18:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none">
+                </div>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">En Yüksek Enerji Zamanın</label>
+                <div class="space-y-2">
+                    <label class="energy-radio-option">
+                        <input type="radio" name="energy-peak" value="morning" checked class="accent-emerald-600">
+                        <span>🌅 Sabah (Early Bird)</span>
+                    </label>
+                    <label class="energy-radio-option">
+                        <input type="radio" name="energy-peak" value="afternoon" class="accent-emerald-600">
+                        <span>☀️ Öğleden Sonra</span>
+                    </label>
+                    <label class="energy-radio-option">
+                        <input type="radio" name="energy-peak" value="night" class="accent-emerald-600">
+                        <span>🌙 Gece (Night Owl)</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. Odak Tetikleyici -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-orange">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>🎧</span> Odak Tetikleyici
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">Beynini çalışmaya sokan stimülasyonlar</p>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Çalışma Modu</label>
+                <select id="social-mode" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="solo">🧘 Tamamen Yalnız (Deep Work)</option>
+                    <option value="body-doubling">👥 Body Doubling</option>
+                    <option value="cafe">☕ Hafif Gürültülü (Kafe)</option>
+                </select>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">İşitsel Destek</label>
+                <select id="focus-trigger" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="silence">🔇 Mutlak Sessizlik</option>
+                    <option value="lofi">🎵 Lo-Fi / Enstrümantal</option>
+                    <option value="brown-noise">🌊 Brown Noise</option>
+                    <option value="binaural">🎶 Binaural Beats</option>
+                    <option value="white-noise">📺 White Noise</option>
+                </select>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Mola Stili</label>
+                <select id="break-style" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="pomodoro">🍅 Pomodoro (5 dk mola)</option>
+                    <option value="long-break">😴 Uzun Mola (15 dk)</option>
+                    <option value="micro">⚡ Mikro Molalar (2 dk)</option>
+                    <option value="free">🌊 Serbest</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 4. Duyusal Profil -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-pink">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>🌡️</span> Duyusal Profil
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">Duyusal hassasiyetlerin ortam ayarlarını şekillendirir</p>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">
+                    Işık Hassasiyeti: <span id="light-display" class="text-pink-500 font-black">Orta</span>
+                </label>
+                <input type="range" id="light-sensitivity" value="2" min="1" max="3" step="1"
+                    oninput="updateSensLabel('light-display',this.value)"
+                    class="adhd-slider adhd-slider-pink w-full">
+                <div class="flex justify-between text-[10px] text-slate-400">
+                    <span>😎 Düşük</span><span>😵 Yüksek</span>
+                </div>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">
+                    Ses Hassasiyeti: <span id="sound-display" class="text-pink-500 font-black">Orta</span>
+                </label>
+                <input type="range" id="sound-sensitivity" value="2" min="1" max="3" step="1"
+                    oninput="updateSensLabel('sound-display',this.value)"
+                    class="adhd-slider adhd-slider-pink w-full">
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Tercih Ettiğin Ortam</label>
+                <select id="env-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="minimal">🧹 Minimal & Temiz</option>
+                    <option value="cozy">🛋️ Rahat & Sıcak</option>
+                    <option value="dynamic">⚡ Dinamik & Değişken</option>
+                    <option value="nature">🌿 Doğa Ögeli</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 5. Duygusal Koruma -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-teal">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>🛡️</span> Duygusal Koruma
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">RSD ve duygusal düzenleme stratejilerin</p>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">
+                    RSD Seviyem: <span id="rsd-display" class="text-teal-600 font-black">Orta</span>
+                </label>
+                <input type="range" id="rsd-level" value="2" min="1" max="3" step="1"
+                    oninput="updateSensLabel('rsd-display',this.value)"
+                    class="adhd-slider adhd-slider-teal w-full">
+                <p class="text-[10px] text-slate-400">RSD: Reddedilme Duyarlılığı Disforisi</p>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Düzenleme Yöntemim</label>
+                <select id="regulation-method" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="breathing">🫁 Nefes Egzersizleri</option>
+                    <option value="movement">🏃 Hareket / Stim</option>
+                    <option value="grounding">🌍 Grounding (5-4-3-2-1)</option>
+                    <option value="music">🎵 Müzikle Yatışma</option>
+                    <option value="cold-water">💧 Soğuk Su</option>
+                </select>
+            </div>
+            <div class="space-y-3">
+                <label class="block text-sm font-semibold text-slate-600">Stim Tercihi</label>
+                <select id="stim-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+                    <option value="fidget">🤏 Fidget / El Oyuncağı</option>
+                    <option value="pacing">🚶 Yürüyüş / Sallanma</option>
+                    <option value="doodling">✏️ Karalama</option>
+                    <option value="chewing">🍬 Çiğneme</option>
+                    <option value="none">🧘 Stim Yok</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- 6. Süper Güçlerim -->
+        <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-yellow">
+            <div>
+                <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest">
+                    <span>⭐</span> Süper Güçlerim
+                </h4>
+                <p class="text-[10px] text-slate-400 mt-1">DEHB'in getirdiği avantajların — kutla bunları!</p>
+            </div>
+            <div class="space-y-1">
+                <label class="superpower-check"><input type="checkbox" id="sp-creativity" class="accent-yellow-500"><span>🎨 Yaratıcılık & Özgün Düşünce</span></label>
+                <label class="superpower-check"><input type="checkbox" id="sp-hyperfocus" class="accent-yellow-500"><span>🔥 Hiperfokus Yeteneği</span></label>
+                <label class="superpower-check"><input type="checkbox" id="sp-energy" class="accent-yellow-500"><span>⚡ Yüksek Enerji & Heves</span></label>
+                <label class="superpower-check"><input type="checkbox" id="sp-empathy" class="accent-yellow-500"><span>💜 Güçlü Empati</span></label>
+                <label class="superpower-check"><input type="checkbox" id="sp-crisis" class="accent-yellow-500"><span>🚒 Kriz Anında Performans</span></label>
+                <label class="superpower-check"><input type="checkbox" id="sp-connections" class="accent-yellow-500"><span>🔗 Bağlantı Kurma Yeteneği</span></label>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Bitirme Stratejisi -->
+    <div class="bg-slate-900 text-white p-12 rounded-[3.5rem] shadow-2xl space-y-10 border-b-8 border-purple-600">
+        <div class="flex items-center gap-4 border-b border-slate-800 pb-6">
+            <span class="text-3xl">🎯</span>
+            <div>
+                <h4 class="text-2xl font-bold">Bitirme Stratejin</h4>
+                <p class="text-slate-400 text-sm italic">n8n, bu notları planlama sonunda sana hatırlatıcı olarak gönderir.</p>
+            </div>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div class="space-y-4">
+                <label class="block text-xs font-black uppercase text-purple-400 tracking-[0.2em]">Günün Sonundaki Ödülün</label>
+                <textarea id="motivation-note"
+                    class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-purple-500 transition-all placeholder-slate-600 h-32 resize-none text-lg"
+                    placeholder="Örn: 1 saat oyun, güzel bir akşam yemeği..."></textarea>
+            </div>
+            <div class="space-y-4">
+                <label class="block text-xs font-black uppercase text-orange-400 tracking-[0.2em]">Seni En Çok Ne Durdurur?</label>
+                <select id="main-obstacle"
+                    class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
+                    <option value="paralysis">🧊 Başlama Felci</option>
+                    <option value="distraction">📱 Dikkat Dağınıklığı</option>
+                    <option value="perfectionism">💎 Mükemmeliyetçilik</option>
+                    <option value="time-blindness">⏰ Zaman Körlüğü</option>
+                    <option value="overwhelm">😤 Bunalma & Overwhelm</option>
+                    <option value="rejection">💔 RSD / Eleştiri Korkusu</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Kaydet -->
+    <div class="flex justify-end">
+        <button id="save-profile-btn" onclick="saveProfile()"
+            class="save-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-5 rounded-[2rem] font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-3 text-lg">
+            <span>💾</span> Değişiklikleri Kaydet
+        </button>
+    </div>
+
+</div>

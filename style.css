@@ -1,0 +1,303 @@
+/* FocusAid — Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+
+:root {
+    --indigo-main:  #6366f1;
+    --indigo-glow:  rgba(99, 102, 241, 0.15);
+    --mint-success: #10b981;
+    --slate-bg:     #f8fafc;
+    --glass-white:  rgba(255, 255, 255, 0.85);
+    --border-light: rgba(226, 232, 240, 0.8);
+}
+
+/* ── Arka Plan ── */
+body {
+    background:
+        radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 45%),
+        radial-gradient(at 100% 0%, rgba(16, 185, 129, 0.04) 0px, transparent 40%),
+        var(--slate-bg);
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #1e293b;
+    min-height: 100vh;
+    letter-spacing: -0.01em;
+}
+
+/* ── Cam Kartlar ── */
+.glass-card {
+    background: var(--glass-white);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid var(--border-light);
+    border-radius: 2.5rem;
+    box-shadow: 0 20px 50px -12px rgba(0, 0, 0, 0.05);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.glass-card:focus-within {
+    transform: scale(1.01);
+    border-color: var(--indigo-main);
+    box-shadow: 0 30px 60px -12px var(--indigo-glow);
+}
+
+/* ── Chatbot Alanı ── */
+#chat-box {
+    background: rgba(241, 245, 249, 0.4);
+    border-radius: 2rem;
+    padding: 1.5rem;
+}
+
+.ai-bubble {
+    background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    border-radius: 1.8rem 1.8rem 1.8rem 0.4rem;
+    font-weight: 500;
+    box-shadow: 0 10px 20px rgba(79, 70, 229, 0.2);
+}
+
+.user-bubble {
+    background: white;
+    color: #334155;
+    padding: 1rem 1.25rem;
+    border-radius: 1.8rem 1.8rem 0.4rem 1.8rem;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+}
+
+/* ── Input'lar ── */
+input[type="text"],
+input[type="number"],
+input[type="time"],
+input[type="date"],
+input[type="datetime-local"],
+textarea,
+select {
+    background: #ffffff !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 1.25rem !important;
+    padding: 1rem 1.25rem !important;
+    transition: all 0.2s ease;
+    font-weight: 500;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    border-color: var(--indigo-main) !important;
+    box-shadow: 0 0 0 4px var(--indigo-glow) !important;
+    outline: none !important;
+}
+
+/* ── Butonlar ── */
+.btn-primary {
+    background: var(--indigo-main);
+    color: white;
+    font-weight: 700;
+    border-radius: 1.5rem;
+    padding: 1rem 2rem;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    border: none;
+    cursor: pointer;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 20px 30px -10px rgba(99, 102, 241, 0.4);
+}
+
+.btn-success {
+    background: var(--mint-success) !important;
+    animation: success-bounce 0.5s ease;
+}
+
+/* ── Sidebar Aktif Stili ── */
+.sidebar-item.active-link {
+    background: #eef2ff !important;
+    color: #4f46e5 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Toast Bildirimi ── */
+#focusaid-toast {
+    max-width: 360px;
+    word-break: break-word;
+}
+
+/* ── Mesaj Pop Animasyonu ── */
+.message-pop {
+    animation: msg-appear 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Animasyonlar ── */
+@keyframes success-bounce {
+    0%, 100% { transform: scale(1); }
+    50%       { transform: scale(1.1); }
+}
+
+@keyframes reveal {
+    0%   { opacity: 0; transform: translateY(16px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes msg-appear {
+    0%   { opacity: 0; transform: translateY(8px) scale(0.97); }
+    100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-slide-in {
+    animation: reveal 0.6s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 99px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── DEHB Dostu Profil Stilleri ── */
+.adhd-hero-header {
+    background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #0d9488 100%);
+    position: relative;
+    overflow: hidden;
+}
+
+.hero-blob-1 {
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 250px; height: 250px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.hero-blob-2 {
+    position: absolute;
+    bottom: -40px; left: 30%;
+    width: 150px; height: 150px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.adhd-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+/* Card renk aksanları */
+.adhd-card-purple { border-top: 4px solid #7c3aed !important; }
+.adhd-card-emerald { border-top: 4px solid #059669 !important; }
+.adhd-card-orange { border-top: 4px solid #f97316 !important; }
+.adhd-card-pink { border-top: 4px solid #ec4899 !important; }
+.adhd-card-teal { border-top: 4px solid #0d9488 !important; }
+.adhd-card-yellow { border-top: 4px solid #f59e0b !important; }
+
+/* Mood Butonları */
+.mood-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.5rem 1rem;
+    border-radius: 9999px;
+    border: 2px solid #e2e8f0;
+    background: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    white-space: nowrap;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+.mood-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: #7c3aed;
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.15);
+}
+
+.mood-btn.active {
+    background: linear-gradient(135deg, #7c3aed, #6366f1);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 8px 20px rgba(124, 58, 237, 0.3);
+}
+
+/* Slider */
+.adhd-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    height: 8px;
+    background: linear-gradient(90deg, #7c3aed, #6366f1);
+    border-radius: 9999px;
+    outline: none;
+    cursor: pointer;
+    border: none !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+}
+
+.adhd-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 24px; height: 24px;
+    background: #fff;
+    border: 3px solid #7c3aed;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+    transition: all 0.2s ease;
+}
+
+.adhd-slider::-webkit-slider-thumb:hover { transform: scale(1.2); }
+
+.adhd-slider-pink { background: linear-gradient(90deg, #ec4899, #f472b6) !important; }
+.adhd-slider-pink::-webkit-slider-thumb { border-color: #ec4899 !important; box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3) !important; }
+
+.adhd-slider-teal { background: linear-gradient(90deg, #0d9488, #14b8a6) !important; }
+.adhd-slider-teal::-webkit-slider-thumb { border-color: #0d9488 !important; box-shadow: 0 4px 12px rgba(13, 148, 136, 0.3) !important; }
+
+/* Enerji Radio */
+.energy-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.65rem 1rem;
+    background: #f8fafc;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.energy-radio-option:hover {
+    background: #f0fdf4;
+    transform: translateX(4px);
+}
+
+/* Süper Güç Checkboxları */
+.superpower-check {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.75rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    transition: background 0.15s ease;
+}
+
+.superpower-check:hover { background: #fefce8; }
+
+/* Kaydet Butonu */
+.save-btn { box-shadow: 0 20px 40px -12px rgba(124, 58, 237, 0.4); }
+.save-btn:hover { box-shadow: 0 25px 50px -12px rgba(124, 58, 237, 0.5); }

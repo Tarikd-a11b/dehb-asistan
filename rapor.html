@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>FocusAid — Oturum Raporu | 7 Haziran 2026</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', sans-serif; color: #1e293b; background: #f8fafc; font-size: 13px; }
+  .page { max-width: 900px; margin: 0 auto; padding: 48px 48px; background: white; }
+
+  /* Header */
+  .header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 24px; border-bottom: 3px solid #6366f1; margin-bottom: 36px; }
+  .header-left h1 { font-size: 28px; font-weight: 800; color: #6366f1; letter-spacing: -0.5px; }
+  .header-left p { color: #64748b; font-size: 13px; margin-top: 4px; }
+  .header-badge { background: #6366f1; color: white; padding: 8px 18px; border-radius: 999px; font-weight: 700; font-size: 12px; }
+
+  /* Section */
+  h2 { font-size: 16px; font-weight: 700; color: #1e293b; margin: 32px 0 14px 0; padding-left: 12px; border-left: 4px solid #6366f1; }
+  h3 { font-size: 13px; font-weight: 700; color: #374151; margin: 18px 0 8px 0; }
+
+  /* Cards */
+  .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px 22px; margin-bottom: 12px; }
+  .card-green { background: #f0fdf4; border-color: #86efac; }
+  .card-red { background: #fff7f7; border-color: #fca5a5; }
+  .card-yellow { background: #fffbeb; border-color: #fde68a; }
+  .card-indigo { background: #eef2ff; border-color: #a5b4fc; }
+
+  /* Status badges */
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+  .badge-green { background: #dcfce7; color: #15803d; }
+  .badge-red { background: #fee2e2; color: #b91c1c; }
+  .badge-yellow { background: #fef9c3; color: #92400e; }
+  .badge-blue { background: #dbeafe; color: #1d4ed8; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+  th { background: #f1f5f9; text-align: left; padding: 8px 12px; font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 9px 12px; border-bottom: 1px solid #f1f5f9; font-size: 12px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  /* Code */
+  code { background: #1e293b; color: #e2e8f0; padding: 2px 7px; border-radius: 5px; font-family: 'Courier New', monospace; font-size: 11px; }
+  pre { background: #1e293b; color: #e2e8f0; padding: 14px 18px; border-radius: 10px; font-size: 11px; font-family: 'Courier New', monospace; overflow-x: auto; margin: 10px 0; line-height: 1.6; }
+
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 12px 0; }
+  .flow-node { background: #eef2ff; border: 1px solid #a5b4fc; color: #3730a3; padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .flow-node.green { background: #f0fdf4; border-color: #86efac; color: #15803d; }
+  .flow-node.orange { background: #fff7ed; border-color: #fdba74; color: #c2410c; }
+  .flow-node.red { background: #fff7f7; border-color: #fca5a5; color: #b91c1c; }
+  .flow-arrow { color: #94a3b8; font-weight: 700; font-size: 14px; }
+
+  /* Checklist */
+  .checklist { list-style: none; }
+  .checklist li { padding: 6px 0; display: flex; align-items: flex-start; gap: 8px; font-size: 12px; border-bottom: 1px solid #f1f5f9; }
+  .checklist li:last-child { border-bottom: none; }
+  .check { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Two columns */
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 12px 0; }
+
+  /* Footer */
+  .footer { margin-top: 48px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #94a3b8; font-size: 11px; }
+
+  @media print {
+    body { background: white; }
+    .page { padding: 32px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="header-left">
+      <h1>🚀 FocusAid — Oturum Raporu</h1>
+      <p>7 Haziran 2026 &nbsp;·&nbsp; n8n + Supabase + Google Calendar Entegrasyon Oturumu</p>
+    </div>
+    <div class="header-badge">v2.0 — Auth + DB</div>
+  </div>
+
+  <!-- ÖZET -->
+  <h2>Oturum Özeti</h2>
+  <div class="cols">
+    <div class="card card-green">
+      <h3>✅ Tamamlanan Ana Başlıklar</h3>
+      <ul style="padding-left:16px; line-height:2; font-size:12px;">
+        <li>Supabase kimlik doğrulama entegrasyonu</li>
+        <li>Google OAuth giriş sayfası (auth.html)</li>
+        <li>Takvim olaylarını GAPI ile yükleme</li>
+        <li>OAuth redirect döngüsü çözüldü</li>
+        <li>n8n → Supabase task kayıt node'u</li>
+        <li>JavaScript SyntaxError düzeltildi</li>
+      </ul>
+    </div>
+    <div class="card card-yellow">
+      <h3>⚠️ Devam Edecek</h3>
+      <ul style="padding-left:16px; line-height:2; font-size:12px;">
+        <li>tasks tablosu kolon eksikliği (Supabase)</li>
+        <li>n8n → Supabase kayıt testi</li>
+        <li>Google token yenileme mekanizması</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- n8n WORKFLOW -->
+  <h2>n8n Workflow Mevcut Hali</h2>
+
+  <div class="card card-indigo">
+    <h3>Workflow Kimlik Bilgileri</h3>
+    <table>
+      <tr><td style="width:150px; color:#64748b;">Workflow ID</td><td><code>KoSsoWH2tLfZszUC</code></td></tr>
+      <tr><td style="color:#64748b;">Webhook URL</td><td><code>http://localhost:5678/webhook-test/focusaid-processor</code></td></tr>
+      <tr><td style="color:#64748b;">Son güncelleme</td><td>2026-06-07T11:01:38Z</td></tr>
+      <tr><td style="color:#64748b;">Durum</td><td><span class="badge badge-green">Aktif</span></td></tr>
+    </table>
+  </div>
+
+  <h3>Workflow Akışı</h3>
+  <div class="flow">
+    <div class="flow-node">Webhook</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Get many events</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Merge</div><div class="flow-arrow">→</div>
+    <div class="flow-node orange">AI Agent (OpenAI)</div><div class="flow-arrow">→</div>
+    <div class="flow-node orange">Code in JavaScript</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Loop Over Items</div><div class="flow-arrow">→</div>
+    <div class="flow-node green">Create an event</div><div class="flow-arrow">→</div>
+    <div class="flow-node red">Save task to Supabase</div><div class="flow-arrow">→</div>
+    <div class="flow-node">Respond to Webhook</div>
+  </div>
+
+  <h3>Node Detayları</h3>
+  <table>
+    <tr>
+      <th>Node</th>
+      <th>Görev</th>
+      <th>Durum</th>
+    </tr>
+    <tr>
+      <td><strong>Webhook</strong></td>
+      <td>Frontend'den taskTitle, deadline, userProfile, userId, supabaseToken alır</td>
+      <td><span class="badge badge-green">✅ Çalışıyor</span></td>
+    </tr>
+    <tr>
+      <td><strong>Get many events</strong></td>
+      <td>Google Calendar'dan bugünden itibaren 4 haftalık etkinlikleri çeker (timeMin = bugünün başı)</td>
+      <td><span class="badge badge-green">✅ Çalışıyor</span></td>
+    </tr>
+    <tr>
+      <td><strong>AI Agent</strong></td>
+      <td>target_tasks = round(available_days × 0.6) adet spesifik görev üretir. Bilişsel yük atar (high/medium/low)</td>
+      <td><span class="badge badge-green">✅ Çalışıyor</span></td>
+    </tr>
+    <tr>
+      <td><strong>Code in JavaScript</strong></td>
+      <td>Proportional distribution: görevleri bugünden deadline'a eşit yayar. Çakışmaları önler. userId, supabaseToken, projectTitle ekler</td>
+      <td><span class="badge badge-green">✅ Çalışıyor</span></td>
+    </tr>
+    <tr>
+      <td><strong>Create an event</strong></td>
+      <td>Her görev için Google Calendar'a etkinlik oluşturur</td>
+      <td><span class="badge badge-green">✅ Çalışıyor</span></td>
+    </tr>
+    <tr>
+      <td><strong>Save task to Supabase</strong></td>
+      <td>Her etkinlik sonrası Supabase tasks tablosuna POST atar. User JWT ile auth.</td>
+      <td><span class="badge badge-yellow">⚠️ Hata (kolon eksik)</span></td>
+    </tr>
+  </table>
+
+  <h3>AI Agent Prompt Mantığı</h3>
+  <div class="card">
+    <ul style="padding-left:16px; line-height:2; font-size:12px;">
+      <li><strong>available_days</strong> = deadline − bugün (takvim günü)</li>
+      <li><strong>target_tasks</strong> = round(available_days × 0.6) → min 3, max 45</li>
+      <li>Her görev = 1 odak seansı (focusPeriod dakika)</li>
+      <li>Görev isimleri spesifik: "HTML skeleton yaz: header, nav, hero" (❌ "HTML yap" değil)</li>
+      <li>Bilişsel yük: high (yaratıcı/derin) / medium (orta) / low (mekanik)</li>
+    </ul>
+  </div>
+
+  <h3>Proportional Distribution Algoritması</h3>
+  <pre>// Task i'nin hedef günü:
+targetIdx = round(i * (N-1) / (T-1))
+// N = toplam gün sayısı, T = görev sayısı
+// Çakışırsa bir sonraki boş slota kaydırılır
+// findSlot(): cursor = workStart, çakışma yoksa o slotu döndür, varsa conflict.end + breakTime'dan devam et</pre>
+
+  <!-- FRONTEND UYGULAMA -->
+  <h2>Frontend Uygulama (index_2.html)</h2>
+
+  <h3>Mimari</h3>
+  <div class="card">
+    <table>
+      <tr><th>Bileşen</th><th>Teknoloji</th><th>Açıklama</th></tr>
+      <tr><td>UI Framework</td><td>Tailwind CSS</td><td>CDN'den yükleniyor</td></tr>
+      <tr><td>Takvim</td><td>FullCalendar v6.1.8</td><td>gapi.client ile Google Calendar events yüklüyor</td></tr>
+      <tr><td>Kimlik Doğrulama</td><td>Supabase Auth (Google OAuth)</td><td>INITIAL_SESSION event ile redirect döngüsü önlendi</td></tr>
+      <tr><td>Veritabanı</td><td>Supabase PostgREST</td><td>profiles okuma/yazma çalışıyor</td></tr>
+      <tr><td>Google API</td><td>GAPI + GIS</td><td>provider_token ile otomatik aktifleşiyor</td></tr>
+      <tr><td>Font</td><td>Plus Jakarta Sans</td><td>Google Fonts CDN</td></tr>
+    </table>
+  </div>
+
+  <h3>Auth Akışı</h3>
+  <div class="flow" style="flex-direction:column; align-items:flex-start;">
+    <div style="display:flex; align-items:center; gap:6px;">
+      <div class="flow-node">auth.html</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node orange">signInWithOAuth (Google)</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node">Supabase callback</div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-node green">index_2.html</div>
+    </div>
+    <div style="font-size:11px; color:#64748b; margin-top:8px; padding-left:4px;">
+      index_2.html'de <code>INITIAL_SESSION</code> event beklenir → session varsa devam, yoksa auth.html'e dön.<br>
+      provider_token → activateGoogleCalendar() → gapi.client.setToken() → takvim etkinlikleri yüklenir.
+    </div>
+  </div>
+
+  <h3>Bu Oturumda Düzeltilen Kritik Bug'lar</h3>
+  <ul class="checklist">
+    <li><span class="check">🔴</span><div><strong>SyntaxError (JavaScript tamamen çalışmıyordu):</strong> <code>saveProfile()</code> fonksiyonu <code>async</code> olmadan <code>await</code> kullanıyordu. Tüm script parse edilemiyordu, hiçbir buton çalışmıyordu. → <code>async function saveProfile()</code> olarak düzeltildi.</div></li>
+    <li><span class="check">🔴</span><div><strong>Takvim etkinlikleri yüklenmiyor:</strong> FullCalendar Google Calendar plugin sadece API key ile private takvimi okuyamıyor. → <code>gapi.client.calendar.events.list()</code> ile custom events function yazıldı.</div></li>
+    <li><span class="check">🔴</span><div><strong>OAuth redirect döngüsü:</strong> PKCE code exchange tamamlanmadan <code>getSession()</code> null dönüyor, sürekli auth.html'e yönlendiriyordu. → <code>INITIAL_SESSION</code> event ile çözüldü.</div></li>
+    <li><span class="check">🔴</span><div><strong>Google Client Secret eksik:</strong> Supabase Google provider'da Client Secret girilmemişti, token exchange başarısız oluyordu. → Google Cloud Console'dan yeni secret oluşturulup Supabase'e eklendi.</div></li>
+  </ul>
+
+  <!-- SUPABASE -->
+  <h2>Supabase Veritabanı</h2>
+
+  <div class="cols">
+    <div class="card card-green">
+      <h3>✅ profiles tablosu</h3>
+      <p style="font-size:12px; color:#374151; line-height:1.8;">Tüm DEHB profil alanları, RLS politikaları ve auto-insert trigger aktif. Giriş yapılan hesap profiles'ta görünüyor.</p>
+    </div>
+    <div class="card card-red">
+      <h3>⚠️ tasks tablosu</h3>
+      <p style="font-size:12px; color:#374151; line-height:1.8;">Tablo mevcut ama kolonlar eksik (<code>cognitive_load</code>, <code>calendar_event_id</code> vb.). n8n kayıt yapamıyor. Düzeltme SQL'i hazır.</p>
+    </div>
+  </div>
+
+  <h3>tasks Tablosu Düzeltme SQL'i</h3>
+  <pre>ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS cognitive_load TEXT;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS calendar_event_id TEXT;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS project_title TEXT;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS summary TEXT;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS day DATE;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
+ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS completed BOOLEAN DEFAULT false;
+NOTIFY pgrst, 'reload schema';</pre>
+
+  <!-- SONRAKI ADIMLAR -->
+  <h2>Bir Sonraki Oturumda Yapılacaklar</h2>
+  <ul class="checklist">
+    <li><span class="check">1️⃣</span><div><strong>tasks kolon düzeltmesi</strong> — Yukarıdaki ALTER TABLE SQL'ini Supabase SQL Editor'de çalıştır. (Not: <code>task_chunks</code> bağımlı tablo var, DROP CASCADE çalışmıyor)</div></li>
+    <li><span class="check">2️⃣</span><div><strong>Supabase kayıt testi</strong> — Workflow çalıştır, tasks tablosuna veri geldiğini doğrula</div></li>
+    <li><span class="check">3️⃣</span><div><strong>Frontend tasks görünümü</strong> — Supabase'den kullanıcının görevlerini çekip listeleyen bir sekme/panel eklenebilir</div></li>
+    <li><span class="check">4️⃣</span><div><strong>Google token yenileme</strong> — provider_token ~1 saat sonra sürüyor; otomatik yenileme veya daha iyi UX</div></li>
+  </ul>
+
+  <!-- TEKNİK REFERANS -->
+  <h2>Teknik Referans</h2>
+  <table>
+    <tr><th>Servis</th><th>URL / Değer</th></tr>
+    <tr><td>Uygulama</td><td><code>http://localhost:3000/auth.html</code></td></tr>
+    <tr><td>n8n</td><td><code>http://localhost:5678</code></td></tr>
+    <tr><td>Supabase Dashboard</td><td><code>https://supabase.com/dashboard/project/tigawsmrndalzvuyjycc</code></td></tr>
+    <tr><td>n8n Webhook</td><td><code>http://localhost:5678/webhook-test/focusaid-processor</code></td></tr>
+    <tr><td>Google OAuth Client</td><td><code>967142942363-ikk9i91et27v9h4gtva0ln2f7s92rv9i.apps.googleusercontent.com</code></td></tr>
+  </table>
+
+  <div class="footer">
+    FocusAid Oturum Raporu &nbsp;·&nbsp; 7 Haziran 2026 &nbsp;·&nbsp; Oluşturan: Claude Sonnet 4.6
+  </div>
+
+</div>
+</body>
+</html>

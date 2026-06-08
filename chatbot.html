@@ -1,0 +1,86 @@
+<div class="animate-slide-in max-w-5xl mx-auto space-y-6">
+
+    <div class="flex justify-between items-center px-4">
+        <div>
+            <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">FocusAid Akıllı Asistan</h2>
+            <p class="text-slate-500 text-sm italic">n8n "Sis Giderici" algoritması ile görevlerini mikro parçalara böler.</p>
+        </div>
+        <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+            </span>
+            <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">n8n Bağlantısı Aktif</span>
+        </div>
+    </div>
+
+    <div class="glass-card p-2 bg-white/50 shadow-2xl flex flex-col h-[700px]">
+
+        <!-- Mesaj Alanı -->
+        <div id="chat-box" class="flex-1 overflow-y-auto m-4 p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-6">
+            <!-- Karşılama Mesajı -->
+            <div class="ai-bubble message-pop max-w-[80%] shadow-lg">
+                <p class="font-medium">Selam kral! Bugün hangi büyük projeyi beraber mikro parçalara bölelim? Deadline seçmeyi unutma ki takvimini ona göre optimize edeyim! 🚀</p>
+            </div>
+
+            <!-- Loading Göstergesi — addMessageToChat referans alıyor -->
+            <div id="loading-text" class="hidden flex items-center gap-3 ml-2">
+                <div class="flex gap-1">
+                    <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+                    <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+                    <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+                </div>
+                <span class="text-slate-400 text-xs italic">Sherlock n8n üzerinde planlama yapıyor...</span>
+            </div>
+        </div>
+
+        <!-- Input Alanı -->
+        <div class="p-6 pt-2 space-y-4">
+            <div class="relative group">
+                <input type="text" id="task-input"
+                    class="w-full bg-white p-5 rounded-2xl outline-none border-2 border-slate-100 focus:border-indigo-300 transition-all font-semibold text-lg pr-40 placeholder:text-slate-300"
+                    placeholder="Ana görevi buraya yaz (Örn: Portfolyo Hazırla)"
+                    title="Enter tuşuna basarak da gönderebilirsin">
+
+                <button onclick="sendTaskToN8N()"
+                    class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-8 rounded-xl font-bold hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2">
+                    <span>🧩</span> Parçala
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input type="text" id="task-desc"
+                    class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-50 text-sm text-slate-600 focus:border-indigo-200 transition-all placeholder:text-slate-400"
+                    placeholder="Ek detaylar veya notlar (opsiyonel)...">
+
+                <input type="datetime-local" id="task-deadline"
+                    class="w-full bg-indigo-50/50 p-4 rounded-xl outline-none border-2 border-transparent focus:border-indigo-200 text-sm text-indigo-700 font-bold cursor-pointer transition-all">
+            </div>
+        </div>
+    </div>
+
+    <!-- Alt Bilgi Kartları -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-10 px-2">
+        <div class="bg-orange-50/80 backdrop-blur-sm p-4 rounded-2xl border border-orange-100 flex items-start gap-3">
+            <span class="text-xl">🛡️</span>
+            <div>
+                <p class="text-[10px] font-black text-orange-400 uppercase tracking-tighter">Bilişsel Koruma</p>
+                <p class="text-xs text-orange-800 font-medium leading-tight">Analiz felcini önlemek için görevler odak süresi uzunluğunda dilimlere bölünür.</p>
+            </div>
+        </div>
+        <div class="bg-indigo-50/80 backdrop-blur-sm p-4 rounded-2xl border border-indigo-100 flex items-start gap-3">
+            <span class="text-xl">📊</span>
+            <div>
+                <p class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Profil Uyumu</p>
+                <p class="text-xs text-indigo-800 font-medium leading-tight">Planlama yapılırken en verimli saatlerin önceliklendirilir.</p>
+            </div>
+        </div>
+        <div class="bg-emerald-50/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-100 flex items-start gap-3">
+            <span class="text-xl">🏁</span>
+            <div>
+                <p class="text-[10px] font-black text-emerald-400 uppercase tracking-tighter">Tersine Planlama</p>
+                <p class="text-xs text-emerald-800 font-medium leading-tight">Deadline'dan bugüne doğru bir yol haritası oluşturulur.</p>
+            </div>
+        </div>
+    </div>
+</div>
