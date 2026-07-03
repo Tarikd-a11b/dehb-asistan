@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FocusAid | DEHB Odak Asistanı</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<script src="config.js"></script>
+<script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
+<script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
+:root{--indigo-main:#6366f1;--indigo-glow:rgba(99,102,241,0.15);--mint-success:#10b981;--slate-bg:#f8fafc;--glass-white:rgba(255,255,255,0.85);--border-light:rgba(226,232,240,0.8)}
+body{background:radial-gradient(at 0% 0%,rgba(99,102,241,.08) 0px,transparent 45%),radial-gradient(at 100% 0%,rgba(16,185,129,.04) 0px,transparent 40%),var(--slate-bg);font-family:'Plus Jakarta Sans',sans-serif;color:#1e293b;min-height:100vh;letter-spacing:-.01em}
+.glass-card{background:var(--glass-white);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-light);border-radius:2.5rem;box-shadow:0 20px 50px -12px rgba(0,0,0,.05);transition:all .4s cubic-bezier(.34,1.56,.64,1)}
+.glass-card:focus-within{transform:scale(1.01);border-color:var(--indigo-main);box-shadow:0 30px 60px -12px var(--indigo-glow)}
+#chat-box{background:rgba(241,245,249,.4);border-radius:2rem;padding:1.5rem}
+.ai-bubble{background:linear-gradient(135deg,#6366f1 0%,#4f46e5 100%);color:#fff;padding:1.25rem 1.5rem;border-radius:1.8rem 1.8rem 1.8rem .4rem;font-weight:500;box-shadow:0 10px 20px rgba(79,70,229,.2)}
+.user-bubble{background:#fff;color:#334155;padding:1rem 1.25rem;border-radius:1.8rem 1.8rem .4rem 1.8rem;border:1px solid var(--border-light);box-shadow:0 4px 6px -1px rgba(0,0,0,.02)}
+input[type=text],input[type=number],input[type=time],input[type=date],input[type=datetime-local],textarea,select{background:#fff!important;border:2px solid #e2e8f0!important;border-radius:1.25rem!important;padding:1rem 1.25rem!important;transition:all .2s ease;font-weight:500;font-family:'Plus Jakarta Sans',sans-serif}
+input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!important;box-shadow:0 0 0 4px var(--indigo-glow)!important;outline:none!important}
+.sidebar-item.active-link{background:#eef2ff!important;color:#4f46e5!important;font-weight:700;box-shadow:0 2px 8px rgba(99,102,241,.12)}
+.message-pop{animation:msg-appear .3s cubic-bezier(.34,1.56,.64,1)}
+.animate-slide-in{animation:reveal .6s cubic-bezier(.19,1,.22,1)}
+@keyframes reveal{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
+@keyframes msg-appear{0%{opacity:0;transform:translateY(8px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes success-bounce{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}::-webkit-scrollbar-thumb:hover{background:#94a3b8}
+#focusaid-toast{max-width:360px;word-break:break-word}
+.fc{font-family:'Plus Jakarta Sans',sans-serif!important;border:none!important}
+.fc-toolbar-title{font-size:1.5rem!important;font-weight:800!important;color:#1e293b}
+.fc-button-primary{background-color:#6366f1!important;border:none!important;border-radius:12px!important;padding:8px 16px!important;font-weight:700!important}
+.fc-button-primary:hover{background-color:#4f46e5!important}
+.fc-daygrid-day.fc-day-today{background-color:rgba(99,102,241,.05)!important}
+.fc-col-header-cell{padding:12px 0!important;text-transform:uppercase;font-size:.7rem;letter-spacing:.1em;color:#94a3b8}
+.fc-daygrid-day-number{font-weight:600;color:#475569;padding:10px!important}
+.fc-event{cursor:pointer;border-radius:8px!important;padding:2px 6px!important}
+/* ── DEHB Dostu Profil Stilleri ── */
+.adhd-hero-header{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 50%,#0d9488 100%);position:relative;overflow:hidden}
+.hero-blob-1{position:absolute;top:-60px;right:-60px;width:250px;height:250px;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none}
+.hero-blob-2{position:absolute;bottom:-40px;left:30%;width:150px;height:150px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
+.adhd-badge{background:rgba(255,255,255,.2);color:#fff;font-size:.7rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.3)}
+.adhd-card-purple{border-top:4px solid #7c3aed!important}.adhd-card-emerald{border-top:4px solid #059669!important}.adhd-card-orange{border-top:4px solid #f97316!important}.adhd-card-pink{border-top:4px solid #ec4899!important}.adhd-card-teal{border-top:4px solid #0d9488!important}.adhd-card-yellow{border-top:4px solid #f59e0b!important}
+.mood-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:9999px;border:2px solid #e2e8f0;background:#fff;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif}
+.mood-btn:hover{transform:translateY(-2px) scale(1.05);border-color:#7c3aed;box-shadow:0 8px 20px rgba(124,58,237,.15)}
+.mood-btn.active{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(124,58,237,.3)}
+.adhd-slider{-webkit-appearance:none;appearance:none;height:8px;background:linear-gradient(90deg,#7c3aed,#6366f1);border-radius:9999px;outline:none;cursor:pointer;border:none!important;padding:0!important;box-shadow:none!important}
+.adhd-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);transition:all .2s ease}
+.adhd-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
+.adhd-slider-pink{background:linear-gradient(90deg,#ec4899,#f472b6)!important}.adhd-slider-pink::-webkit-slider-thumb{border-color:#ec4899!important;box-shadow:0 4px 12px rgba(236,72,153,.3)!important}
+.adhd-slider-teal{background:linear-gradient(90deg,#0d9488,#14b8a6)!important}.adhd-slider-teal::-webkit-slider-thumb{border-color:#0d9488!important;box-shadow:0 4px 12px rgba(13,148,136,.3)!important}
+.energy-radio-option{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;background:#f8fafc;border-radius:.75rem;cursor:pointer;transition:all .2s ease;font-size:.875rem;font-weight:500}
+.energy-radio-option:hover{background:#f0fdf4;transform:translateX(4px)}
+.superpower-check{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.75rem;cursor:pointer;font-size:.875rem;font-weight:500;transition:background .15s ease}
+.superpower-check:hover{background:#fefce8}
+.save-btn{box-shadow:0 20px 40px -12px rgba(124,58,237,.4)}.save-btn:hover{box-shadow:0 25px 50px -12px rgba(124,58,237,.5)}
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+<!-- ════════════════════════════════════════
+     SAYFA ŞABLONLARı — fetch() yok, CORS yok
+     ════════════════════════════════════════ -->
+
+<template id="tpl-calendar">
+<div class="animate-slide-in">
+  <div class="flex justify-between items-end mb-8">
+    <div>
+      <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Ajanda ve Planlar</h2>
+      <p class="text-slate-500 italic mt-1">n8n tarafından parçalanmış görevlerini burada yönetebilirsin.</p>
+    </div>
+  </div>
+  <div class="flex flex-col xl:flex-row gap-10">
+    <div class="flex-1 min-w-[350px] glass-card p-8 bg-white/90 shadow-2xl">
+      <div id="calendar" class="min-h-[600px]"></div>
+    </div>
+    <div id="task-form-panel" class="w-full xl:w-[480px] glass-card p-10 bg-white shadow-2xl border-l-4 border-indigo-500 hidden animate-slide-in">
+      <div class="flex justify-between items-start mb-8">
+        <h3 class="text-2xl font-bold text-slate-800">Görev Detayları</h3>
+        <button onclick="closeForm()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="space-y-8">
+        <div>
+          <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Görev Başlığı</label>
+          <input type="text" id="task-title" placeholder="Neye odaklanıyoruz?" class="text-2xl font-semibold w-full outline-none border-b-2 border-slate-100 focus:border-indigo-500 pb-4 transition-all bg-transparent">
+        </div>
+        <div class="grid grid-cols-1 gap-6">
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Planlanan Tarih</label>
+            <input type="date" id="task-date" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium">
+          </div>
+          <div class="flex gap-4">
+            <div class="flex-1">
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Başlangıç</label>
+              <input type="time" id="task-start" onchange="updateEndTime()" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-indigo-600">
+            </div>
+            <div class="flex-1">
+              <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tahmini Bitiş</label>
+              <input type="time" id="task-end" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-slate-400">
+            </div>
+          </div>
+          <div>
+            <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ek Detaylar</label>
+            <textarea id="task-desc" placeholder="Notlarını veya n8n için ipuçlarını buraya yazabilirsin..." class="w-full bg-slate-50 p-5 rounded-3xl h-32 border border-transparent focus:border-indigo-200 outline-none resize-none text-sm leading-relaxed"></textarea>
+          </div>
+        </div>
+        <div class="flex gap-4 pt-4">
+          <button onclick="saveTaskToGoogle()" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Takvime İşle</button>
+          <button onclick="triggerN8N_Split()" class="flex-1 bg-emerald-50 text-emerald-600 px-6 rounded-2xl font-bold border border-emerald-100 hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-2"><span>🧩</span> Parçala</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-chatbot">
+<div class="animate-slide-in max-w-5xl mx-auto space-y-6">
+  <div class="flex justify-between items-center px-4">
+    <div>
+      <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">FocusAid Akıllı Asistan</h2>
+      <p class="text-slate-500 text-sm italic">n8n "Sis Giderici" algoritması ile görevlerini mikro parçalara böler.</p>
+    </div>
+    <div class="flex items-center gap-2 bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
+      <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
+      <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">n8n Bağlantısı Aktif</span>
+    </div>
+  </div>
+  <div class="glass-card p-2 bg-white/50 shadow-2xl flex flex-col h-[700px]">
+    <div id="chat-box" class="flex-1 overflow-y-auto m-4 p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-6">
+      <div class="ai-bubble message-pop max-w-[80%] shadow-lg">
+        <p class="font-medium">Selam kral! Bugün hangi büyük projeyi beraber mikro parçalara bölelim? Deadline seçmeyi unutma ki takvimini ona göre optimize edeyim! 🚀</p>
+      </div>
+      <div id="loading-text" class="hidden flex items-center gap-3 ml-2">
+        <div class="flex gap-1">
+          <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:0ms"></span>
+          <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:150ms"></span>
+          <span class="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style="animation-delay:300ms"></span>
+        </div>
+        <span class="text-slate-400 text-xs italic">Sherlock n8n üzerinde planlama yapıyor...</span>
+      </div>
+    </div>
+    <div class="p-6 pt-2 space-y-4">
+      <div class="relative group">
+        <input type="text" id="task-input" class="w-full bg-white p-5 rounded-2xl outline-none border-2 border-slate-100 focus:border-indigo-300 transition-all font-semibold text-lg pr-40 placeholder:text-slate-300" placeholder="Ana görevi buraya yaz (Örn: Portfolyo Hazırla)">
+        <button onclick="sendTaskToN8N()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-8 rounded-xl font-bold hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <input type="text" id="task-desc" class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-50 text-sm text-slate-600 focus:border-indigo-200 transition-all placeholder:text-slate-400" placeholder="Ek detaylar veya notlar (opsiyonel)...">
+        <input type="datetime-local" id="task-deadline" class="w-full bg-indigo-50/50 p-4 rounded-xl outline-none border-2 border-transparent focus:border-indigo-200 text-sm text-indigo-700 font-bold cursor-pointer transition-all">
+      </div>
+    </div>
+  </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-10 px-2">
+    <div class="bg-orange-50/80 backdrop-blur-sm p-4 rounded-2xl border border-orange-100 flex items-start gap-3"><span class="text-xl">🛡️</span><div><p class="text-[10px] font-black text-orange-400 uppercase tracking-tighter">Bilişsel Koruma</p><p class="text-xs text-orange-800 font-medium leading-tight">Analiz felcini önlemek için görevler odak süresi uzunluğunda dilimlere bölünür.</p></div></div>
+    <div class="bg-indigo-50/80 backdrop-blur-sm p-4 rounded-2xl border border-indigo-100 flex items-start gap-3"><span class="text-xl">📊</span><div><p class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter">Profil Uyumu</p><p class="text-xs text-indigo-800 font-medium leading-tight">Planlama yapılırken en verimli saatlerin önceliklendirilir.</p></div></div>
+    <div class="bg-emerald-50/80 backdrop-blur-sm p-4 rounded-2xl border border-emerald-100 flex items-start gap-3"><span class="text-xl">🏁</span><div><p class="text-[10px] font-black text-emerald-400 uppercase tracking-tighter">Tersine Planlama</p><p class="text-xs text-emerald-800 font-medium leading-tight">Deadline'dan bugüne doğru bir yol haritası oluşturulur.</p></div></div>
+  </div>
+</div>
+</template>
+
+<template id="tpl-profile">
+<div class="animate-slide-in space-y-8 pb-10">
+
+  <!-- Hero Header -->
+  <div class="adhd-hero-header rounded-[3rem] p-10">
+    <div class="relative z-10">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-4xl">🧠</span>
+        <span class="adhd-badge">DEHB Dostu</span>
+      </div>
+      <h2 class="text-4xl font-extrabold text-white tracking-tight">Nöro-Profil Merkezi</h2>
+      <p class="text-purple-200 mt-2 text-base">Beynin nasıl çalışıyor? Sana özel planlar yapabilmem için ayarlarını kişiselleştir.</p>
+    </div>
+    <div class="hero-blob-1"></div>
+    <div class="hero-blob-2"></div>
+  </div>
+
+  <!-- Bugünkü Mod -->
+  <div class="glass-card p-6 bg-white shadow-sm">
+    <h4 class="font-bold text-slate-500 text-xs uppercase tracking-widest mb-4 flex items-center gap-2"><span>⚡</span> Bugün Nasıl Hissediyorsun?</h4>
+    <div class="flex gap-3 flex-wrap">
+      <button onclick="setMood('hyper')" id="mood-hyper" class="mood-btn">🚀 Hiper Modda</button>
+      <button onclick="setMood('focused')" id="mood-focused" class="mood-btn">🎯 Odaklıyım</button>
+      <button onclick="setMood('foggy')" id="mood-foggy" class="mood-btn">🌫️ Beyin Sisi</button>
+      <button onclick="setMood('anxious')" id="mood-anxious" class="mood-btn">😰 Kaygılı</button>
+      <button onclick="setMood('crash')" id="mood-crash" class="mood-btn">💤 Enerji Düşük</button>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+
+    <!-- 1. Odak Yönetimi -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-purple">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>💊</span> Odak Yönetimi</h4>
+        <p class="text-[10px] text-slate-400 mt-1">İlaç ve odak süren planlamayı şekillendirir</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">İlaç Kullanım Durumu</label>
+        <div class="flex gap-2">
+          <button id="med-yes" onclick="setMed(true)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">✅ Evet</button>
+          <button id="med-no" onclick="setMed(false)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">❌ Hayır</button>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Odak Süresi: <span id="focus-display" class="text-purple-600 font-black">25 dk</span></label>
+        <input type="range" id="focus-period" value="25" min="10" max="90" step="5" oninput="document.getElementById('focus-display').textContent=this.value+' dk'" class="adhd-slider w-full">
+        <div class="flex justify-between text-[10px] text-slate-400"><span>10 dk</span><span>⚡ 25 Pomodoro</span><span>90 dk</span></div>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Hiperfokus Uyarısı</label>
+        <select id="hyperfocus-limit" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="none">⛔ Alarm Yok</option>
+          <option value="60">⏰ 60 dk'da bir uyar</option>
+          <option value="90">⏰ 90 dk'da bir uyar</option>
+          <option value="120">⏰ 2 saatte bir uyar</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 2. Zaman Döngüsü -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-emerald">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🕒</span> Zaman Döngüsü</h4>
+        <p class="text-[10px] text-slate-400 mt-1">Zaman körlüğüne karşı düzenin sınırları</p>
+      </div>
+      <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase">Mesai Başlangıç</label><input type="time" id="work-start" value="09:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none"></div>
+        <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase">Mesai Bitiş</label><input type="time" id="work-end" value="18:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none"></div>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">En Yüksek Enerji Zamanın</label>
+        <div class="space-y-2">
+          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="morning" checked class="accent-emerald-600"><span>🌅 Sabah (Early Bird)</span></label>
+          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="afternoon" class="accent-emerald-600"><span>☀️ Öğleden Sonra</span></label>
+          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="night" class="accent-emerald-600"><span>🌙 Gece (Night Owl)</span></label>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Odak Tetikleyici -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-orange">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🎧</span> Odak Tetikleyici</h4>
+        <p class="text-[10px] text-slate-400 mt-1">Beynini çalışmaya sokan stimülasyonlar</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Çalışma Modu</label>
+        <select id="social-mode" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="solo">🧘 Tamamen Yalnız (Deep Work)</option>
+          <option value="body-doubling">👥 Body Doubling</option>
+          <option value="cafe">☕ Hafif Gürültülü (Kafe)</option>
+        </select>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">İşitsel Destek</label>
+        <select id="focus-trigger" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="silence">🔇 Mutlak Sessizlik</option>
+          <option value="lofi">🎵 Lo-Fi / Enstrümantal</option>
+          <option value="brown-noise">🌊 Brown Noise</option>
+          <option value="binaural">🎶 Binaural Beats</option>
+          <option value="white-noise">📺 White Noise</option>
+        </select>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Mola Stili</label>
+        <select id="break-style" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="pomodoro">🍅 Pomodoro (5 dk mola)</option>
+          <option value="long-break">😴 Uzun Mola (15 dk)</option>
+          <option value="micro">⚡ Mikro Molalar (2 dk)</option>
+          <option value="free">🌊 Serbest</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 4. Duyusal Profil -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-pink">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🌡️</span> Duyusal Profil</h4>
+        <p class="text-[10px] text-slate-400 mt-1">Duyusal hassasiyetlerin ortam ayarlarını şekillendirir</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Işık Hassasiyeti: <span id="light-display" class="text-pink-500 font-black">Orta</span></label>
+        <input type="range" id="light-sensitivity" value="2" min="1" max="3" step="1" oninput="updateSensLabel('light-display',this.value)" class="adhd-slider adhd-slider-pink w-full">
+        <div class="flex justify-between text-[10px] text-slate-400"><span>😎 Düşük</span><span>😵 Yüksek</span></div>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Ses Hassasiyeti: <span id="sound-display" class="text-pink-500 font-black">Orta</span></label>
+        <input type="range" id="sound-sensitivity" value="2" min="1" max="3" step="1" oninput="updateSensLabel('sound-display',this.value)" class="adhd-slider adhd-slider-pink w-full">
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Tercih Ettiğin Ortam</label>
+        <select id="env-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="minimal">🧹 Minimal & Temiz</option>
+          <option value="cozy">🛋️ Rahat & Sıcak</option>
+          <option value="dynamic">⚡ Dinamik & Değişken</option>
+          <option value="nature">🌿 Doğa Ögeli</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 5. Duygusal Koruma -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-teal">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🛡️</span> Duygusal Koruma</h4>
+        <p class="text-[10px] text-slate-400 mt-1">RSD ve duygusal düzenleme stratejilerin</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">RSD Seviyem: <span id="rsd-display" class="text-teal-600 font-black">Orta</span></label>
+        <input type="range" id="rsd-level" value="2" min="1" max="3" step="1" oninput="updateSensLabel('rsd-display',this.value)" class="adhd-slider adhd-slider-teal w-full">
+        <p class="text-[10px] text-slate-400">RSD: Reddedilme Duyarlılığı Disforisi</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Düzenleme Yöntemim</label>
+        <select id="regulation-method" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="breathing">🫁 Nefes Egzersizleri</option>
+          <option value="movement">🏃 Hareket / Stim</option>
+          <option value="grounding">🌍 Grounding (5-4-3-2-1)</option>
+          <option value="music">🎵 Müzikle Yatışma</option>
+          <option value="cold-water">💧 Soğuk Su</option>
+        </select>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Stim Tercihi</label>
+        <select id="stim-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="fidget">🤏 Fidget / El Oyuncağı</option>
+          <option value="pacing">🚶 Yürüyüş / Sallanma</option>
+          <option value="doodling">✏️ Karalama</option>
+          <option value="chewing">🍬 Çiğneme</option>
+          <option value="none">🧘 Stim Yok</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 6. Süper Güçlerim -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-yellow">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>⭐</span> Süper Güçlerim</h4>
+        <p class="text-[10px] text-slate-400 mt-1">DEHB'in getirdiği avantajların — kutla bunları!</p>
+      </div>
+      <div class="space-y-1">
+        <label class="superpower-check"><input type="checkbox" id="sp-creativity" class="accent-yellow-500"><span>🎨 Yaratıcılık & Özgün Düşünce</span></label>
+        <label class="superpower-check"><input type="checkbox" id="sp-hyperfocus" class="accent-yellow-500"><span>🔥 Hiperfokus Yeteneği</span></label>
+        <label class="superpower-check"><input type="checkbox" id="sp-energy" class="accent-yellow-500"><span>⚡ Yüksek Enerji & Heves</span></label>
+        <label class="superpower-check"><input type="checkbox" id="sp-empathy" class="accent-yellow-500"><span>💜 Güçlü Empati</span></label>
+        <label class="superpower-check"><input type="checkbox" id="sp-crisis" class="accent-yellow-500"><span>🚒 Kriz Anında Performans</span></label>
+        <label class="superpower-check"><input type="checkbox" id="sp-connections" class="accent-yellow-500"><span>🔗 Bağlantı Kurma Yeteneği</span></label>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bitirme Stratejisi -->
+  <div class="bg-slate-900 text-white p-12 rounded-[3.5rem] shadow-2xl space-y-10 border-b-8 border-purple-600">
+    <div class="flex items-center gap-4 border-b border-slate-800 pb-6">
+      <span class="text-3xl">🎯</span>
+      <div>
+        <h4 class="text-2xl font-bold">Bitirme Stratejin</h4>
+        <p class="text-slate-400 text-sm italic">n8n, bu notları planlama sonunda sana hatırlatıcı olarak gönderir.</p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-12">
+      <div class="space-y-4">
+        <label class="block text-xs font-black uppercase text-purple-400 tracking-[0.2em]">Günün Sonundaki Ödülün</label>
+        <textarea id="motivation-note" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-purple-500 transition-all placeholder-slate-600 h-32 resize-none text-lg" placeholder="Örn: 1 saat oyun, güzel bir akşam yemeği..."></textarea>
+      </div>
+      <div class="space-y-4">
+        <label class="block text-xs font-black uppercase text-orange-400 tracking-[0.2em]">Seni En Çok Ne Durdurur?</label>
+        <select id="main-obstacle" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
+          <option value="paralysis">🧊 Başlama Felci</option>
+          <option value="distraction">📱 Dikkat Dağınıklığı</option>
+          <option value="perfectionism">💎 Mükemmeliyetçilik</option>
+          <option value="time-blindness">⏰ Zaman Körlüğü</option>
+          <option value="overwhelm">😤 Bunalma & Overwhelm</option>
+          <option value="rejection">💔 RSD / Eleştiri Korkusu</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Kaydet -->
+  <div class="flex justify-end">
+    <button id="save-profile-btn" onclick="saveProfile()" class="save-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-5 rounded-[2rem] font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-3 text-lg">
+      <span>💾</span> Değişiklikleri Kaydet
+    </button>
+  </div>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════
+     UYGULAMA LAYOUT
+     ════════════════════════════════════════ -->
+<div class="flex min-h-screen">
+  <aside class="w-64 bg-white border-r border-slate-100 p-6 sticky top-0 h-screen flex flex-col justify-between shadow-sm">
+    <div>
+      <div class="mb-10">
+        <h1 class="text-2xl font-bold text-indigo-600">🚀 FocusAid</h1>
+        <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">DEHB Odak Asistanı</p>
+      </div>
+      <nav class="space-y-2">
+        <button onclick="loadPage('calendar')" id="nav-calendar" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">📅 Takvim</button>
+        <button onclick="loadPage('chatbot')" id="nav-chatbot" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">🧩 Parçalayıcı</button>
+        <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">👤 Profil</button>
+      </nav>
+    </div>
+    <div class="space-y-3">
+      <div class="flex items-center gap-2 px-3 py-2 bg-slate-50 rounded-xl">
+        <span class="relative flex h-2 w-2"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span></span>
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">n8n Bağlantısı</span>
+      </div>
+      <!-- Kullanıcı bilgisi (Supabase oturumundan) -->
+      <div id="user-info" class="hidden px-3 py-2 bg-slate-50 rounded-xl">
+        <div class="flex items-center gap-2">
+          <img id="user-avatar" src="" alt="" class="w-7 h-7 rounded-full object-cover border border-slate-200">
+          <div class="min-w-0">
+            <p id="user-name" class="text-[10px] font-black text-slate-600 truncate uppercase tracking-wide"></p>
+            <p id="user-email" class="text-[9px] text-slate-400 truncate"></p>
+          </div>
+        </div>
+      </div>
+      <button id="auth-btn" onclick="handleAuthClick()" class="w-full py-2.5 text-[10px] font-black border border-slate-200 rounded-xl hover:bg-slate-50 transition uppercase tracking-widest text-slate-400">Google Takvimi Bağla</button>
+      <button onclick="signOut()" class="w-full py-2 text-[9px] font-bold border border-red-100 rounded-xl hover:bg-red-50 transition uppercase tracking-widest text-red-400">Çıkış Yap</button>
+    </div>
+  </aside>
+  <main id="main-content" class="flex-1 p-8 overflow-y-auto">
+    <div class="flex items-center justify-center h-full text-slate-400">
+      <div class="text-center"><div class="text-4xl mb-4 animate-spin">⚙️</div><p class="italic text-sm">Sherlock hazırlanıyor...</p></div>
+    </div>
+  </main>
+</div>
+
+<!-- ════════════════════════════════════════
+     JAVASCRIPT
+     ════════════════════════════════════════ -->
+<script>
+// ── SUPABASE ─────────────────────────────────────────────────────────────────
+// Supabase Dashboard → Project Settings → API'den al
+const SUPABASE_URL      = FOCUSAID_CONFIG.SUPABASE_URL;
+const SUPABASE_ANON_KEY = FOCUSAID_CONFIG.SUPABASE_ANON_KEY;
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── AUTH GUARD ─────────────────────────────────────────────────────────────────
+// getSession() ile anlık kontrol yerine INITIAL_SESSION event'ini bekliyoruz.
+// INITIAL_SESSION, PKCE code exchange dahil tüm async işlemler tamamlandıktan
+// sonra ateşlenir → redirect döngüsünü engeller.
+let currentUser = null;
+let _authReady = false;
+
+async function _onSession(session) {
+  currentUser = session.user;
+  showUserInfo(currentUser);
+  if (session.access_token)  AppState.supabaseToken = session.access_token;
+  if (session.provider_token) activateGoogleCalendar(session.provider_token);
+  await loadProfileFromSupabase();
+}
+
+sb.auth.onAuthStateChange(async (event, session) => {
+  if (event === 'SIGNED_OUT') {
+    window.location.href = 'auth.html';
+    return;
+  }
+  if (event === 'INITIAL_SESSION') {
+    _authReady = true;
+    if (!session) { window.location.href = 'auth.html'; return; }
+    await _onSession(session);
+    return;
+  }
+  if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+    if (!_authReady) { _authReady = true; await _onSession(session); return; }
+    currentUser = session.user;
+    if (session.access_token) AppState.supabaseToken = session.access_token;
+  }
+});
+
+function showUserInfo(user) {
+  const meta = user.user_metadata || {};
+  const infoEl   = document.getElementById('user-info');
+  const avatarEl = document.getElementById('user-avatar');
+  const nameEl   = document.getElementById('user-name');
+  const emailEl  = document.getElementById('user-email');
+  if (!infoEl) return;
+  infoEl.classList.remove('hidden');
+  if (avatarEl) avatarEl.src = meta.avatar_url || '';
+  if (nameEl)   nameEl.textContent  = (meta.full_name || user.email || '').split(' ')[0];
+  if (emailEl)  emailEl.textContent = user.email || '';
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  window.location.href = 'auth.html';
+}
+
+// ── SUPABASE PROFİL İŞLEMLERİ ────────────────────────────────────────────────
+async function loadProfileFromSupabase() {
+  if (!currentUser) return;
+  const { data, error } = await sb
+    .from('profiles')
+    .select('*')
+    .eq('id', currentUser.id)
+    .single();
+
+  if (error || !data) return;
+
+  // Supabase → userProfile nesnesine dönüştür
+  userProfile = {
+    medication:       data.medication       ?? false,
+    focusPeriod:      data.focus_period     ?? 25,
+    workHours:        { start: data.work_start ?? '09:00', end: data.work_end ?? '18:00' },
+    social:           data.social           ?? 'solo',
+    energyPeak:       data.energy_peak      ?? 'morning',
+    focusTrigger:     data.focus_trigger    ?? 'silence',
+    motivationNote:   data.motivation_note  ?? '',
+    mainObstacle:     data.main_obstacle    ?? 'paralysis',
+    breakStyle:       data.break_style      ?? 'pomodoro',
+    todayMood:        data.today_mood       ?? '',
+    hyperfocusLimit:  data.hyperfocus_limit ?? 'none',
+    lightSensitivity: data.light_sensitivity ?? 2,
+    soundSensitivity: data.sound_sensitivity ?? 2,
+    envPref:          data.env_pref         ?? 'minimal',
+    rsdLevel:         data.rsd_level        ?? 2,
+    regulationMethod: data.regulation_method ?? 'breathing',
+    stimPref:         data.stim_pref        ?? 'fidget',
+    superpowers:      Array.isArray(data.superpowers) ? data.superpowers : []
+  };
+  localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
+}
+
+async function saveProfileToSupabase(profile) {
+  if (!currentUser) return;
+  await sb.from('profiles').upsert({
+    id:                currentUser.id,
+    email:             currentUser.email,
+    focus_period:      profile.focusPeriod,
+    work_start:        profile.workHours?.start,
+    work_end:          profile.workHours?.end,
+    energy_peak:       profile.energyPeak,
+    medication:        profile.medication,
+    social:            profile.social,
+    focus_trigger:     profile.focusTrigger,
+    motivation_note:   profile.motivationNote,
+    main_obstacle:     profile.mainObstacle,
+    break_style:       profile.breakStyle,
+    today_mood:        profile.todayMood,
+    hyperfocus_limit:  profile.hyperfocusLimit,
+    light_sensitivity: profile.lightSensitivity,
+    sound_sensitivity: profile.soundSensitivity,
+    env_pref:          profile.envPref,
+    rsd_level:         profile.rsdLevel,
+    regulation_method: profile.regulationMethod,
+    stim_pref:         profile.stimPref,
+    superpowers:       profile.superpowers ?? []
+  }, { onConflict: 'id' });
+}
+
+// ── CONFIG ──
+const CONFIG = FOCUSAID_CONFIG;
+
+const AppState = { calendar: null, tokenClient: null, gapiReady: false, gisReady: false, googleAccessToken: null, supabaseToken: null };
+
+// ── GOOGLE AUTH ──
+function gapiLoaded() {
+  gapi.load('client', async () => {
+    try {
+      await gapi.client.init({ apiKey: CONFIG.GOOGLE_API_KEY, discoveryDocs: [CONFIG.DISCOVERY_DOC] });
+      AppState.gapiReady = true;
+    } catch(e) { console.error('Google API hatası:', e); }
+  });
+}
+function gisLoaded() {
+  AppState.tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.GOOGLE_CLIENT_ID, scope: CONFIG.SCOPES, callback: '' });
+  AppState.gisReady = true;
+}
+// Google Calendar'ı aktifleştirir: token'ı GAPI'ye set eder, butonu günceller, etkinlikleri yükler
+async function activateGoogleCalendar(token) {
+  AppState.googleAccessToken = token;
+  let waited = 0;
+  while (!AppState.gapiReady && waited < 8000) {
+    await new Promise(r => setTimeout(r, 200));
+    waited += 200;
+  }
+  if (AppState.gapiReady) {
+    gapi.client.setToken({ access_token: token });
+    const btn = document.getElementById('auth-btn');
+    if (btn) {
+      btn.textContent = '✓ Takvim Bağlandı';
+      btn.classList.add('text-emerald-600', 'border-emerald-200');
+      btn.disabled = true;
+    }
+  }
+  AppState.calendar?.refetchEvents();
+}
+
+function handleAuthClick() {
+  if (!AppState.gisReady) { showToast('Google henüz hazır değil, bekle.', 'error'); return; }
+  AppState.tokenClient.callback = async (resp) => {
+    if (resp.error) return;
+    const t = gapi.client.getToken();
+    if (t?.access_token) await activateGoogleCalendar(t.access_token);
+  };
+  AppState.tokenClient.requestAccessToken({ prompt: gapi.client.getToken() === null ? 'consent' : '' });
+}
+
+// ── TAKVİM ──
+function initCalendar() {
+  const el = document.getElementById('calendar');
+  if (!el) return;
+  AppState.calendar = new FullCalendar.Calendar(el, {
+    initialView: 'dayGridMonth', locale: 'tr',
+    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+    selectable: true, editable: true,
+    dateClick(info) { openTaskForm(info.dateStr); },
+    eventClick(info) { openTaskForm(info.event.startStr.split('T')[0], info.event); },
+    events: async (info, successCb, failureCb) => {
+      try {
+        if (!AppState.gapiReady || !AppState.googleAccessToken) { successCb([]); return; }
+        gapi.client.setToken({ access_token: AppState.googleAccessToken });
+        const resp = await gapi.client.calendar.events.list({
+          calendarId: 'primary',
+          timeMin: info.startStr,
+          timeMax: info.endStr,
+          singleEvents: true,
+          orderBy: 'startTime'
+        });
+        successCb((resp.result.items || []).map(ev => ({
+          id: ev.id,
+          title: ev.summary || 'Görev',
+          start: ev.start?.dateTime || ev.start?.date,
+          end: ev.end?.dateTime || ev.end?.date,
+          extendedProps: { description: ev.description || '' },
+          backgroundColor: (ev.summary || '').includes('Mola') ? '#10b981' : '#6366f1',
+          borderColor: 'transparent'
+        })));
+      } catch(e) { console.error('Takvim etkinlikleri yüklenemedi:', e); failureCb(e); }
+    }
+  });
+  AppState.calendar.render();
+  // Eğer Supabase'den token zaten varsa hemen aktifleştir
+  if (AppState.googleAccessToken) activateGoogleCalendar(AppState.googleAccessToken);
+}
+
+// ── GÖREV FORMU ──
+function openTaskForm(date, ev = null) {
+  const panel = document.getElementById('task-form-panel');
+  if (!panel) return;
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+  const now = new Date();
+  set('task-date',  date);
+  set('task-title', ev?.title ?? '');
+  set('task-desc',  ev?.extendedProps?.description ?? '');
+  set('task-start', ev ? ev.startStr.split('T')[1]?.slice(0,5) : `${String(now.getHours()).padStart(2,'0')}:00`);
+  updateEndTime();
+  panel.classList.remove('hidden');
+  panel.classList.add('animate-slide-in');
+  document.getElementById('task-title')?.focus();
+}
+function closeForm() { document.getElementById('task-form-panel')?.classList.add('hidden'); }
+function updateEndTime() {
+  const s = document.getElementById('task-start')?.value;
+  if (!s) return;
+  const [h,m] = s.split(':').map(Number);
+  const el = document.getElementById('task-end');
+  if (el) el.value = `${String((h+1)%24).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+// ── GOOGLE'A KAYDET ──
+async function saveTaskToGoogle() {
+  const title = document.getElementById('task-title')?.value?.trim();
+  const date  = document.getElementById('task-date')?.value;
+  const start = document.getElementById('task-start')?.value;
+  const end   = document.getElementById('task-end')?.value;
+  const desc  = document.getElementById('task-desc')?.value ?? '';
+  if (!title) { showToast('Bir başlık girmelisin kral! ⚠️', 'error'); return; }
+  if (!date || !start || !end) { showToast('Tarih ve saat alanlarını doldur!', 'error'); return; }
+  const btn = document.querySelector('button[onclick="saveTaskToGoogle()"]');
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
+  try {
+    await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: { summary: title, description: desc, start: { dateTime: `${date}T${start}:00`, timeZone: CONFIG.TIMEZONE }, end: { dateTime: `${date}T${end}:00`, timeZone: CONFIG.TIMEZONE } } });
+    AppState.calendar?.refetchEvents();
+    closeForm();
+    showToast('✅ Görev takvime işlendi!', 'success');
+  } catch(e) { showToast('❌ Google bağlantısını kontrol et kral!', 'error'); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Takvime İşle'; } }
+}
+
+// ── n8n PARÇALAYICI (TAKVİM FORMU) ──
+async function triggerN8N_Split() {
+  const title = document.getElementById('task-title')?.value?.trim();
+  const desc  = document.getElementById('task-desc')?.value ?? '';
+  const date  = document.getElementById('task-date')?.value;
+  if (!title) { showToast('Parçalamak için bir başlık girmelisin kral! ⚠️', 'error'); return; }
+  const btn = document.querySelector('button[onclick="triggerN8N_Split()"]');
+  const orig = btn?.innerHTML;
+  if (btn) { btn.innerHTML = '⏳ Analiz Ediyor...'; btn.disabled = true; }
+  const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
+  try {
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: profile, userId: currentUser?.id, supabaseToken: AppState.supabaseToken }) });
+    if (res.ok) { showToast('🧩 Görev parçalandı!', 'success'); AppState.calendar?.refetchEvents(); closeForm(); }
+    else throw new Error('n8n ' + res.status);
+  } catch(e) { showToast('❌ n8n ulaşılamadı. Webhook açık mı?', 'error'); }
+  finally { if (btn) { btn.innerHTML = orig; btn.disabled = false; } }
+}
+
+// ── n8n CHATBOT ──
+async function sendTaskToN8N() {
+  const taskEl = document.getElementById('task-input');
+  const descEl = document.getElementById('task-desc');
+  const dlEl   = document.getElementById('task-deadline');
+  const task   = taskEl?.value?.trim();
+  const dl     = dlEl?.value;
+  if (!task || !dl) { addMessageToChat('⚠️ Bir görev adı ve teslim tarihi girmelisin kral!', 'error'); return; }
+  const fmt = new Date(dl).toLocaleString('tr-TR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
+  addMessageToChat(`🚀 <b>Proje:</b> ${task}<br>📅 <b>Hedef:</b> ${fmt}`, 'user');
+  setLoading(true);
+  const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
+  try {
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis' } }) });
+    if (!res.ok) throw new Error('n8n ' + res.status);
+    const result = await res.json().catch(() => ({}));
+    addMessageToChat(`✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.<br><br>🎯 <b>İlk adım:</b><br>"<i>${result.firstStep || 'İlk mikro görevin takviminde hazır!'}</i>"`, 'ai');
+    if (taskEl) taskEl.value = ''; if (descEl) descEl.value = ''; if (dlEl) dlEl.value = '';
+    AppState.calendar?.refetchEvents();
+  } catch(e) { addMessageToChat('❌ n8n bağlantısı kurulamadı. n8n açık mı?', 'error'); }
+  finally { setLoading(false); }
+}
+function addMessageToChat(text, type = 'ai') {
+  const box = document.getElementById('chat-box');
+  if (!box) return;
+  const cls = { user:'user-bubble ml-auto', ai:'ai-bubble shadow-md', error:'bg-red-50 text-red-700 mx-auto border border-red-200 rounded-2xl p-4 text-sm' };
+  const div = document.createElement('div');
+  div.className = `message-pop max-w-[85%] animate-slide-in ${cls[type] || cls.ai}`;
+  div.innerHTML = text;
+  const loading = document.getElementById('loading-text');
+  loading ? box.insertBefore(div, loading) : box.appendChild(div);
+  box.scrollTo({ top: box.scrollHeight, behavior: 'smooth' });
+}
+function setLoading(v) { document.getElementById('loading-text')?.classList.toggle('hidden', !v); }
+
+// ── SAYFA YÜKLEYİCİ — fetch YOK, <template> kullanıyor ──
+function loadPage(name) {
+  const main = document.getElementById('main-content');
+  if (!main) return;
+  const tpl = document.getElementById(`tpl-${name}`);
+  if (!tpl) { main.innerHTML = `<p class="p-8 text-red-500">Şablon bulunamadı: ${name}</p>`; return; }
+
+  main.innerHTML = '';
+  main.appendChild(tpl.content.cloneNode(true));
+
+  const inits = {
+    calendar: () => typeof initCalendar    === 'function' && initCalendar(),
+    profile:  () => typeof loadProfileToUI === 'function' && loadProfileToUI()
+  };
+  inits[name]?.();
+
+  // Sidebar aktif durumu
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active-link','bg-indigo-50','text-indigo-600','shadow-sm'));
+  document.getElementById(`nav-${name}`)?.classList.add('active-link','bg-indigo-50','text-indigo-600','shadow-sm');
+
+  // Enter desteği (chatbot)
+  if (name === 'chatbot') {
+    document.getElementById('task-input')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTaskToN8N(); } });
+  }
+
+  main.classList.remove('animate-slide-in');
+  void main.offsetWidth;
+  main.classList.add('animate-slide-in');
+}
+
+// ── TOAST ──
+function showToast(msg, type = 'success') {
+  document.getElementById('focusaid-toast')?.remove();
+  const c = { success:'bg-emerald-600', error:'bg-red-600', info:'bg-indigo-600' };
+  const t = document.createElement('div');
+  t.id = 'focusaid-toast';
+  t.className = `fixed bottom-6 right-6 z-50 ${c[type]||c.info} text-white px-6 py-3 rounded-2xl shadow-xl font-semibold text-sm animate-slide-in`;
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3500);
+}
+
+// ── PROFİL ──
+const DEFAULT_PROFILE = {
+  medication:false, focusPeriod:25, workHours:{start:'09:00',end:'18:00'},
+  social:'solo', energyPeak:'morning', focusTrigger:'silence',
+  motivationNote:'', mainObstacle:'paralysis', breakStyle:'pomodoro',
+  todayMood:'', hyperfocusLimit:'none',
+  lightSensitivity:2, soundSensitivity:2, envPref:'minimal',
+  rsdLevel:2, regulationMethod:'breathing', stimPref:'fidget',
+  superpowers:[]
+};
+let userProfile = { ...DEFAULT_PROFILE, ...JSON.parse(localStorage.getItem('focusaid_profile') || '{}') };
+
+function setMood(mood) {
+  userProfile.todayMood = mood;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('mood-' + mood)?.classList.add('active');
+}
+
+function updateSensLabel(displayId, val) {
+  const el = document.getElementById(displayId);
+  if (el) el.textContent = ['','Düşük','Orta','Yüksek'][parseInt(val)] || 'Orta';
+}
+
+function setMed(active) {
+  userProfile.medication = !!active;
+  const yes = document.getElementById('med-yes'), no = document.getElementById('med-no');
+  if (!yes || !no) return;
+  if (active) { yes.className='flex-1 p-3 border-2 border-purple-600 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg'; no.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; }
+  else { yes.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; no.className='flex-1 p-3 border-2 border-slate-300 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 shadow-inner'; }
+}
+
+async function saveProfile() {
+  try {
+    const sg = (id, fb) => { const el = document.getElementById(id); return el ? el.value : fb; };
+    const energyEl = document.querySelector('input[name="energy-peak"]:checked');
+    userProfile = {
+      medication: userProfile.medication,
+      focusPeriod: Number(sg('focus-period', userProfile.focusPeriod)) || 25,
+      workHours: { start: sg('work-start', userProfile.workHours.start), end: sg('work-end', userProfile.workHours.end) },
+      social: sg('social-mode', userProfile.social),
+      energyPeak: energyEl ? energyEl.value : userProfile.energyPeak,
+      focusTrigger: sg('focus-trigger', userProfile.focusTrigger),
+      motivationNote: sg('motivation-note', userProfile.motivationNote),
+      mainObstacle: sg('main-obstacle', userProfile.mainObstacle),
+      breakStyle: sg('break-style', userProfile.breakStyle),
+      todayMood: userProfile.todayMood,
+      hyperfocusLimit: sg('hyperfocus-limit', userProfile.hyperfocusLimit),
+      lightSensitivity: Number(sg('light-sensitivity', userProfile.lightSensitivity)),
+      soundSensitivity: Number(sg('sound-sensitivity', userProfile.soundSensitivity)),
+      envPref: sg('env-pref', userProfile.envPref),
+      rsdLevel: Number(sg('rsd-level', userProfile.rsdLevel)),
+      regulationMethod: sg('regulation-method', userProfile.regulationMethod),
+      stimPref: sg('stim-pref', userProfile.stimPref),
+      superpowers: ['creativity','hyperfocus','energy','empathy','crisis','connections'].filter(k => document.getElementById('sp-'+k)?.checked)
+    };
+    localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
+    // Supabase'e de kaydet
+    await saveProfileToSupabase(userProfile);
+    const btn = document.getElementById('save-profile-btn');
+    if (btn) {
+      const orig = btn.innerHTML;
+      btn.disabled = true; btn.innerHTML = '✅ Profil Güncellendi!';
+      btn.style.background = 'linear-gradient(135deg,#059669,#047857)';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.disabled = false; }, 2500);
+    }
+  } catch(e) { console.error(e); showToast('Kayıt hatası!','error'); }
+}
+
+function loadProfileToUI() {
+  if (!document.getElementById('focus-period')) return;
+  const ss = (id, v) => { if (v == null) return; const el = document.getElementById(id); if (el) el.value = v; };
+  ss('focus-period', userProfile.focusPeriod);
+  const fd = document.getElementById('focus-display');
+  if (fd) fd.textContent = (userProfile.focusPeriod || 25) + ' dk';
+  ss('work-start', userProfile.workHours?.start); ss('work-end', userProfile.workHours?.end);
+  ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
+  ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
+  ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
+  ss('light-sensitivity', userProfile.lightSensitivity); ss('sound-sensitivity', userProfile.soundSensitivity);
+  ss('env-pref', userProfile.envPref); ss('rsd-level', userProfile.rsdLevel);
+  ss('regulation-method', userProfile.regulationMethod); ss('stim-pref', userProfile.stimPref);
+  updateSensLabel('light-display', userProfile.lightSensitivity || 2);
+  updateSensLabel('sound-display', userProfile.soundSensitivity || 2);
+  updateSensLabel('rsd-display', userProfile.rsdLevel || 2);
+  const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
+  if (radio) radio.checked = true;
+  setMed(userProfile.medication);
+  if (userProfile.todayMood) setMood(userProfile.todayMood);
+  (userProfile.superpowers || []).forEach(k => { const cb = document.getElementById('sp-'+k); if (cb) cb.checked = true; });
+}
+
+// ── BAŞLAT ──
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('🚀 FocusAid başlatılıyor...');
+  loadPage('calendar');
+});
+</script>
+</body>
+</html>
