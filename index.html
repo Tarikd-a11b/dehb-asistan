@@ -9,6 +9,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="config.js"></script>
+<script src="tasks-logic.js"></script>
+<script src="tasks-view.js"></script>
 <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
 <style>
@@ -64,6 +66,39 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 <!-- ════════════════════════════════════════
      SAYFA ŞABLONLARı — fetch() yok, CORS yok
      ════════════════════════════════════════ -->
+
+<template id="tpl-today">
+<div class="animate-slide-in max-w-4xl mx-auto space-y-8 pb-10">
+
+  <!-- İlerleme şeridi -->
+  <div>
+    <div class="flex justify-between items-end mb-3">
+      <div>
+        <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Bugün</h2>
+        <p class="text-slate-500 italic mt-1">Sırada ne var?</p>
+      </div>
+      <span id="today-progress-text" class="text-sm font-black text-indigo-600 tabular-nums">0/0</span>
+    </div>
+    <div class="h-2 bg-slate-200 rounded-full overflow-hidden">
+      <div id="today-progress-bar" class="h-full bg-indigo-500 rounded-full transition-all duration-500" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Sıradaki görev kartı -->
+  <div id="today-current"></div>
+
+  <!-- Bugünün listesi -->
+  <div id="today-list" class="space-y-2"></div>
+
+  <!-- Boş durum -->
+  <div id="today-empty" class="hidden text-center py-20">
+    <div class="text-5xl mb-4">🌤️</div>
+    <p class="text-slate-500 font-medium">Bugün için planlanmış mikro görev yok.</p>
+    <button onclick="loadPage('chatbot')" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 active:scale-95 transition-all">🧩 Bir görevi parçala</button>
+  </div>
+
+</div>
+</template>
 
 <template id="tpl-calendar">
 <div class="animate-slide-in">
@@ -405,6 +440,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
         <p class="text-[10px] text-slate-400 mt-1 uppercase tracking-widest">DEHB Odak Asistanı</p>
       </div>
       <nav class="space-y-2">
+        <button onclick="loadPage('today')" id="nav-today" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">🎯 Bugün</button>
         <button onclick="loadPage('calendar')" id="nav-calendar" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">📅 Takvim</button>
         <button onclick="loadPage('chatbot')" id="nav-chatbot" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">🧩 Parçalayıcı</button>
         <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">👤 Profil</button>
@@ -459,6 +495,12 @@ async function _onSession(session) {
   if (session.access_token)  AppState.supabaseToken = session.access_token;
   if (session.provider_token) activateGoogleCalendar(session.provider_token);
   await loadProfileFromSupabase();
+  // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
+  // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
+  // tekrar dene — aksi halde gereksiz ikinci sorgu atılır.
+  if (typeof initToday === 'function' && document.getElementById('today-list') && !TodayState.loaded) {
+    await initToday();
+  }
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
@@ -746,6 +788,7 @@ function setLoading(v) { document.getElementById('loading-text')?.classList.togg
 function loadPage(name) {
   const main = document.getElementById('main-content');
   if (!main) return;
+  if (typeof stopTodayTimer === 'function') stopTodayTimer();
   const tpl = document.getElementById(`tpl-${name}`);
   if (!tpl) { main.innerHTML = `<p class="p-8 text-red-500">Şablon bulunamadı: ${name}</p>`; return; }
 
@@ -753,6 +796,7 @@ function loadPage(name) {
   main.appendChild(tpl.content.cloneNode(true));
 
   const inits = {
+    today:    () => typeof initToday       === 'function' && initToday(),
     calendar: () => typeof initCalendar    === 'function' && initCalendar(),
     profile:  () => typeof loadProfileToUI === 'function' && loadProfileToUI()
   };
@@ -878,7 +922,7 @@ function loadProfileToUI() {
 // ── BAŞLAT ──
 document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 FocusAid başlatılıyor...');
-  loadPage('calendar');
+  loadPage('today');
 });
 </script>
 </body>
