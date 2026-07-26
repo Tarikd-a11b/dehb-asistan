@@ -3,7 +3,7 @@
    DOM render + Supabase/GAPI çağrıları. Saf hesaplar tasks-logic.js'te.
    ══════════════════════════════════════════════════════════════ */
 
-const TodayState = { rows: [], today: [], carried: [], timer: null };
+const TodayState = { rows: [], today: [], carried: [], timer: null, loaded: false };
 
 async function initToday() {
   stopTodayTimer();
@@ -38,6 +38,7 @@ async function loadTasks() {
   const { today, carried } = splitTasks(TodayState.rows, todayISO);
   TodayState.today = today;
   TodayState.carried = carried;
+  TodayState.loaded = true;
 
   console.log(`[Bugün] pencere ${baslangic} → ${todayISO} | gelen kayıt: ${TodayState.rows.length} | bugün: ${today.length} | devreden: ${carried.length}`);
   if (TodayState.rows.length === 0) {

@@ -495,10 +495,12 @@ async function _onSession(session) {
   if (session.access_token)  AppState.supabaseToken = session.access_token;
   if (session.provider_token) activateGoogleCalendar(session.provider_token);
   await loadProfileFromSupabase();
-  // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenir; o sırada currentUser
-  // henüz yok olduğu için Bugün ekranı boş yüklenir. Oturum hazır olduğunda
-  // ekran açıksa görevleri yeniden çek.
-  if (typeof initToday === 'function' && document.getElementById('today-list')) await initToday();
+  // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
+  // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
+  // tekrar dene — aksi halde gereksiz ikinci sorgu atılır.
+  if (typeof initToday === 'function' && document.getElementById('today-list') && !TodayState.loaded) {
+    await initToday();
+  }
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
