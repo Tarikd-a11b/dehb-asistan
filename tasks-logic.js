@@ -25,12 +25,19 @@ function addDaysISO(iso, delta) {
   return localDayISO(new Date(y, m - 1, d + delta));
 }
 
-/** Bugünün görevleri (hepsi) + geçmişten devreden tamamlanmamışlar. */
-function splitTasks(rows, todayISO) {
+/**
+ * Bugünün görevleri (hepsi) + geçmişten devreden tamamlanmamışlar.
+ *
+ * keepIds: bu oturumda tamamlanan görev id'leri (Set<string>). Devreden bir
+ * görev tamamlandığı an filtreden düşüp listeden yok olurdu; biten iş görünür
+ * kalsın diye (ödül hissi) oturum boyunca korunur. Sayfa yenilenince temizlenir.
+ */
+function splitTasks(rows, todayISO, keepIds) {
   const list = rows || [];
+  const keep = keepIds || new Set();
   return {
     today:   list.filter(r => r.day === todayISO),
-    carried: list.filter(r => r.day < todayISO && !r.completed)
+    carried: list.filter(r => r.day < todayISO && (!r.completed || keep.has(String(r.id))))
   };
 }
 

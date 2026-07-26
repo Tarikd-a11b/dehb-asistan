@@ -3,7 +3,20 @@
    DOM render + Supabase/GAPI çağrıları. Saf hesaplar tasks-logic.js'te.
    ══════════════════════════════════════════════════════════════ */
 
-const TodayState = { rows: [], today: [], carried: [], timer: null, loaded: false };
+const TodayState = {
+  rows: [], today: [], carried: [], timer: null, loaded: false,
+  // Bu oturumda tamamlanan görev id'leri. Devreden bir görev tamamlandığında
+  // filtreden düşüp listeden yok olmasın diye tutulur (bkz. splitTasks).
+  sessionCompleted: new Set()
+};
+
+/** rows'u bugün/devreden olarak böler ve state'e yazar. */
+function refreshBuckets(todayISO) {
+  const { today, carried } = splitTasks(TodayState.rows, todayISO, TodayState.sessionCompleted);
+  TodayState.today = today;
+  TodayState.carried = carried;
+  return { today, carried };
+}
 
 async function initToday() {
   stopTodayTimer();
@@ -35,9 +48,7 @@ async function loadTasks() {
   }
 
   TodayState.rows = data || [];
-  const { today, carried } = splitTasks(TodayState.rows, todayISO);
-  TodayState.today = today;
-  TodayState.carried = carried;
+  const { today, carried } = refreshBuckets(todayISO);
   TodayState.loaded = true;
 
   console.log(`[Bugün] pencere ${baslangic} → ${todayISO} | gelen kayıt: ${TodayState.rows.length} | bugün: ${today.length} | devreden: ${carried.length}`);
@@ -138,11 +149,15 @@ async function toggleTask(id) {
 
   const yeniDurum = !task.completed;
   task.completed = yeniDurum;   // iyimser: UI hemen güncellenir
+  // Devreden görev tamamlanınca listeden düşmesin diye oturum hafızasına al.
+  if (yeniDurum) TodayState.sessionCompleted.add(String(task.id));
+  else TodayState.sessionCompleted.delete(String(task.id));
   renderToday();
 
   const { error } = await sb.from('tasks').update({ completed: yeniDurum }).eq('id', task.id);
   if (error) {
     task.completed = !yeniDurum;   // geri al
+    if (yeniDurum) TodayState.sessionCompleted.delete(String(task.id));
     renderToday();
     showToast('Kaydedilemedi, tekrar dene.', 'error');
     return;
@@ -186,8 +201,7 @@ async function snoozeTask(id) {
   const eski = { start_time: task.start_time, end_time: task.end_time, day: task.day };
   Object.assign(task, yeni);   // iyimser
   const todayISO = localDayISO();
-  const g1 = splitTasks(TodayState.rows, todayISO);
-  TodayState.today = g1.today; TodayState.carried = g1.carried;
+  refreshBuckets(todayISO);
   renderToday();
 
   const { error } = await sb.from('tasks')
@@ -196,8 +210,7 @@ async function snoozeTask(id) {
 
   if (error) {
     Object.assign(task, eski);   // geri al
-    const g2 = splitTasks(TodayState.rows, todayISO);
-    TodayState.today = g2.today; TodayState.carried = g2.carried;
+    refreshBuckets(todayISO);
     renderToday();
     showToast('Ertelenemedi, tekrar dene.', 'error');
     return;

@@ -30,6 +30,14 @@ test('splitTasks bugunu ve devredenleri ayirir', () => {
   assert.deepStrictEqual(carried.map(t => t.id), [1]);
 });
 
+test('splitTasks oturumda tamamlanan devredeni listede tutar', () => {
+  // Normalde tamamlanan devreden gorev (id 2) listeden duser.
+  assert.deepStrictEqual(L.splitTasks(rows, '2026-07-26').carried.map(t => t.id), [1]);
+  // keepIds ile bu oturumda tamamlananlar korunur (odul hissi kaybolmasin).
+  const keep = new Set(['2']);
+  assert.deepStrictEqual(L.splitTasks(rows, '2026-07-26', keep).carried.map(t => t.id), [1, 2]);
+});
+
 // ── pickCurrentTask ──
 test('pickCurrentTask su an aktif olani secer', () => {
   const now = new Date('2026-07-26T09:10:00+03:00');
