@@ -163,7 +163,7 @@ test('computeSnooze free mola stilinde sadece odak suresi kadar erteler', () => 
 
 - [ ] **Step 2: Testleri çalıştır, başarısız olduklarını gör**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: FAIL — `Cannot find module '../tasks-logic.js'`
 
 - [ ] **Step 3: `tasks-logic.js` dosyasını yaz**
@@ -282,7 +282,7 @@ if (typeof module !== 'undefined' && module.exports) {
 
 - [ ] **Step 4: Testleri çalıştır, hepsinin geçtiğini gör**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: PASS — 13 test, 0 fail. Hata varsa `tasks-logic.js` düzeltilir, test dosyası DEĞİŞTİRİLMEZ.
 
 - [ ] **Step 5: Commit**
@@ -846,7 +846,7 @@ Tüm senaryoların bir arada çalıştığının kanıtı. Yeni kod yok.
 
 - [ ] **Step 1: Birim testleri koştur**
 
-Run: `node --test test/`
+Run: `node --test`
 Expected: 13 test PASS.
 
 - [ ] **Step 2: Spec'in doğrulama listesini baştan sona geç**
