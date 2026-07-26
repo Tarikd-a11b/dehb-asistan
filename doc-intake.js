@@ -51,8 +51,13 @@ async function extractText(file, kind) {
 
 /** Analiz webhook'unu çağırır. Model bazen ```json sarmalıyla döndürür, temizlenir. */
 async function analyzeDocument(text, fileName) {
-  const url = CONFIG.N8N_ANALYZE_WEBHOOK;
-  if (!url) throw new Error('N8N_ANALYZE_WEBHOOK tanimsiz');
+  const url = (typeof CONFIG !== 'undefined') && CONFIG.N8N_ANALYZE_WEBHOOK;
+  if (!url) {
+    throw new Error('config.js eski sürümü önbellekte — Ctrl+Shift+R ile sert yenile');
+  }
+  if (typeof localDayISO !== 'function') {
+    throw new Error('tasks-logic.js yüklenmemiş');
+  }
 
   const bugun = localDayISO();   // tasks-logic.js — yerel tarih, UTC değil
   const res = await fetch(url, {
@@ -130,7 +135,10 @@ async function handleFileSelect(file) {
       );
     } catch (e) {
       console.error('[Yönerge] analiz hatası:', e);
-      setIntakeStatus('Analiz edilemedi (n8n kapalı olabilir). Bilgileri elle girebilirsin.', 'error');
+      // Gerçek sebebi ekranda göster; "n8n kapalı olabilir" demek çoğu zaman
+      // yanlış yönlendiriyor ve konsola bakmayan kullanıcı sebebi göremiyor.
+      const detay = (e && e.message) ? ` — ${e.message}` : '';
+      setIntakeStatus(`Analiz edilemedi${detay}. Bilgileri elle girebilirsin.`, 'error');
     }
   } catch (e) {
     console.error('[Yönerge] metin çıkarılamadı:', e);
