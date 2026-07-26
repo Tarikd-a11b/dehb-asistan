@@ -141,7 +141,7 @@ const snoozeMinutes = focusPeriod + breakMinutes;   // ör. 40 dk odak + 15 dk m
 
 Bu, n8n `Code in JavaScript` node'undaki `step = focusPeriod + breakMinutes` ile **birebir aynı
 formüldür** — ertelenen görev, workflow'un baştan yerleştireceği slota denk düşer. `BREAK_MAP` iki yerde
-(n8n Code node'u ve `tasks-view.js`) kopya halinde durur; biri değişirse diğeri de güncellenmeli, bu
+(n8n Code node'u ve `tasks-logic.js`) kopya halinde durur; biri değişirse diğeri de güncellenmeli, bu
 yüzden ön yüz tarafına eşlemenin kaynağını belirten bir yorum düşülecek.
 
 - `start_time` ve `end_time` `snoozeMinutes` kadar ileri kaydırılır, görevin süresi korunur.
@@ -161,8 +161,13 @@ render, ağ isteği yok. Sayfa değişiminde `clearInterval` ile durdurulur.
 
 - **`<template id="tpl-today">`** → `index_2.html` içinde kalır. Projenin bilinçli "fetch yok, CORS yok"
   deseni korunur.
-- **`tasks-view.js`** (yeni dosya) → `config.js` gibi `<script>` ile yüklenir. Tek sorumluluk, izole:
-  `loadTasks · pickCurrentTask · renderToday · completeTask · snoozeTask · syncCalendarMark · stopTodayTimer`
+- **`tasks-logic.js`** (yeni dosya) → saf mantık: DOM yok, ağ yok. `localDayISO · addDaysISO ·
+  splitTasks · pickCurrentTask · computeProgress · dayLabel · computeSnooze`. Node'un yerleşik test
+  runner'ı ile (`node --test`, sıfır bağımlılık) gerçekten test edilir; dosya sonundaki koşullu
+  `module.exports` tarayıcıda zararsızdır.
+- **`tasks-view.js`** (yeni dosya) → DOM render + ağ çağrıları: `initToday · loadTasks · renderToday ·
+  toggleTask · snoozeTask · syncCalendarMark · stopTodayTimer`
+- İkisi de `config.js` gibi `<script>` ile yüklenir (modül değil, global scope).
 - `loadPage`'in `inits` haritasına `today` satırı.
 - Sidebar'a 4. buton (`nav-today`).
 - `DOMContentLoaded` → `loadPage('today')` (şu an `calendar`).
@@ -179,8 +184,12 @@ boştur ve ekran boş durumu gösterir. Kod yazımını engellemez; doğrulama a
 
 ## Doğrulama
 
-Projede test koşucusu yok (vanilla JS, build adımı yok). Supabase SQL Editor'den elle birkaç satır
-eklenip `python -m http.server 3000` ile serve edilerek şu senaryolar gözle doğrulanacak:
+Saf mantık (`tasks-logic.js`) Node'un yerleşik test runner'ı ile gerçekten test edilir — `node --test test/`,
+npm kurulumu gerekmez. En riskli üç hesap orada test altındadır: yerel/UTC gün kayması, "sıradaki görev"
+seçimi ve erteleme hesabı.
+
+DOM ve ağ tarafında test koşucusu yok. Supabase SQL Editor'den elle birkaç satır eklenip
+`python -m http.server 3000` ile serve edilerek şu senaryolar gözle doğrulanacak:
 
 1. Boş liste → boş durum ekranı çıkıyor mu
 2. Sadece devreden görevler → gri gün rozetiyle görünüyor, kırmızı/uyarı yok
