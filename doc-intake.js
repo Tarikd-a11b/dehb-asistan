@@ -3,7 +3,7 @@
    Saf hesaplar doc-intake-logic.js içinde.
    ══════════════════════════════════════════════════════════════ */
 
-const IntakeState = { text: '', fileName: '', busy: false };
+const IntakeState = { busy: false };
 
 const PDFJS_BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.0.379/build';
 
@@ -107,8 +107,6 @@ async function handleFileSelect(file) {
       return;
     }
 
-    IntakeState.text = text;
-    IntakeState.fileName = file.name;
     if (truncated) {
       setIntakeStatus(`${file.name} okundu (uzun olduğu için ilk 40.000 karakter alındı). İnceleniyor…`, 'info');
     } else {
@@ -153,7 +151,13 @@ function bindIntake() {
   const drop = document.getElementById('intake-drop');
   if (!input || !drop) return;
 
-  input.addEventListener('change', e => handleFileSelect(e.target.files && e.target.files[0]));
+  input.addEventListener('change', async e => {
+    const dosya = e.target.files && e.target.files[0];
+    await handleFileSelect(dosya);
+    // Değeri temizle: aksi halde AYNI dosya ikinci kez seçildiğinde 'change'
+    // ateşlenmez ve kullanıcı hiçbir şey olmadığını sanır.
+    e.target.value = '';
+  });
 
   ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => {
     e.preventDefault(); drop.classList.add('border-indigo-400', 'bg-indigo-50/50');
