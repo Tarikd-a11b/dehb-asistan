@@ -17,21 +17,34 @@ function stopTodayTimer() {
 }
 
 async function loadTasks() {
-  if (!currentUser) return;
+  if (!currentUser) { console.log('[Bugün] oturum henüz hazır değil, yükleme atlandı'); return; }
   const todayISO = localDayISO();
+  const baslangic = addDaysISO(todayISO, -CARRY_OVER_DAYS);
+
   const { data, error } = await sb
     .from('tasks')
     .select('*')
-    .gte('day', addDaysISO(todayISO, -CARRY_OVER_DAYS))
+    .gte('day', baslangic)
     .lte('day', todayISO)
     .order('start_time', { ascending: true });
 
-  if (error) { showToast('Görevler yüklenemedi.', 'error'); return; }
+  if (error) {
+    console.error('[Bugün] sorgu hatası:', error);
+    showToast('Görevler yüklenemedi.', 'error');
+    return;
+  }
 
   TodayState.rows = data || [];
   const { today, carried } = splitTasks(TodayState.rows, todayISO);
   TodayState.today = today;
   TodayState.carried = carried;
+
+  console.log(`[Bugün] pencere ${baslangic} → ${todayISO} | gelen kayıt: ${TodayState.rows.length} | bugün: ${today.length} | devreden: ${carried.length}`);
+  if (TodayState.rows.length === 0) {
+    // Tablo boş mu, yoksa yalnızca bu tarih penceresi mi boş? Ayırt et.
+    const { count, error: sayimHatasi } = await sb.from('tasks').select('*', { count: 'exact', head: true });
+    console.log('[Bugün] tablodaki TOPLAM kayıt (tarih filtresiz):', count, sayimHatasi || '');
+  }
 }
 
 function saatAralik(task) {
