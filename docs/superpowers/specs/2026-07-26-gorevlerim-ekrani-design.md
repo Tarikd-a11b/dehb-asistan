@@ -38,7 +38,8 @@ Bu ikisinin kesişimi: **yargısız görünürlük + tek tıklık eylem.**
 | Gecikmiş görev | Listede kalır, gri "dün"/"3 gün önce" rozeti + tek tıkla "Sonraya al" | Görünürlük (Barkley) + yargısızlık (RSD) |
 | Tamamlama | Supabase `completed=true` **ve** Google etkinliğine ✓ + yeşil renk | Kullanıcı tercihi; takvimde de görünür olsun |
 | Doğruluk kaynağı | Supabase. Takvim senkronu best-effort, başarısızlığı akışı bozmaz | Google token'ı ~1 saatte ölüyor, otomatik yenileme yok |
-| Erteleme | +60 dk, süre korunur; mesai sonunu aşarsa yarının mesai başına | Tek tık, karar yükü yok |
+| Erteleme | Profilden hesaplanan bir odak bloğu kadar: `focusPeriod + breakMinutes` | n8n'in slot adımıyla (`step`) birebir aynı; kişinin ritmine uyar |
+| Devretme tavanı | 3 gün | Kuyruğun şişmesini engeller |
 | Kapsam sınırı | Sidebar'da kalıcı "sıradaki görev" şeridi bu spec'te YOK | YAGNI; ekran oturduktan sonra ~10 satırlık ek |
 
 ## Veri katmanı
@@ -48,7 +49,7 @@ SELECT ve UPDATE politikaları (`auth.uid() = user_id`) yeterli.
 
 ```js
 sb.from('tasks').select('*')
-  .gte('day', <bugün - 7 gün>)   // 'YYYY-MM-DD'
+  .gte('day', <bugün - 3 gün>)   // 'YYYY-MM-DD'
   .lte('day', <bugün>)           // 'YYYY-MM-DD'
   .order('start_time', { ascending: true })
 ```
@@ -65,7 +66,8 @@ Tek sorgu, istemcide ikiye ayrılır:
 - **Devredenler** (`day < bugün AND completed = false`): aynı listede, gri gün rozetiyle.
 - Geçmiş günlerin tamamlananları gösterilmez.
 
-7 günlük tavan listenin süresiz şişmesini engeller.
+3 günlük tavan listenin süresiz şişmesini engeller. 3 günden eski tamamlanmamış görevler ekrandan
+düşer — veritabanında durmaya devam eder, sadece "bugün ne yapıyorum" ekranını kirletmez.
 
 n8n'in yazdığı alanlar (`Prepare Supabase Payload` node'undan doğrulandı):
 `user_id, project_title, name, summary, cognitive_load, day, start_time, end_time,
@@ -128,7 +130,21 @@ erişilemez olması görev tamamlamayı engellememeli.
 
 ### Sonraya al
 
-- `start_time` ve `end_time` +60 dk kaydırılır, süre korunur.
+Erteleme miktarı sabit değil, **kişinin profilinden hesaplanır** — bir tam odak bloğu kadar:
+
+```js
+const BREAK_MAP = { pomodoro: 5, 'long-break': 15, micro: 2, free: 0 };
+const focusPeriod  = profile.focusPeriod ?? 25;
+const breakMinutes = BREAK_MAP[profile.breakStyle] ?? 15;
+const snoozeMinutes = focusPeriod + breakMinutes;   // ör. 40 dk odak + 15 dk mola → 55 dk
+```
+
+Bu, n8n `Code in JavaScript` node'undaki `step = focusPeriod + breakMinutes` ile **birebir aynı
+formüldür** — ertelenen görev, workflow'un baştan yerleştireceği slota denk düşer. `BREAK_MAP` iki yerde
+(n8n Code node'u ve `tasks-view.js`) kopya halinde durur; biri değişirse diğeri de güncellenmeli, bu
+yüzden ön yüz tarafına eşlemenin kaynağını belirten bir yorum düşülecek.
+
+- `start_time` ve `end_time` `snoozeMinutes` kadar ileri kaydırılır, görevin süresi korunur.
 - Yeni `start_time` profildeki `workHours.end`'i aşarsa → yarının `workHours.start` saatine taşınır,
   `day` güncellenir.
 - Takvim etkinliği aynı best-effort politikasıyla `patch` ile kaydırılır.
@@ -172,6 +188,7 @@ eklenip `python -m http.server 3000` ile serve edilerek şu senaryolar gözle do
 4. Hepsi tamamlanmış → kutlama durumu, ilerleme 7/7
 5. **Takvim bağlı değilken tamamlama** → Supabase yazıyor, hata yutuluyor, bilgi toast'ı çıkıyor (en kritik hata yolu)
 6. Ertelemenin mesai sonunu aşması → yarının mesai başına taşınıyor, `day` güncelleniyor
+   (ayrıca: profildeki odak/mola değerleri değiştirilince erteleme miktarının da değiştiği doğrulanacak)
 7. Tamamlamayı geri alma → takvim başlığındaki `✓ ` ve renk geri dönüyor
 
 Test için `localhost:3000/auth.html` üzerinden girilmeli (`127.0.0.1` değil — Supabase PKCE origin bağımlı).
