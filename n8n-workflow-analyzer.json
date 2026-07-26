@@ -1,0 +1,122 @@
+{
+  "name": "FocusAid Analyzer",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "focusaid-analyze",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "0569e658-16d8-446d-9079-949dc5186957",
+      "name": "Webhook",
+      "webhookId": "focusaid-analyze-webhook"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Sen bir proje yonergesi analiz asistanisin. Asagidaki belge metnini oku ve YALNIZCA JSON dondur.\n\nBUGUNUN TARIHI: {{ $json.body.today }}\nDOSYA ADI: {{ $json.body.fileName }}\n\nBELGE METNI:\n{{ $json.body.documentText }}\n\nIstenen JSON semasi:\n{\n  \"title\": \"projenin kisa adi (en fazla 60 karakter)\",\n  \"deadline\": \"ISO 8601 tarih, +03:00 ofsetiyle. Orn: 2026-08-15T23:59:00+03:00\",\n  \"deadlineQuote\": \"tarihin gectigi cumlenin belgeden BIREBIR alintisi\",\n  \"requirements\": [\"zorunluluk maddesi\", \"...\"]\n}\n\nKURALLAR:\n- Belgede net bir teslim tarihi YOKSA deadline ve deadlineQuote alanlarini null yap. ASLA tarih uydurma.\n- \"iki hafta icinde\" gibi goreli ifadeleri BUGUNUN TARIHI'ne gore hesapla.\n- requirements: ogrencinin yapmak ZORUNDA oldugu somut ciktilar ve kurallar. En fazla 12 madde, her biri tek satir, kisa.\n- Kapak sayfasi, iletisim bilgisi, imza gibi bolumleri requirements'a KOYMA.\n- Yanitin SADECE JSON olsun; markdown kod blogu, aciklama, onsoz EKLEME.",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "8d0dc9df-874f-42c0-9981-476144f25da5",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        200
+      ],
+      "id": "2f3e75a6-08e1-46c0-9f8f-323dbf2dd694",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "L7pAW943KMWrNGRc",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.output }}",
+        "options": {
+          "responseHeaders": {
+            "entries": [
+              {
+                "name": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "name": "Access-Control-Allow-Origin",
+                "value": "*"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        480,
+        0
+      ],
+      "id": "babf548c-c3a7-41e2-b35e-def000964a0a",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

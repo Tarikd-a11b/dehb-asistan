@@ -11,6 +11,9 @@
 <script src="config.js"></script>
 <script src="tasks-logic.js"></script>
 <script src="tasks-view.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+<script src="doc-intake-logic.js"></script>
+<script src="doc-intake.js"></script>
 <script src="https://apis.google.com/js/api.js" async defer onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" async defer onload="gisLoaded()"></script>
 <style>
@@ -181,6 +184,13 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
       </div>
     </div>
     <div class="p-6 pt-2 space-y-4">
+      <label id="intake-drop" class="block border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center cursor-pointer hover:border-indigo-300 hover:bg-indigo-50/30 transition-all">
+        <input type="file" id="intake-file" accept=".pdf,.docx" class="hidden">
+        <span class="text-2xl">📄</span>
+        <p class="text-sm font-semibold text-slate-600 mt-1">Yönerge dosyasını sürükle veya seç</p>
+        <p class="text-[11px] text-slate-400">PDF veya Word (.docx) · en fazla 10 MB</p>
+      </label>
+      <p id="intake-status" class="hidden text-xs font-medium px-2"></p>
       <div class="relative group">
         <input type="text" id="task-input" class="w-full bg-white p-5 rounded-2xl outline-none border-2 border-slate-100 focus:border-indigo-300 transition-all font-semibold text-lg pr-40 placeholder:text-slate-300" placeholder="Ana görevi buraya yaz (Örn: Portfolyo Hazırla)">
         <button onclick="sendTaskToN8N()" class="absolute right-2 top-2 bottom-2 bg-indigo-600 text-white px-8 rounded-xl font-bold hover:bg-indigo-700 active:scale-95 shadow-lg shadow-indigo-200 transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
@@ -188,6 +198,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input type="text" id="task-desc" class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-50 text-sm text-slate-600 focus:border-indigo-200 transition-all placeholder:text-slate-400" placeholder="Ek detaylar veya notlar (opsiyonel)...">
         <input type="datetime-local" id="task-deadline" class="w-full bg-indigo-50/50 p-4 rounded-xl outline-none border-2 border-transparent focus:border-indigo-200 text-sm text-indigo-700 font-bold cursor-pointer transition-all">
+      </div>
+      <div id="req-wrap" class="hidden space-y-1">
+        <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block px-2">Yönergeden çıkarılan zorunluluklar (her satır bir madde)</label>
+        <textarea id="task-requirements" rows="4" class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-100 focus:border-indigo-200 text-sm text-slate-600 transition-all" placeholder="Örn: 4 aşamalı çizim"></textarea>
+        <p id="deadline-quote" class="hidden text-[11px] text-slate-400 italic px-2"></p>
       </div>
     </div>
   </div>
@@ -762,7 +777,9 @@ async function sendTaskToN8N() {
   setLoading(true);
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
   try {
-    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis' } }) });
+    const reqEl = document.getElementById('task-requirements');
+    const requirements = typeof parseRequirements === 'function' ? parseRequirements(reqEl?.value) : [];
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis', breakStyle: profile.breakStyle ?? 'long-break' } }) });
     if (!res.ok) throw new Error('n8n ' + res.status);
     const result = await res.json().catch(() => ({}));
     addMessageToChat(`✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.<br><br>🎯 <b>İlk adım:</b><br>"<i>${result.firstStep || 'İlk mikro görevin takviminde hazır!'}</i>"`, 'ai');
@@ -809,6 +826,7 @@ function loadPage(name) {
   // Enter desteği (chatbot)
   if (name === 'chatbot') {
     document.getElementById('task-input')?.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTaskToN8N(); } });
+    if (typeof bindIntake === 'function') bindIntake();
   }
 
   main.classList.remove('animate-slide-in');

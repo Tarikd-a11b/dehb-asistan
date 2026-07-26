@@ -8,6 +8,7 @@ const FOCUSAID_CONFIG = {
     GOOGLE_CLIENT_ID:  'CLIENT_ID.apps.googleusercontent.com',
     DISCOVERY_DOC:     'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
     SCOPES:            'https://www.googleapis.com/auth/calendar.events',
-    N8N_WEBHOOK:       'http://localhost:5678/webhook-test/focusaid-processor',
+    N8N_WEBHOOK:       'http://localhost:5678/webhook/focusaid-processor',
+    N8N_ANALYZE_WEBHOOK:       'http://localhost:5678/webhook/focusaid-analyze',
     TIMEZONE:          'Europe/Istanbul'
 };
