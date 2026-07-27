@@ -138,10 +138,10 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // INITIAL_SESSION: oturum durumu (PKCE exchange dahil) kesinleşince ateşlenir
 sb.auth.onAuthStateChange((event, session) => {
   if (event === 'INITIAL_SESSION' && session) {
-    window.location.href = 'index_2.html';
+    window.location.href = 'index.html';
   }
   if (event === 'SIGNED_IN' && session) {
-    window.location.href = 'index_2.html';
+    window.location.href = 'index.html';
   }
 });
 
@@ -155,13 +155,20 @@ async function signInWithGoogle() {
   errEl.classList.add('hidden');
   loadEl.classList.remove('hidden');
 
+  // NOT: Girişte takvim (calendar.events) izni İSTENMİYOR.
+  // Google, "doğrulanmamış + production" durumdaki uygulamalarda bu hassas
+  // scope için kod değişimini reddediyor ve Supabase "Unable to exchange
+  // external code" hatası veriyordu. Giriş yalnızca email/profile ile yapılır;
+  // takvim izni uygulama içindeki "Google Takvimi Bağla" düğmesiyle ayrıca
+  // alınır (GIS token client, index.html → handleAuthClick).
+  //
+  // NOT: redirectTo hâlâ index_2.html — Supabase Redirect URLs listesinde kayıtlı
+  // adres bu. index_2.html artık index.html'e yönlendiren bir köprü. Supabase'e
+  // http://localhost:3000/index.html eklenince burası da index.html yapılabilir.
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      // Takvim erişimi için ek scope
-      scopes: 'https://www.googleapis.com/auth/calendar.events',
-      redirectTo: 'http://localhost:3000/index_2.html',
-      queryParams: { access_type: 'offline', prompt: 'consent' }
+      redirectTo: 'http://localhost:3000/index_2.html'
     }
   });
 

@@ -103,16 +103,18 @@ Tarayıcıda: `http://localhost:3000/auth.html`
 
 ```
 ├── auth.html          # Google OAuth giriş sayfası
-├── index_2.html       # Ana uygulama (chatbot + takvim + profil)
-├── calendar.html      # Takvim bileşeni
-├── chatbot.html       # AI sohbet bileşeni
-├── profile.html       # Kullanıcı profil bileşeni
+├── index.html         # Ana uygulama (Bugün + chatbot + takvim + profil)
+├── index_2.html       # index.html'e yönlendirme köprüsü (Supabase redirect URL'i buraya kayıtlı)
 ├── rapor.html         # Rapor bileşeni
-├── app-core.js        # Ortak JS modülleri
-├── n8n-logic.js       # n8n entegrasyon mantığı
-├── profile.js         # Profil yönetimi
-├── style.css          # Ek stiller
+├── tasks-logic.js     # Görev mantığı — DOM'suz, test edilebilir
+├── tasks-view.js      # Görev ekranı render + Supabase/GAPI çağrıları
+├── doc-intake-logic.js # Yönerge dosyası ayrıştırma mantığı — DOM'suz
+├── doc-intake.js      # Yönerge dosyası yükleme arayüzü
+├── serve.py           # Önbelleksiz geliştirme sunucusu (port 3000)
 ├── schema.sql         # Supabase veritabanı şeması
+├── fix-tasks-*.sql    # tasks tablosu şema/RLS düzeltmeleri
+├── n8n-workflow-*.json # n8n iş akışı tanımları
+├── test/              # tasks-logic + doc-intake-logic testleri (node --test)
 ├── config.example.js  # Konfigürasyon şablonu (bunu kopyala → config.js)
 └── config.js          # Gerçek konfigürasyon (gitignored, paylaşma)
 ```

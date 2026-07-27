@@ -48,19 +48,15 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 .hero-blob-1{position:absolute;top:-60px;right:-60px;width:250px;height:250px;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none}
 .hero-blob-2{position:absolute;bottom:-40px;left:30%;width:150px;height:150px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
 .adhd-badge{background:rgba(255,255,255,.2);color:#fff;font-size:.7rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.3)}
-.adhd-card-purple{border-top:4px solid #7c3aed!important}.adhd-card-emerald{border-top:4px solid #059669!important}.adhd-card-orange{border-top:4px solid #f97316!important}.adhd-card-pink{border-top:4px solid #ec4899!important}.adhd-card-teal{border-top:4px solid #0d9488!important}.adhd-card-yellow{border-top:4px solid #f59e0b!important}
+.adhd-card-purple{border-top:4px solid #7c3aed!important}.adhd-card-emerald{border-top:4px solid #059669!important}.adhd-card-orange{border-top:4px solid #f97316!important}
 .mood-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:9999px;border:2px solid #e2e8f0;background:#fff;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif}
 .mood-btn:hover{transform:translateY(-2px) scale(1.05);border-color:#7c3aed;box-shadow:0 8px 20px rgba(124,58,237,.15)}
 .mood-btn.active{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(124,58,237,.3)}
 .adhd-slider{-webkit-appearance:none;appearance:none;height:8px;background:linear-gradient(90deg,#7c3aed,#6366f1);border-radius:9999px;outline:none;cursor:pointer;border:none!important;padding:0!important;box-shadow:none!important}
 .adhd-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);transition:all .2s ease}
 .adhd-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
-.adhd-slider-pink{background:linear-gradient(90deg,#ec4899,#f472b6)!important}.adhd-slider-pink::-webkit-slider-thumb{border-color:#ec4899!important;box-shadow:0 4px 12px rgba(236,72,153,.3)!important}
-.adhd-slider-teal{background:linear-gradient(90deg,#0d9488,#14b8a6)!important}.adhd-slider-teal::-webkit-slider-thumb{border-color:#0d9488!important;box-shadow:0 4px 12px rgba(13,148,136,.3)!important}
 .energy-radio-option{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;background:#f8fafc;border-radius:.75rem;cursor:pointer;transition:all .2s ease;font-size:.875rem;font-weight:500}
 .energy-radio-option:hover{background:#f0fdf4;transform:translateX(4px)}
-.superpower-check{display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;border-radius:.75rem;cursor:pointer;font-size:.875rem;font-weight:500;transition:background .15s ease}
-.superpower-check:hover{background:#fefce8}
 .save-btn{box-shadow:0 20px 40px -12px rgba(124,58,237,.4)}.save-btn:hover{box-shadow:0 25px 50px -12px rgba(124,58,237,.5)}
 </style>
 </head>
@@ -112,8 +108,8 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
     </div>
   </div>
   <div class="flex flex-col xl:flex-row gap-10">
-    <div class="flex-1 min-w-[350px] glass-card p-8 bg-white/90 shadow-2xl">
-      <div id="calendar" class="min-h-[600px]"></div>
+    <div class="flex-1 min-w-[350px] glass-card p-6 bg-white/90 shadow-2xl">
+      <div id="calendar"></div>
     </div>
     <div id="task-form-panel" class="w-full xl:w-[480px] glass-card p-10 bg-white shadow-2xl border-l-4 border-indigo-500 hidden animate-slide-in">
       <div class="flex justify-between items-start mb-8">
@@ -329,81 +325,6 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
       </div>
     </div>
 
-    <!-- 4. Duyusal Profil -->
-    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-pink">
-      <div>
-        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🌡️</span> Duyusal Profil</h4>
-        <p class="text-[10px] text-slate-400 mt-1">Duyusal hassasiyetlerin ortam ayarlarını şekillendirir</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Işık Hassasiyeti: <span id="light-display" class="text-pink-500 font-black">Orta</span></label>
-        <input type="range" id="light-sensitivity" value="2" min="1" max="3" step="1" oninput="updateSensLabel('light-display',this.value)" class="adhd-slider adhd-slider-pink w-full">
-        <div class="flex justify-between text-[10px] text-slate-400"><span>😎 Düşük</span><span>😵 Yüksek</span></div>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Ses Hassasiyeti: <span id="sound-display" class="text-pink-500 font-black">Orta</span></label>
-        <input type="range" id="sound-sensitivity" value="2" min="1" max="3" step="1" oninput="updateSensLabel('sound-display',this.value)" class="adhd-slider adhd-slider-pink w-full">
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Tercih Ettiğin Ortam</label>
-        <select id="env-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="minimal">🧹 Minimal & Temiz</option>
-          <option value="cozy">🛋️ Rahat & Sıcak</option>
-          <option value="dynamic">⚡ Dinamik & Değişken</option>
-          <option value="nature">🌿 Doğa Ögeli</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 5. Duygusal Koruma -->
-    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-teal">
-      <div>
-        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🛡️</span> Duygusal Koruma</h4>
-        <p class="text-[10px] text-slate-400 mt-1">RSD ve duygusal düzenleme stratejilerin</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">RSD Seviyem: <span id="rsd-display" class="text-teal-600 font-black">Orta</span></label>
-        <input type="range" id="rsd-level" value="2" min="1" max="3" step="1" oninput="updateSensLabel('rsd-display',this.value)" class="adhd-slider adhd-slider-teal w-full">
-        <p class="text-[10px] text-slate-400">RSD: Reddedilme Duyarlılığı Disforisi</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Düzenleme Yöntemim</label>
-        <select id="regulation-method" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="breathing">🫁 Nefes Egzersizleri</option>
-          <option value="movement">🏃 Hareket / Stim</option>
-          <option value="grounding">🌍 Grounding (5-4-3-2-1)</option>
-          <option value="music">🎵 Müzikle Yatışma</option>
-          <option value="cold-water">💧 Soğuk Su</option>
-        </select>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Stim Tercihi</label>
-        <select id="stim-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="fidget">🤏 Fidget / El Oyuncağı</option>
-          <option value="pacing">🚶 Yürüyüş / Sallanma</option>
-          <option value="doodling">✏️ Karalama</option>
-          <option value="chewing">🍬 Çiğneme</option>
-          <option value="none">🧘 Stim Yok</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- 6. Süper Güçlerim -->
-    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-yellow">
-      <div>
-        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>⭐</span> Süper Güçlerim</h4>
-        <p class="text-[10px] text-slate-400 mt-1">DEHB'in getirdiği avantajların — kutla bunları!</p>
-      </div>
-      <div class="space-y-1">
-        <label class="superpower-check"><input type="checkbox" id="sp-creativity" class="accent-yellow-500"><span>🎨 Yaratıcılık & Özgün Düşünce</span></label>
-        <label class="superpower-check"><input type="checkbox" id="sp-hyperfocus" class="accent-yellow-500"><span>🔥 Hiperfokus Yeteneği</span></label>
-        <label class="superpower-check"><input type="checkbox" id="sp-energy" class="accent-yellow-500"><span>⚡ Yüksek Enerji & Heves</span></label>
-        <label class="superpower-check"><input type="checkbox" id="sp-empathy" class="accent-yellow-500"><span>💜 Güçlü Empati</span></label>
-        <label class="superpower-check"><input type="checkbox" id="sp-crisis" class="accent-yellow-500"><span>🚒 Kriz Anında Performans</span></label>
-        <label class="superpower-check"><input type="checkbox" id="sp-connections" class="accent-yellow-500"><span>🔗 Bağlantı Kurma Yeteneği</span></label>
-      </div>
-    </div>
-
   </div>
 
   <!-- Bitirme Stratejisi -->
@@ -504,11 +425,42 @@ const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 let currentUser = null;
 let _authReady = false;
 
+const AUTH_YONLENDIRME_BAYRAGI = 'focusaid_auth_yonlendirme';
+
+// Yalnızca yönlendirme döngüsü tespit edildiğinde gösterilir. Normalde oturumsuz
+// kullanıcı sessizce auth.html'e gider.
+function gosterOturumTeshisi() {
+  const u = new URL(window.location.href);
+  const sbAnahtarlari = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
+  // En sık sebep: dosyaya çift tıklayıp file:// ile açmak. localStorage origin
+  // başına tutulduğundan localhost:3000'de kurulan oturum file:// altında
+  // görünmez ve Google file:// adresine geri dönemez.
+  const yanlisProtokol = window.location.protocol !== 'http:' && window.location.protocol !== 'https:';
+  document.body.innerHTML =
+    '<div style="padding:32px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.7;color:#1e293b">' +
+    '<h2 style="font-size:20px;font-weight:800;margin-bottom:16px">Oturum kurulamadı — teşhis</h2>' +
+    (yanlisProtokol
+      ? '<p style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin-bottom:16px">' +
+        '<b>Sebep bu:</b> sayfa <code>' + window.location.protocol + '</code> ile açılmış. ' +
+        'Sunucuyu başlatıp (<code>python serve.py</code>) ' +
+        '<a href="http://localhost:3000/auth.html" style="color:#4f46e5;font-weight:700">http://localhost:3000/auth.html</a> ' +
+        'adresinden açın.</p>'
+      : '') +
+    '<b>URL:</b> ' + window.location.href + '<br>' +
+    '<b>code parametresi:</b> ' + (u.searchParams.get('code') ? 'VAR' : 'YOK') + '<br>' +
+    '<b>error:</b> ' + (u.searchParams.get('error') || u.searchParams.get('error_description') || 'yok') + '<br>' +
+    '<b>hash:</b> ' + (window.location.hash || 'yok') + '<br>' +
+    '<b>localStorage sb- anahtarları:</b> ' + (sbAnahtarlari.length ? sbAnahtarlari.join(', ') : 'HİÇ YOK') + '<br><br>' +
+    '<a href="auth.html" style="color:#4f46e5;font-weight:700">← Giriş sayfasına dön</a></div>';
+}
+
 async function _onSession(session) {
   currentUser = session.user;
   showUserInfo(currentUser);
   if (session.access_token)  AppState.supabaseToken = session.access_token;
-  if (session.provider_token) activateGoogleCalendar(session.provider_token);
+  // NOT: session.provider_token'ı takvime bağlamak İÇİN KULLANMA — Supabase'in Google
+  // OAuth'unda calendar.events scope'u bilerek yok, bu token'la events.list 403 verir.
+  // Takvim izni SADECE "Google Takvimi Bağla" butonundaki GIS tokenClient'tan gelir.
   await loadProfileFromSupabase();
   // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
   // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
@@ -519,13 +471,30 @@ async function _onSession(session) {
 }
 
 sb.auth.onAuthStateChange(async (event, session) => {
+  // Teşhis: giriş döngüsünde hangi olayın geldiğini ve oturumun kurulup
+  // kurulmadığını görmek için. URL'de code/error var mı da yazdırılır.
+  console.log('[Auth]', event, session ? 'oturum VAR' : 'oturum YOK',
+              '| url:', window.location.href);
   if (event === 'SIGNED_OUT') {
     window.location.href = 'auth.html';
     return;
   }
   if (event === 'INITIAL_SESSION') {
     _authReady = true;
-    if (!session) { window.location.href = 'auth.html'; return; }
+    if (!session) {
+      // Oturum yok → giriş sayfasına. Bayrak, auth.html ↔ index.html arasında
+      // sonsuz yönlendirme döngüsü oluşursa ikinci turda durup sebebi ekrana
+      // yazmak için; döngüye giren bir sayfayı tarayıcıda incelemek zordur.
+      if (sessionStorage.getItem(AUTH_YONLENDIRME_BAYRAGI)) {
+        sessionStorage.removeItem(AUTH_YONLENDIRME_BAYRAGI);
+        gosterOturumTeshisi();
+        return;
+      }
+      sessionStorage.setItem(AUTH_YONLENDIRME_BAYRAGI, '1');
+      window.location.href = 'auth.html';
+      return;
+    }
+    sessionStorage.removeItem(AUTH_YONLENDIRME_BAYRAGI);
     await _onSession(session);
     return;
   }
@@ -577,14 +546,7 @@ async function loadProfileFromSupabase() {
     mainObstacle:     data.main_obstacle    ?? 'paralysis',
     breakStyle:       data.break_style      ?? 'pomodoro',
     todayMood:        data.today_mood       ?? '',
-    hyperfocusLimit:  data.hyperfocus_limit ?? 'none',
-    lightSensitivity: data.light_sensitivity ?? 2,
-    soundSensitivity: data.sound_sensitivity ?? 2,
-    envPref:          data.env_pref         ?? 'minimal',
-    rsdLevel:         data.rsd_level        ?? 2,
-    regulationMethod: data.regulation_method ?? 'breathing',
-    stimPref:         data.stim_pref        ?? 'fidget',
-    superpowers:      Array.isArray(data.superpowers) ? data.superpowers : []
+    hyperfocusLimit:  data.hyperfocus_limit ?? 'none'
   };
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
 }
@@ -605,14 +567,7 @@ async function saveProfileToSupabase(profile) {
     main_obstacle:     profile.mainObstacle,
     break_style:       profile.breakStyle,
     today_mood:        profile.todayMood,
-    hyperfocus_limit:  profile.hyperfocusLimit,
-    light_sensitivity: profile.lightSensitivity,
-    sound_sensitivity: profile.soundSensitivity,
-    env_pref:          profile.envPref,
-    rsd_level:         profile.rsdLevel,
-    regulation_method: profile.regulationMethod,
-    stim_pref:         profile.stimPref,
-    superpowers:       profile.superpowers ?? []
+    hyperfocus_limit:  profile.hyperfocusLimit
   }, { onConflict: 'id' });
 }
 
@@ -671,6 +626,7 @@ function initCalendar() {
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+    height: 'auto', aspectRatio: 1.9,
     selectable: true, editable: true,
     dateClick(info) { openTaskForm(info.dateStr); },
     eventClick(info) { openTaskForm(info.event.startStr.split('T')[0], info.event); },
@@ -864,11 +820,6 @@ function setMood(mood) {
   document.getElementById('mood-' + mood)?.classList.add('active');
 }
 
-function updateSensLabel(displayId, val) {
-  const el = document.getElementById(displayId);
-  if (el) el.textContent = ['','Düşük','Orta','Yüksek'][parseInt(val)] || 'Orta';
-}
-
 function setMed(active) {
   userProfile.medication = !!active;
   const yes = document.getElementById('med-yes'), no = document.getElementById('med-no');
@@ -892,14 +843,7 @@ async function saveProfile() {
       mainObstacle: sg('main-obstacle', userProfile.mainObstacle),
       breakStyle: sg('break-style', userProfile.breakStyle),
       todayMood: userProfile.todayMood,
-      hyperfocusLimit: sg('hyperfocus-limit', userProfile.hyperfocusLimit),
-      lightSensitivity: Number(sg('light-sensitivity', userProfile.lightSensitivity)),
-      soundSensitivity: Number(sg('sound-sensitivity', userProfile.soundSensitivity)),
-      envPref: sg('env-pref', userProfile.envPref),
-      rsdLevel: Number(sg('rsd-level', userProfile.rsdLevel)),
-      regulationMethod: sg('regulation-method', userProfile.regulationMethod),
-      stimPref: sg('stim-pref', userProfile.stimPref),
-      superpowers: ['creativity','hyperfocus','energy','empathy','crisis','connections'].filter(k => document.getElementById('sp-'+k)?.checked)
+      hyperfocusLimit: sg('hyperfocus-limit', userProfile.hyperfocusLimit)
     };
     localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
     // Supabase'e de kaydet
@@ -924,17 +868,10 @@ function loadProfileToUI() {
   ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
-  ss('light-sensitivity', userProfile.lightSensitivity); ss('sound-sensitivity', userProfile.soundSensitivity);
-  ss('env-pref', userProfile.envPref); ss('rsd-level', userProfile.rsdLevel);
-  ss('regulation-method', userProfile.regulationMethod); ss('stim-pref', userProfile.stimPref);
-  updateSensLabel('light-display', userProfile.lightSensitivity || 2);
-  updateSensLabel('sound-display', userProfile.soundSensitivity || 2);
-  updateSensLabel('rsd-display', userProfile.rsdLevel || 2);
   const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
   if (radio) radio.checked = true;
   setMed(userProfile.medication);
   if (userProfile.todayMood) setMood(userProfile.todayMood);
-  (userProfile.superpowers || []).forEach(k => { const cb = document.getElementById('sp-'+k); if (cb) cb.checked = true; });
 }
 
 // ── BAŞLAT ──
