@@ -1,0 +1,184 @@
+{
+  "name": "FocusAid Weekly Report",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "weeksInterval": 1,
+              "triggerAtDay": [1],
+              "triggerAtHour": 7,
+              "triggerAtMinute": 0
+            }
+          ]
+        }
+      },
+      "id": "9f0b2e5e-d257-42be-8000-0657f9e819da",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "calendar": {
+          "__rl": true,
+          "value": "bilaltarikd@gmail.com",
+          "mode": "list",
+          "cachedResultName": "bilaltarikd@gmail.com"
+        },
+        "returnAll": true,
+        "timeMin": "={{ $now.startOf('week').toISO() }}",
+        "timeMax": "={{ $now.endOf('week').toISO() }}",
+        "options": {}
+      },
+      "id": "e86fd355-6882-49b9-9854-f42f45baf8f1",
+      "name": "Get many events",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [620, 200],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "RgsGXRJCrcd0unU4",
+          "name": "Google Calendar account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://tigawsmrndalzvuyjycc.supabase.co/rest/v1/profiles",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "select", "value": "motivation_note" },
+            { "name": "email", "value": "eq.bilaltarikd@gmail.com" }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            { "name": "apikey", "value": "SERVICE_ROLE_KEY_BURAYA" },
+            { "name": "Authorization", "value": "Bearer SERVICE_ROLE_KEY_BURAYA" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3a1f6f2b-9c4d-4e5a-8b7c-1d2e3f4a5b6c",
+      "name": "Get profile from Supabase",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [620, 420],
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "mode": "append",
+        "numberInputs": 2
+      },
+      "id": "5c2d4e6f-1a3b-4c5d-9e8f-7a6b5c4d3e2f",
+      "name": "Merge",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [840, 300]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const items = $input.all();\n\nconst profileItem = items.find(i => i.json && Object.prototype.hasOwnProperty.call(i.json, 'motivation_note'));\nconst eventItems = items.filter(i => i !== profileItem);\n\nconst simdiMs = Date.now() + 3 * 3600000;\nconst simdi_istanbul = new Date(simdiMs).toISOString().replace('Z', '+03:00');\n\nconst etkinlikler = eventItems.map(item => {\n  const j = item.json;\n  const summary = j.summary || 'İsimsiz Etkinlik';\n  const start = (j.start && (j.start.dateTime || j.start.date)) || '';\n  return `- ${summary} | Baslangic: ${start}`;\n});\n\nconst etkinlik_listesi = etkinlikler.join('\\n');\nconst toplam_is = eventItems.length;\nconst odul_notu = (profileItem && profileItem.json && profileItem.json.motivation_note) ? String(profileItem.json.motivation_note).trim() : '';\n\nreturn [{ json: { etkinlik_listesi, toplam_is, simdi_istanbul, odul_notu } }];"
+      },
+      "id": "20b9c75e-05d2-4c76-92ec-d4daba09b5a7",
+      "name": "Code in JavaScript",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1060, 300]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Bu haftanın (bugünden itibaren, Pazar'a kadar) FocusAid takvim etkinlikleri:\n{{ $json.etkinlik_listesi }}\n\nToplam etkinlik sayısı: {{ $json.toplam_is }}\nŞu an (Istanbul saatiyle, ZORUNLU referans): {{ $json.simdi_istanbul }}\n\nSADECE simdi_istanbul değerini referans alarak her etkinliğin durumunu belirle: başlangıç saati simdi_istanbul'dan önceyse 'Tamamlandı', içindeyse 'Devam Ediyor', sonraysa 'Bekliyor'. Başka hiçbir zaman tahmini yapma, bilgi kesim tarihini kullanma.\nEğer hiç etkinlik yoksa bunu nazikçe belirt ve kullanıcıyı yeni bir görev eklemeye motive et.",
+        "options": {
+          "systemMessage": "Sen DEHB'li kullanıcılar için haftalık takvim özeti hazırlayan, Türkçe yazan, DEHB dostu ve motive edici bir asistansın.\n\nGörevin: verilen etkinlik listesini kullanarak tek parça HTML formatında bir e-posta gövdesi üretmek.\n\nKurallar:\n- Çıktı SADECE geçerli HTML olmalı (```html gibi kod bloğu işaretleri KOYMA, başka hiçbir açıklama ekleme).\n- İçinde bir tablo olsun, sütunlar: Görev - Tarih - Saat - Durum.\n- Durum sütununda sadece 'Tamamlandı', 'Devam Ediyor' veya 'Bekliyor' değerlerini kullan (kırmızı/olumsuz renk veya 'GECİKTİ' gibi ifadeler KULLANMA — RSD'ye (reddedilme duyarlılığı) karşı koruma amaçlı).\n- Tablonun üstünde kısa, sıcak, motive edici bir giriş paragrafı olsun (2-3 cümle).\n- Tablonun altında kısa bir kapanış/teşvik cümlesi olsun.\n- Basit inline CSS kullanılabilir (tablo kenarlıkları, renkler) ama harici stil dosyası/script YOK.\n\nSADECE HTML döndür, başka hiçbir metin ekleme."
+        }
+      },
+      "id": "2df85065-125e-4221-b06c-96b8422d41f7",
+      "name": "AI Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [1280, 300]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "624d9ca7-a193-4491-9eb5-9e406dc1949d",
+      "name": "Google Gemini Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1.1,
+      "position": [1280, 500],
+      "credentials": {
+        "googlePalmApi": {
+          "id": "L7pAW943KMWrNGRc",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "sendTo": "bilaltarikd@gmail.com",
+        "subject": "=FocusAid Haftalık Rapor - {{ $now.format('dd.MM.yyyy') }}",
+        "emailType": "html",
+        "message": "={{ $json.output + ($('Code in JavaScript').item.json.odul_notu ? '<div style=\"margin-top:24px;padding:16px 20px;background:#fef9c3;border-radius:16px;font-family:sans-serif\"><b>🎁 Bu haftanın ödülü:</b> ' + $('Code in JavaScript').item.json.odul_notu + '</div>' : '') }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "79755a1e-8ec5-4ac0-88e0-5c4645a49028",
+      "name": "Send a message",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [1500, 300],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "OfUX8cVUB00Vw75e",
+          "name": "Gmail account"
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [[
+        { "node": "Get many events", "type": "main", "index": 0 },
+        { "node": "Get profile from Supabase", "type": "main", "index": 0 }
+      ]]
+    },
+    "Get many events": {
+      "main": [[{ "node": "Merge", "type": "main", "index": 0 }]]
+    },
+    "Get profile from Supabase": {
+      "main": [[{ "node": "Merge", "type": "main", "index": 1 }]]
+    },
+    "Merge": {
+      "main": [[{ "node": "Code in JavaScript", "type": "main", "index": 0 }]]
+    },
+    "Code in JavaScript": {
+      "main": [[{ "node": "AI Agent", "type": "main", "index": 0 }]]
+    },
+    "AI Agent": {
+      "main": [[{ "node": "Send a message", "type": "main", "index": 0 }]]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [[{ "node": "AI Agent", "type": "ai_languageModel", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
