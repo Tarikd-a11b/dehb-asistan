@@ -13,7 +13,7 @@
       "parameters": {
         "width": 480,
         "height": 420,
-        "content": "## FocusAid Processor — Yeniden İnşa Edildi (v2)\n\nEski workflow (KoSsoWH2tLfZszUC) bu n8n kurulumunda kayboldu. Bu versiyon, kullanıcının eski ekran görüntüsüne bakılarak gerçek mimariye (AI Agent + OpenAI Chat Model node'ları) uygun şekilde yeniden yazıldı.\n\n**İçe aktardıktan sonra yapman gerekenler:**\n\n1. **Get many events** ve **Create an event** node'larına Google Calendar OAuth2 kimlik bilgisi bağla.\n2. **OpenAI Chat Model** node'una bir *OpenAI account* (openAiApi) kimlik bilgisi bağla (API anahtarını gir).\n3. Workflow'u **Active** yap. Sonra `config.js`'teki `N8N_WEBHOOK` değerini `http://localhost:5678/webhook-test/focusaid-processor` yerine `http://localhost:5678/webhook/focusaid-processor` yap (production URL), yoksa her seferinde editörde 'Listen for test event' tıklaman gerekir.\n4. Bir kere test et: uygulamadan bir görev + deadline gönder, Executions sekmesinden akışı izle.\n\n**Eski ekran görüntüsünden farklar (bilinçli):**\n- Orijinalde 'Create an event' ile 'Save task to Supabase' arasında kullanılmayan/boş bir 'Replace Me' (NoOp) node'u vardı — o yerine, calendar_event_id'yi görev verisiyle gerçekten birleştiren 'Prepare Supabase Payload' adında işlevsel bir Code node kondu.\n- Memory ve Tool girişleri orijinalde de boştu, burada da bağlı değil."
+        "content": "## FocusAid Processor — Çok Kullanıcılı (v3)\n\n**Get many events** ve **Create an event** artık n8n'in sabit Google Calendar credential'ını KULLANMIYOR — ikisi de HTTP Request node'u, `Authorization: Bearer {{ $json.googleAccessToken }}` ile o anki isteği yapan kullanıcının KENDİ takvimine okuyup yazıyor. Bu token frontend'den (`AppState.googleAccessToken`, GIS ile alınan canlı token) webhook payload'ında geliyor — Normalize & Calculate → Merge → Code in JavaScript zincirinde her task item'a kopyalanıyor. Token yoksa/süresi geçmişse (kullanıcı takvimini bağlamamışsa) her iki node da 401 alır ama `onError: continueRegularOutput` sayesinde akış durmaz — görev yine de Supabase'e (tek gerçek kaynak) kaydedilir, sadece takvim senkronu atlanır.\n\n**İçe aktardıktan sonra yapman gereken TEK şey:**\n\n1. **OpenAI Chat Model** node'una bir *OpenAI account* (openAiApi) kimlik bilgisi bağla (API anahtarını gir).\n2. **Save task to Supabase** node'undaki `SERVICE_ROLE_KEY_BURAYA` yerine gerçek service_role anahtarını gir.\n3. Workflow'u **Active** yap.\n4. Bir kere test et: uygulamadan (takvimi bağlanmış bir kullanıcı olarak) bir görev + deadline gönder, Executions sekmesinden akışı izle — event kendi takviminde oluşmalı.\n\n**Eski ekran görüntüsünden farklar (bilinçli):**\n- Orijinalde 'Create an event' ile 'Save task to Supabase' arasında kullanılmayan/boş bir 'Replace Me' (NoOp) node'u vardı — o yerine, calendar_event_id'yi görev verisiyle gerçekten birleştiren 'Prepare Supabase Payload' adında işlevsel bir Code node kondu.\n- Memory ve Tool girişleri orijinalde de boştu, burada da bağlı değil."
       }
     },
     {
@@ -44,47 +44,64 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "const raw = $input.first().json;\nconst body = raw.body ?? raw;\n\nconst taskTitle = body.taskTitle || 'Adsız Proje';\nconst taskDescription = body.taskDescription || '';\nconst userId = body.userId || null;\nconst supabaseToken = body.supabaseToken || null;\n\nconst profile = body.userProfile || {};\nconst focusPeriod = profile.focusPeriod ?? 25;\nconst energyPeak = profile.energyPeak ?? 'morning';\nconst workHours = profile.workHours ?? { start: '09:00', end: '18:00' };\nconst mainObstacle = profile.mainObstacle ?? 'paralysis';\nconst breakStyle = profile.breakStyle ?? 'long-break';\n\nconst deadlineRaw = body.deadline || body.targetDate;\nif (!deadlineRaw) {\n  throw new Error(\"Webhook payload'inda deadline veya targetDate olmali\");\n}\n\nconst now = new Date();\nlet deadline = new Date(deadlineRaw);\nif (!body.deadline && body.targetDate) {\n  deadline.setHours(23, 59, 0, 0);\n}\n\nconst msPerDay = 24 * 60 * 60 * 1000;\nconst availableDays = Math.max(1, Math.ceil((deadline.getTime() - now.getTime()) / msPerDay));\n\n// Gunluk kapasite: calisma saatlerine kac odak seansi sigar\nfunction toMin(hhmm) { const p = String(hhmm).split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); }\nconst breakMap = { pomodoro: 5, 'long-break': 15, micro: 2, free: 0 };\nconst breakMinutes = breakMap[breakStyle] != null ? breakMap[breakStyle] : 15;\nconst slotsPerDay = Math.max(1, Math.floor((toMin(workHours.end) - toMin(workHours.start)) / (focusPeriod + breakMinutes)));\nconst perDayCap = Math.min(slotsPerDay, 3); // DEHB: gunde en fazla ~3 odak seansi\n\n// Gorev sayisi araligi — AI karmasikliga gore bu aralikta secer\nconst minTasks = Math.max(3, Math.ceil(availableDays / 2));\nconst maxTasks = Math.max(minTasks + 1, availableDays * perDayCap);\n\nreturn [{\n  json: {\n    taskTitle,\n    taskDescription,\n    userId,\n    supabaseToken,\n    now: now.toISOString(),\n    deadline: deadline.toISOString(),\n    availableDays,\n    minTasks,\n    maxTasks,\n    profile: { focusPeriod, energyPeak, workHours, mainObstacle, breakStyle, breakMinutes }\n  }\n}];\n"
+        "jsCode": "const raw = $input.first().json;\nconst body = raw.body ?? raw;\n\nconst taskTitle = body.taskTitle || 'Adsız Proje';\nconst taskDescription = body.taskDescription || '';\nconst userId = body.userId || null;\nconst supabaseToken = body.supabaseToken || null;\nconst googleAccessToken = body.googleAccessToken || null;\n\nconst profile = body.userProfile || {};\nconst focusPeriod = profile.focusPeriod ?? 25;\nconst energyPeak = profile.energyPeak ?? 'morning';\nconst workHours = profile.workHours ?? { start: '09:00', end: '18:00' };\nconst mainObstacle = profile.mainObstacle ?? 'paralysis';\nconst breakStyle = profile.breakStyle ?? 'long-break';\n\nconst deadlineRaw = body.deadline || body.targetDate;\nif (!deadlineRaw) {\n  throw new Error(\"Webhook payload'inda deadline veya targetDate olmali\");\n}\n\nconst now = new Date();\nlet deadline = new Date(deadlineRaw);\nif (!body.deadline && body.targetDate) {\n  deadline.setHours(23, 59, 0, 0);\n}\n\nconst msPerDay = 24 * 60 * 60 * 1000;\nconst availableDays = Math.max(1, Math.ceil((deadline.getTime() - now.getTime()) / msPerDay));\n\n// Gunluk kapasite: calisma saatlerine kac odak seansi sigar\nfunction toMin(hhmm) { const p = String(hhmm).split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); }\nconst breakMap = { pomodoro: 5, 'long-break': 15, micro: 2, free: 0 };\nconst breakMinutes = breakMap[breakStyle] != null ? breakMap[breakStyle] : 15;\n// Gece yarisini asan calisma penceresi (ör. 20:00 -> 06:00): bitis, baslangictan kucukse\n// pencere ertesi gune tasiyor demektir, suresi (1440 - baslangic + bitis) olur.\nconst workStartMinN = toMin(workHours.start);\nconst workEndMinRawN = toMin(workHours.end);\nconst sessionDurationN = workEndMinRawN <= workStartMinN ? (1440 - workStartMinN + workEndMinRawN) : (workEndMinRawN - workStartMinN);\nconst slotsPerDay = Math.max(1, Math.floor(sessionDurationN / (focusPeriod + breakMinutes)));\nconst perDayCap = Math.min(slotsPerDay, 3); // DEHB: gunde en fazla ~3 odak seansi\n\n// Gorev sayisi araligi — AI karmasikliga gore bu aralikta secer\nconst minTasks = Math.max(3, Math.ceil(availableDays / 2));\nconst maxTasks = Math.max(minTasks + 1, availableDays * perDayCap);\n\nreturn [{\n  json: {\n    taskTitle,\n    taskDescription,\n    userId,\n    supabaseToken,\n    googleAccessToken,\n    now: now.toISOString(),\n    deadline: deadline.toISOString(),\n    availableDays,\n    minTasks,\n    maxTasks,\n    profile: { focusPeriod, energyPeak, workHours, mainObstacle, breakStyle, breakMinutes }\n  }\n}];\n"
       }
     },
     {
       "id": "gcal-getall",
       "name": "Get many events",
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         280,
         140
       ],
       "parameters": {
-        "resource": "event",
-        "operation": "getAll",
-        "calendar": {
-          "__rl": true,
-          "mode": "list",
-          "value": "primary",
-          "cachedResultName": "primary"
+        "method": "GET",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "authentication": "none",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "timeMin",
+              "value": "={{ $json.now }}"
+            },
+            {
+              "name": "timeMax",
+              "value": "={{ $json.deadline }}"
+            },
+            {
+              "name": "singleEvents",
+              "value": "true"
+            }
+          ]
         },
-        "returnAll": true,
-        "timeMin": "={{ $json.now }}",
-        "timeMax": "={{ $json.deadline }}",
-        "options": {
-          "singleEvents": true
-        }
-      }
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.googleAccessToken }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "id": "aggregate-events",
       "name": "Aggregate Events",
-      "type": "n8n-nodes-base.aggregate",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         520,
         140
       ],
       "parameters": {
-        "aggregate": "aggregateAllItemData",
-        "destinationFieldName": "existingEvents"
+        "mode": "runOnceForAllItems",
+        "jsCode": "const body = $input.first().json;\nreturn [{ json: { existingEvents: body.items || [] } }];\n"
       }
     },
     {
@@ -152,35 +169,42 @@
       ],
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "// ── FocusAid — Görev Dağıtımı (rapor algoritması) ──\n// AI Agent sadece görev + cognitive_load üretir; planlamayı burada yaparız.\nconst merged = $('Merge').first().json;\nconst aiRaw = $json.output || '{\"tasks\":[]}';\n\nlet parsed;\ntry { parsed = JSON.parse(aiRaw); }\ncatch (e) { throw new Error('AI Agent gecerli JSON dondurmedi: ' + String(aiRaw).slice(0, 300)); }\nconst rawTasks = Array.isArray(parsed) ? parsed : (parsed.tasks || []);\nif (rawTasks.length === 0) throw new Error('AI Agent hic gorev uretmedi');\n\nconst profile = merged.profile || {};\nconst workHours = profile.workHours || {};\nconst focusPeriod = profile.focusPeriod || 25;\nconst existingEvents = merged.existingEvents || [];\n\n// Mola süresi (dk): profil breakStyle'a göre, yoksa 15 dk (rapor: en az 15 dk ara)\nconst breakMap = { pomodoro: 5, 'long-break': 15, micro: 2, free: 0 };\nconst breakMinutes = (profile.breakMinutes != null) ? Number(profile.breakMinutes)\n  : (breakMap[profile.breakStyle] != null ? breakMap[profile.breakStyle] : 15);\nconst step = focusPeriod + breakMinutes;\n\nfunction pad(n) { return String(n).padStart(2, '0'); }\nfunction toMin(hhmm) { const p = String(hhmm).split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); }\nconst workStartMin = toMin(workHours.start || '09:00');\nconst workEndMin = toMin(workHours.end || '18:00');\n\n// Istanbul (UTC+3) duvar saati — sunucu timezone'undan bağımsız\nconst IST = 3 * 3600 * 1000;\nfunction wall(iso) { return new Date(new Date(iso).getTime() + IST); } // getUTC* ile oku\nfunction keyOf(w) { return w.getUTCFullYear() + '-' + pad(w.getUTCMonth() + 1) + '-' + pad(w.getUTCDate()); }\nfunction minsOf(w) { return w.getUTCHours() * 60 + w.getUTCMinutes(); }\n\n// 1) scheduledSlots — mevcut takvim etkinliklerinden dolu aralıklar (gün bazında)\nconst occ = {};\nfunction reserve(key, a, b) { (occ[key] = occ[key] || []).push({ a, b }); }\nfunction isFree(key, a, b) { return !(occ[key] || []).some(o => a < o.b && b > o.a); }\nfor (const ev of existingEvents) {\n  const s = ev.start && (ev.start.dateTime || ev.start.date);\n  const e = ev.end && (ev.end.dateTime || ev.end.date);\n  if (!s || !e) continue;\n  const sw = wall(s), ew = wall(e);\n  reserve(keyOf(sw), minsOf(sw), minsOf(ew));\n}\n\n// 2) availableDays — BUGUNDEN deadline'a, en az 1 bos slotu olan gunler\n// Bugun icin gecmis saatlere gorev koymamak adina 'simdi + tampon'dan baslanir.\nconst nowW = wall(merged.now || new Date().toISOString());\nconst deadW = wall(merged.deadline || merged.now);\nconst deadlineMin = minsOf(deadW);\nconst todayKey = keyOf(nowW);\nconst nowMin   = minsOf(nowW);\nconst LEAD_MIN = 15; // gorev en erken 15 dk sonra baslasin\nfunction startMinFor(key) {\n  return key === todayKey ? Math.max(workStartMin, nowMin + LEAD_MIN) : workStartMin;\n}\nlet cur = new Date(Date.UTC(nowW.getUTCFullYear(), nowW.getUTCMonth(), nowW.getUTCDate()));\nconst lastAnchor = Date.UTC(deadW.getUTCFullYear(), deadW.getUTCMonth(), deadW.getUTCDate());\nconst days = [];\nwhile (cur.getTime() <= lastAnchor) {\n  const key = cur.getUTCFullYear() + '-' + pad(cur.getUTCMonth() + 1) + '-' + pad(cur.getUTCDate());\n  const endMin = (cur.getTime() === lastAnchor) ? Math.min(workEndMin, deadlineMin) : workEndMin;\n  let free = false;\n  for (let m = startMinFor(key); m + focusPeriod <= endMin; m += step) { if (isFree(key, m, m + focusPeriod)) { free = true; break; } }\n  if (free) days.push({ key, endMin });\n  cur = new Date(cur.getTime() + 24 * 3600 * 1000);\n}\nif (days.length === 0) {\n  const d = new Date(Date.UTC(nowW.getUTCFullYear(), nowW.getUTCMonth(), nowW.getUTCDate() + 1));\n  days.push({ key: d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()), endMin: workEndMin });\n}\n\n// 3) maxPerDay + proportional dağıtım\nconst T = rawTasks.length;\nconst A = days.length;\nconst maxPerDay = Math.ceil(T / A);\nconst count = {};\nfunction findSlot(day) {\n  if ((count[day.key] || 0) >= maxPerDay) return null;\n  for (let m = startMinFor(day.key); m + focusPeriod <= day.endMin; m += step) {\n    if (isFree(day.key, m, m + focusPeriod)) return m;\n  }\n  return null;\n}\n\nconst results = [];\nfor (let i = 0; i < T; i++) {\n  const t = rawTasks[i] || {};\n  const targetIdx = A > 1 ? Math.round(i * (A - 1) / (T - 1)) : 0;\n\n  let day = null, startMin = null;\n  let s = findSlot(days[targetIdx]);\n  if (s !== null) { day = days[targetIdx]; startMin = s; }\n  for (let j = targetIdx + 1; day === null && j < A; j++) { const x = findSlot(days[j]); if (x !== null) { day = days[j]; startMin = x; } }\n  for (let j = targetIdx - 1; day === null && j >= 0; j--) { const x = findSlot(days[j]); if (x !== null) { day = days[j]; startMin = x; } }\n  if (day === null) { day = days[A - 1]; startMin = startMinFor(day.key); } // taşma: son güne zorla\n\n  reserve(day.key, startMin, startMin + focusPeriod);\n  count[day.key] = (count[day.key] || 0) + 1;\n\n  const endMinT = startMin + focusPeriod;\n  const startISO = day.key + 'T' + pad(Math.floor(startMin / 60)) + ':' + pad(startMin % 60) + ':00+03:00';\n  const endISO = day.key + 'T' + pad(Math.floor(endMinT / 60)) + ':' + pad(endMinT % 60) + ':00+03:00';\n\n  results.push({\n    json: {\n      title: t.title || t.name || ('Gorev ' + (i + 1)),\n      summary: t.summary || '',\n      cognitiveLoad: t.cognitiveLoad || t.cognitive_load || 'medium',\n      day: day.key,\n      start: startISO,\n      end: endISO,\n      userId: merged.userId,\n      supabaseToken: merged.supabaseToken,\n      projectTitle: merged.taskTitle\n    }\n  });\n}\n\nreturn results;\n"
+        "jsCode": "// ── FocusAid — Görev Dağıtımı (rapor algoritması, mutlak-dakika zaman çizgisi) ──\n// AI Agent sadece görev + cognitive_load üretir; planlamayı burada yaparız.\nconst merged = $('Merge').first().json;\nconst aiRaw = $json.output || '{\"tasks\":[]}';\n\nlet parsed;\ntry { parsed = JSON.parse(aiRaw); }\ncatch (e) { throw new Error('AI Agent gecerli JSON dondurmedi: ' + String(aiRaw).slice(0, 300)); }\nconst rawTasks = Array.isArray(parsed) ? parsed : (parsed.tasks || []);\nif (rawTasks.length === 0) throw new Error('AI Agent hic gorev uretmedi');\n\nconst profile = merged.profile || {};\nconst workHours = profile.workHours || {};\nconst focusPeriod = profile.focusPeriod || 25;\nconst existingEvents = merged.existingEvents || [];\n\n// Mola süresi (dk): profil breakStyle'a göre, yoksa 15 dk (rapor: en az 15 dk ara)\nconst breakMap = { pomodoro: 5, 'long-break': 15, micro: 2, free: 0 };\nconst breakMinutes = (profile.breakMinutes != null) ? Number(profile.breakMinutes)\n  : (breakMap[profile.breakStyle] != null ? breakMap[profile.breakStyle] : 15);\nconst step = focusPeriod + breakMinutes;\n\nfunction pad(n) { return String(n).padStart(2, '0'); }\nfunction toMin(hhmm) { const p = String(hhmm).split(':').map(Number); return (p[0] || 0) * 60 + (p[1] || 0); }\nconst workStartMin = toMin(workHours.start || '09:00');\nconst workEndMinRaw = toMin(workHours.end || '18:00');\n// Gece yarisini asan pencere (ör. 20:00 -> 06:00): bitis <= baslangic ise pencere ertesi gune tasar.\nconst overnight = workEndMinRaw <= workStartMin;\nconst sessionDuration = overnight ? (1440 - workStartMin + workEndMinRaw) : (workEndMinRaw - workStartMin);\n\n// Istanbul (UTC+3) duvar saati — sunucu timezone'undan bağımsız\nconst IST = 3 * 3600 * 1000;\nfunction wall(iso) { return new Date(new Date(iso).getTime() + IST); }\n\nconst nowW = wall(merged.now || new Date().toISOString());\nconst deadW = wall(merged.deadline || merged.now);\n\n// epoch0: bugünün (yerel) gece yarısı — tüm zaman çizelgesi buradan itibaren TEK bir mutlak\n// dakika sayı doğrusu olarak tutulur. Bu sayede gece-aşan pencereler ve gün sınırları ayrı\n// özel-durum kodu gerektirmeden doğal biçimde çözülür.\nconst epoch0 = Date.UTC(nowW.getUTCFullYear(), nowW.getUTCMonth(), nowW.getUTCDate());\nfunction absMinOf(w) { return Math.round((w.getTime() - epoch0) / 60000); }\nfunction dateFromAbsMin(m) { return new Date(epoch0 + m * 60000); }\nfunction dayKeyFromAbsMin(m) { const d = dateFromAbsMin(m); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()); }\nfunction isoFromAbsMin(m) { const d = dateFromAbsMin(m); return d.getUTCFullYear() + '-' + pad(d.getUTCMonth() + 1) + '-' + pad(d.getUTCDate()) + 'T' + pad(d.getUTCHours()) + ':' + pad(d.getUTCMinutes()) + ':00+03:00'; }\n\nconst nowAbsMin = absMinOf(nowW);\nconst deadlineAbsMin = absMinOf(deadW);\n\n// 1) scheduledSlots — mevcut takvim etkinliklerinden dolu aralıklar (mutlak dakika ekseninde)\nconst occ = [];\nfunction reserve(a, b) { occ.push({ a, b }); }\nfunction isFree(a, b) { return !occ.some(o => a < o.b && b > o.a); }\nfor (const ev of existingEvents) {\n  const s = ev.start && (ev.start.dateTime || ev.start.date);\n  const e = ev.end && (ev.end.dateTime || ev.end.date);\n  if (!s || !e) continue;\n  reserve(absMinOf(wall(s)), absMinOf(wall(e)));\n}\n\n// 2) Her takvim gününde bir çalışma seansı: [gün_başı + workStart, +sessionDuration).\n//    Gece-aşan pencerede bu araligin sonu dogal olarak ertesi gune tasar (mutlak dakika sayesinde).\nconst LEAD_MIN = 15; // gorev en erken 15 dk sonra baslasin (bugunku ilk seans icin)\nconst sessions = [];\nfor (let dayOffset = 0; dayOffset <= 60; dayOffset++) {\n  const sessionStartAbs = dayOffset * 1440 + workStartMin;\n  if (sessionStartAbs > deadlineAbsMin) break;\n  const sessionEndAbs = sessionStartAbs + sessionDuration;\n  const effectiveEnd = Math.min(sessionEndAbs, deadlineAbsMin);\n  const effectiveStart = dayOffset === 0 ? Math.max(sessionStartAbs, nowAbsMin + LEAD_MIN) : sessionStartAbs;\n  if (effectiveStart + focusPeriod > effectiveEnd) continue; // bu seansta hic yer yok\n  sessions.push({ key: dayKeyFromAbsMin(sessionStartAbs), start: effectiveStart, end: effectiveEnd });\n}\nif (sessions.length === 0) {\n  const sessionStartAbs = 1440 + workStartMin; // deadline cok yakinsa/gecmisse: en azindan yarina bir seans ac\n  sessions.push({ key: dayKeyFromAbsMin(sessionStartAbs), start: sessionStartAbs, end: sessionStartAbs + sessionDuration });\n}\n\n// 3) maxPerDay + proportional dağıtım\nconst T = rawTasks.length;\nconst A = sessions.length;\nconst maxPerDay = Math.ceil(T / A);\nconst count = {};\nfunction findSlot(session) {\n  if ((count[session.key] || 0) >= maxPerDay) return null;\n  for (let m = session.start; m + focusPeriod <= session.end; m += step) {\n    if (isFree(m, m + focusPeriod)) return m;\n  }\n  return null;\n}\n\nconst results = [];\nfor (let i = 0; i < T; i++) {\n  const t = rawTasks[i] || {};\n  const targetIdx = A > 1 ? Math.round(i * (A - 1) / (T - 1)) : 0;\n\n  let session = null, startAbs = null;\n  let s = findSlot(sessions[targetIdx]);\n  if (s !== null) { session = sessions[targetIdx]; startAbs = s; }\n  for (let j = targetIdx + 1; session === null && j < A; j++) { const x = findSlot(sessions[j]); if (x !== null) { session = sessions[j]; startAbs = x; } }\n  for (let j = targetIdx - 1; session === null && j >= 0; j--) { const x = findSlot(sessions[j]); if (x !== null) { session = sessions[j]; startAbs = x; } }\n  if (session === null) { session = sessions[A - 1]; startAbs = session.start; } // taşma: son seansa zorla\n\n  reserve(startAbs, startAbs + focusPeriod);\n  count[session.key] = (count[session.key] || 0) + 1;\n\n  results.push({\n    json: {\n      title: t.title || t.name || ('Gorev ' + (i + 1)),\n      summary: t.summary || '',\n      cognitiveLoad: t.cognitiveLoad || t.cognitive_load || 'medium',\n      day: session.key,\n      start: isoFromAbsMin(startAbs),\n      end: isoFromAbsMin(startAbs + focusPeriod),\n      userId: merged.userId,\n      supabaseToken: merged.supabaseToken,\n      googleAccessToken: merged.googleAccessToken,\n      projectTitle: merged.taskTitle\n    }\n  });\n}\n\nreturn results;\n"
       }
     },
     {
       "id": "gcal-create",
       "name": "Create an event",
-      "type": "n8n-nodes-base.googleCalendar",
-      "typeVersion": 1.3,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
         1720,
         460
       ],
       "parameters": {
-        "resource": "event",
-        "operation": "create",
-        "calendar": {
-          "__rl": true,
-          "mode": "list",
-          "value": "primary",
-          "cachedResultName": "primary"
+        "method": "POST",
+        "url": "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+        "authentication": "none",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.googleAccessToken }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
         },
-        "start": "={{ $json.start }}",
-        "end": "={{ $json.end }}",
-        "useDefaultReminders": true,
-        "additionalFields": {
-          "summary": "={{ $json.title }}",
-          "description": "={{ $json.summary }}"
-        }
-      }
+        "sendBody": true,
+        "contentType": "json",
+        "specifyBody": "json",
+        "jsonBody": "={{ { summary: $json.title, description: $json.summary, start: { dateTime: $json.start, timeZone: 'Europe/Istanbul' }, end: { dateTime: $json.end, timeZone: 'Europe/Istanbul' } } }}",
+        "options": {}
+      },
+      "onError": "continueRegularOutput"
     },
     {
       "id": "code-prepare-supabase",

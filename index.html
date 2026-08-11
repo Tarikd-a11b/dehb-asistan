@@ -713,7 +713,7 @@ async function triggerN8N_Split() {
   if (btn) { btn.innerHTML = '⏳ Analiz Ediyor...'; btn.disabled = true; }
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
   try {
-    const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: profile, userId: currentUser?.id, supabaseToken: AppState.supabaseToken }) });
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: profile, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null }) });
     if (res.ok) { showToast('🧩 Görev parçalandı!', 'success'); AppState.calendar?.refetchEvents(); closeForm(); }
     else throw new Error('n8n ' + res.status);
   } catch(e) { showToast('❌ n8n ulaşılamadı. Webhook açık mı?', 'error'); }
@@ -735,7 +735,7 @@ async function sendTaskToN8N() {
   try {
     const reqEl = document.getElementById('task-requirements');
     const requirements = typeof parseRequirements === 'function' ? parseRequirements(reqEl?.value) : [];
-    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis', breakStyle: profile.breakStyle ?? 'long-break' } }) });
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis', breakStyle: profile.breakStyle ?? 'long-break' } }) });
     if (!res.ok) throw new Error('n8n ' + res.status);
     const result = await res.json().catch(() => ({}));
     addMessageToChat(`✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.<br><br>🎯 <b>İlk adım:</b><br>"<i>${result.firstStep || 'İlk mikro görevin takviminde hazır!'}</i>"`, 'ai');
