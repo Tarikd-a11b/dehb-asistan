@@ -13,8 +13,9 @@ değil. Supabase PKCE akışı, girişin başladığı origin'de bitmesini bekli
 """
 import http.server
 import socketserver
+import os
 
-PORT = 3000
+PORT = int(os.environ.get('PORT', 3000))
 
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
