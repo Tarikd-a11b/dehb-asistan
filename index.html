@@ -722,8 +722,8 @@ async function openDayView(dateStr) {
       .from('tasks')
       .select('*')
       .eq('user_id', currentUser?.id)
-      .eq('scheduled_date', dateStr)
-      .order('scheduled_start_time', { ascending: true });
+      .eq('day', dateStr)
+      .order('start_time', { ascending: true });
 
     if (error) throw error;
 
@@ -734,10 +734,11 @@ async function openDayView(dateStr) {
 
     // Görevleri listele
     tasksList.innerHTML = data.map(task => {
-      const start = task.scheduled_start_time || '--:--';
-      const end = task.scheduled_end_time || '--:--';
-      const statusColor = task.status === 'completed' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700';
-      const statusText = task.status === 'completed' ? '✓ Tamamlandı' : task.status === 'in_progress' ? '⏱️ Devam Ediyor' : '⏳ Bekleniyor';
+      const start = task.start_time ? new Date(task.start_time).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) : '--:--';
+      const end = task.end_time ? new Date(task.end_time).toLocaleTimeString('tr-TR', {hour: '2-digit', minute: '2-digit'}) : '--:--';
+      const isCompleted = task.completed === true;
+      const statusColor = isCompleted ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700';
+      const statusText = isCompleted ? '✓ Tamamlandı' : '⏳ Bekleniyor';
 
       return `
         <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all">
@@ -757,7 +758,11 @@ async function openDayView(dateStr) {
     }).join('');
   } catch (err) {
     console.error('Görevler yüklenemedi:', err);
-    tasksList.innerHTML = '<div class="text-center text-red-500 py-8">❌ Görevler yüklenemedii. Tekrar dene.</div>';
+    console.error('User ID:', currentUser?.id, 'Date:', dateStr);
+    console.error('Supabase client:', window.supabaseClient ? 'OK' : 'NULL');
+    const errMsg = err?.message || err?.details || err?.error_description || err?.hint || (typeof err === 'string' ? err : 'Bilinmeyen hata');
+    console.error('Error message:', errMsg);
+    tasksList.innerHTML = `<div class="text-center text-red-500 py-8">❌ ${errMsg}</div>`;
   }
 }
 
