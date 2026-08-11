@@ -8,7 +8,7 @@ listelenir.
 n8n (yerel, `localhost:5678`). Build adımı yok, paket yöneticisi yok — dosyalar doğrudan servis edilir.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-07-27.
+Son güncelleme: 2026-08-11.
 
 ---
 
@@ -78,6 +78,15 @@ değiştir, en son köprüyü sil.
 dahil tüm async iş bitince ateşlendiği için yönlendirme döngüsünü engeller. Oturum yoksa `auth.html`'e
 gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup teşhis ekranı basar
 (`gosterOturumTeshisi()`), tarayıcıda bounce eden bir sayfayı incelemek zor olduğu için.
+
+## Bilinen Sorunlar
+
+- **Takvim ay/hafta görünümünde event başlıkları görülmüyor.** Supabase'ten 109+ görev yükleniyor ve
+  day-view modal'ında başlıklar doğru görülüyor, ama month/week görünümünde "Görev" yazılı kutular 
+  olarak gösterilmiyor (FullCalendar CSS compact rendering). Çözüm: `.fc-event-title` stilini 
+  override'lamak veya `eventContent` render function'ını kullanmak.
+- **Tasks tablosu title kolonu.** n8n workflow'unda title'ı nasıl yazıldığı kontrol edilmedi; 
+  description'a yazılıyor olabilir.
 
 ## Tuzaklar
 
