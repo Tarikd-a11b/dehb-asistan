@@ -7,8 +7,12 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="config.js"></script>
+<script>
+// Supabase kliyentini başlat ve window'a attach et
+window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_URL, FOCUSAID_CONFIG.SUPABASE_ANON_KEY);
+</script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
 <script src="tasks-logic.js"></script>
 <script src="tasks-view.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
@@ -105,6 +109,27 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
     <div>
       <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">Ajanda ve Planlar</h2>
       <p class="text-slate-500 italic mt-1">n8n tarafından parçalanmış görevlerini burada yönetebilirsin.</p>
+    </div>
+  </div>
+  <!-- Gün Detayları Modal -->
+  <div id="day-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 animate-slide-in" onclick="closeDayModal(event)">
+    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 animate-slide-in" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-start mb-8">
+        <div>
+          <p class="text-indigo-600 font-bold text-sm uppercase tracking-widest mb-2">Seçilen Gün</p>
+          <h2 id="day-modal-date" class="text-3xl font-bold text-slate-900">-</h2>
+        </div>
+        <button onclick="closeDayModal()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div id="day-tasks-list" class="space-y-4">
+        <div class="text-center text-slate-400 py-8">Yükleniyor...</div>
+      </div>
+      <div class="mt-8 pt-6 border-t border-slate-200 flex gap-3">
+        <button onclick="closeDayModal()" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all">Kapat</button>
+        <button onclick="openNewTaskForDay()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ Yeni Görev</button>
+      </div>
     </div>
   </div>
   <div class="flex flex-col xl:flex-row gap-10">
@@ -628,7 +653,7 @@ function initCalendar() {
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
     height: 'auto', aspectRatio: 1.9,
     selectable: true, editable: true,
-    dateClick(info) { openTaskForm(info.dateStr); },
+    dateClick(info) { openDayView(info.dateStr); },
     eventClick(info) { openTaskForm(info.event.startStr.split('T')[0], info.event); },
     events: async (info, successCb, failureCb) => {
       try {
@@ -674,6 +699,83 @@ function openTaskForm(date, ev = null) {
   document.getElementById('task-title')?.focus();
 }
 function closeForm() { document.getElementById('task-form-panel')?.classList.add('hidden'); }
+
+// ── GÜN DETAYLARI MODAL ──
+async function openDayView(dateStr) {
+  const modal = document.getElementById('day-modal');
+  const dateEl = document.getElementById('day-modal-date');
+  const tasksList = document.getElementById('day-tasks-list');
+  if (!modal || !dateEl || !tasksList) return;
+
+  // Tarihi güzel format'la
+  const date = new Date(dateStr + 'T00:00:00');
+  const formatter = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  dateEl.textContent = formatter.format(date);
+
+  // Yükleniyor göster
+  tasksList.innerHTML = '<div class="text-center text-slate-400 py-8">Görevler yükleniyor...</div>';
+  modal.classList.remove('hidden');
+
+  try {
+    // Supabase'ten o günün görevlerini çek
+    const { data, error } = await window.supabaseClient
+      .from('tasks')
+      .select('*')
+      .eq('user_id', currentUser?.id)
+      .eq('scheduled_date', dateStr)
+      .order('scheduled_start_time', { ascending: true });
+
+    if (error) throw error;
+
+    if (!data || data.length === 0) {
+      tasksList.innerHTML = '<div class="text-center text-slate-400 py-8">📭 Bu gün için görev yok</div>';
+      return;
+    }
+
+    // Görevleri listele
+    tasksList.innerHTML = data.map(task => {
+      const start = task.scheduled_start_time || '--:--';
+      const end = task.scheduled_end_time || '--:--';
+      const statusColor = task.status === 'completed' ? 'bg-green-100 text-green-700' : task.status === 'in_progress' ? 'bg-blue-100 text-blue-700' : 'bg-yellow-100 text-yellow-700';
+      const statusText = task.status === 'completed' ? '✓ Tamamlandı' : task.status === 'in_progress' ? '⏱️ Devam Ediyor' : '⏳ Bekleniyor';
+
+      return `
+        <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all">
+          <div class="flex justify-between items-start gap-4 mb-3">
+            <div class="flex-1">
+              <h4 class="font-bold text-slate-900 text-lg">${task.name || task.title || 'Görev'}</h4>
+              <p class="text-sm text-slate-600 mt-1">${task.description || ''}</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${statusColor}">${statusText}</span>
+          </div>
+          <div class="flex gap-4 items-center text-sm">
+            <span class="font-mono font-semibold text-indigo-600">🕐 ${start} - ${end}</span>
+            ${task.cognitive_load ? `<span class="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold">Yoğunluk: ${task.cognitive_load}</span>` : ''}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    console.error('Görevler yüklenemedi:', err);
+    tasksList.innerHTML = '<div class="text-center text-red-500 py-8">❌ Görevler yüklenemedii. Tekrar dene.</div>';
+  }
+}
+
+function closeDayModal(event) {
+  if (event && event.target.id !== 'day-modal') return; // Sadece arka plana tıklanırsa kapat
+  document.getElementById('day-modal')?.classList.add('hidden');
+}
+
+function openNewTaskForDay() {
+  const dateStr = document.getElementById('day-modal-date')?.textContent;
+  if (!dateStr) return;
+  // Tarihi YYYY-MM-DD format'ına çevir
+  const date = new Date(dateStr);
+  const dateInput = date.toISOString().split('T')[0];
+  closeDayModal();
+  openTaskForm(dateInput);
+}
+
 function updateEndTime() {
   const s = document.getElementById('task-start')?.value;
   if (!s) return;
