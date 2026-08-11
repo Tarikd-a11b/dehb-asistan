@@ -46,7 +46,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 .fc-daygrid-day.fc-day-today{background-color:rgba(99,102,241,.05)!important}
 .fc-col-header-cell{padding:12px 0!important;text-transform:uppercase;font-size:.7rem;letter-spacing:.1em;color:#94a3b8}
 .fc-daygrid-day-number{font-weight:600;color:#475569;padding:10px!important}
-.fc-event{cursor:pointer;border-radius:8px!important;padding:2px 6px!important}
+.fc-event{cursor:pointer;border-radius:8px!important;padding:4px 6px!important;font-size:0.8rem!important;line-height:1.3!important;overflow:visible!important}
+.fc-event-title{display:block!important;font-weight:600!important;padding:0 2px!important;white-space:normal!important}
+.fc-daygrid-day-frame{min-height:100px!important}
 /* ── DEHB Dostu Profil Stilleri ── */
 .adhd-hero-header{background:linear-gradient(135deg,#7c3aed 0%,#4f46e5 50%,#0d9488 100%);position:relative;overflow:hidden}
 .hero-blob-1{position:absolute;top:-60px;right:-60px;width:250px;height:250px;background:rgba(255,255,255,.08);border-radius:50%;pointer-events:none}
@@ -657,24 +659,63 @@ function initCalendar() {
     eventClick(info) { openTaskForm(info.event.startStr.split('T')[0], info.event); },
     events: async (info, successCb, failureCb) => {
       try {
-        if (!AppState.gapiReady || !AppState.googleAccessToken) { successCb([]); return; }
-        gapi.client.setToken({ access_token: AppState.googleAccessToken });
-        const resp = await gapi.client.calendar.events.list({
-          calendarId: 'primary',
-          timeMin: info.startStr,
-          timeMax: info.endStr,
-          singleEvents: true,
-          orderBy: 'startTime'
-        });
-        successCb((resp.result.items || []).map(ev => ({
-          id: ev.id,
-          title: ev.summary || 'Görev',
-          start: ev.start?.dateTime || ev.start?.date,
-          end: ev.end?.dateTime || ev.end?.date,
-          extendedProps: { description: ev.description || '' },
-          backgroundColor: (ev.summary || '').includes('Mola') ? '#10b981' : '#6366f1',
-          borderColor: 'transparent'
-        })));
+        const events = [];
+        const startDate = info.startStr.split('T')[0];
+        const endDate = info.endStr.split('T')[0];
+
+        // 1. Supabase'den tasks'ı çek
+        try {
+          const { data: tasks, error: tasksError } = await window.supabaseClient
+            .from('tasks')
+            .select('*')
+            .eq('user_id', currentUser?.id)
+            .gte('day', startDate)
+            .lte('day', endDate);
+
+          if (!tasksError && tasks) {
+            events.push(...tasks.map(task => ({
+              id: `task-${task.id}`,
+              title: task.title || 'Görev',
+              start: task.start_time,
+              end: task.end_time,
+              extendedProps: {
+                description: task.description || '',
+                cognitive_load: task.cognitive_load || 'Orta'
+              },
+              backgroundColor: task.completed ? '#94a3b8' : '#6366f1',
+              borderColor: 'transparent'
+            })));
+            console.log(`[Takvim] Supabase'den ${tasks.length} görev yüklendi`, tasks.slice(0,3).map(t => ({title: t.title, id: t.id, day: t.day, start_time: t.start_time})));
+          }
+        } catch(e) { console.warn('[Takvim] Supabase tasks yüklenemedi:', e); }
+
+        // 2. Google Calendar'dan events'ı çek
+        if (AppState.gapiReady && AppState.googleAccessToken) {
+          try {
+            gapi.client.setToken({ access_token: AppState.googleAccessToken });
+            const resp = await gapi.client.calendar.events.list({
+              calendarId: 'primary',
+              timeMin: info.startStr,
+              timeMax: info.endStr,
+              singleEvents: true,
+              orderBy: 'startTime'
+            });
+            if (resp.result.items) {
+              events.push(...(resp.result.items || []).map(ev => ({
+                id: ev.id,
+                title: ev.summary || 'Görev',
+                start: ev.start?.dateTime || ev.start?.date,
+                end: ev.end?.dateTime || ev.end?.date,
+                extendedProps: { description: ev.description || '' },
+                backgroundColor: (ev.summary || '').includes('Mola') ? '#10b981' : '#8b5cf6',
+                borderColor: 'transparent'
+              })));
+              console.log(`[Takvim] Google Calendar'dan ${resp.result.items.length} etkinlik yüklendi`);
+            }
+          } catch(e) { console.warn('[Takvim] Google Calendar events yüklenemedi:', e); }
+        }
+
+        successCb(events);
       } catch(e) { console.error('Takvim etkinlikleri yüklenemedi:', e); failureCb(e); }
     }
   });
