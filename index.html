@@ -20,6 +20,7 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="doc-intake.js"></script>
 <script src="https://apis.google.com/js/api.js" defer onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" defer onload="gisLoaded()"></script>
+<script src="dehb-info.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
 :root{--indigo-main:#6366f1;--indigo-glow:rgba(99,102,241,0.15);--mint-success:#10b981;--slate-bg:#f8fafc;--glass-white:rgba(255,255,255,0.85);--border-light:rgba(226,232,240,0.8)}
@@ -64,6 +65,59 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 .energy-radio-option{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;background:#f8fafc;border-radius:.75rem;cursor:pointer;transition:all .2s ease;font-size:.875rem;font-weight:500}
 .energy-radio-option:hover{background:#f0fdf4;transform:translateX(4px)}
 .save-btn{box-shadow:0 20px 40px -12px rgba(124,58,237,.4)}.save-btn:hover{box-shadow:0 25px 50px -12px rgba(124,58,237,.5)}
+/* ── DEHB Bilgilendirme Platform Stilleri ── */
+
+.dehb-nav-item {
+  /* Mevcut .sidebar-item class'ından inherit ediyor, ek özellikler: */
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+  color: #64748b;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.dehb-nav-item:hover {
+  background-color: #f1f5f9;
+  transform: translateX(4px);
+}
+
+.dehb-nav-item.active-link {
+  background-color: #eef2ff !important;
+  color: #4f46e5 !important;
+  font-weight: 700;
+  border-color: #c7d2fe;
+  box-shadow: 0 2px 8px rgba(99,102,241,.12);
+}
+
+.dehb-content {
+  display: block;
+  animation: fadeInUp 0.3s ease-in-out;
+}
+
+.dehb-content.hidden {
+  display: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive: Mobile'da mini nav-bar yatay olması (sonra yapılacak) */
+@media (max-width: 768px) {
+  /* TODO: Mini nav-bar horizontal tab'a dönüşsün */
+}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -393,6 +447,429 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 </template>
 
 <!-- ════════════════════════════════════════
+     DEHB Bilgilendirme Platformu
+     ════════════════════════════════════════ -->
+
+<template id="tpl-dehb-info">
+<div class="animate-slide-in max-w-6xl mx-auto pb-10">
+
+  <!-- Başlık -->
+  <div class="mb-8">
+    <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">DEHB Bilgilendirme</h2>
+    <p class="text-slate-500 italic mt-1">Kendini anlamaya başla</p>
+  </div>
+
+  <!-- İçerik Container (Mini Nav + Bölümler) -->
+  <div class="flex gap-8">
+
+    <!-- Mini Nav-Bar (Sol, Sabit) -->
+    <nav class="w-52 flex-shrink-0 space-y-2">
+      <button onclick="showDehbSection('nedir')" id="dehb-nav-nedir"
+        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
+        🧠 DEHB Nedir?
+      </button>
+      <button onclick="showDehbSection('belirtiler')" id="dehb-nav-belirtiler"
+        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
+        ⚡ Belirtiler
+      </button>
+      <button onclick="showDehbSection('stratejiler')" id="dehb-nav-stratejiler"
+        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
+        💡 Başa Çıkma
+      </button>
+      <button onclick="showDehbSection('yasam')" id="dehb-nav-yasam"
+        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
+        🌙 Yaşam İpuçları
+      </button>
+      <button onclick="showDehbSection('kaynaklar')" id="dehb-nav-kaynaklar"
+        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
+        🔗 Kaynaklar
+      </button>
+    </nav>
+
+    <!-- İçerik Alanı (Sağ) -->
+    <div class="flex-1 space-y-6">
+
+      <!-- Bölüm 1: DEHB Nedir? -->
+      <div id="dehb-section-nedir" class="dehb-content">
+  <div class="space-y-6">
+
+    <div class="glass-card p-6">
+      <h3 class="text-2xl font-bold text-slate-900 mb-4">🧠 DEHB Nedir?</h3>
+
+      <p class="text-slate-700 mb-4 leading-relaxed">
+        DEHB (Dikkat Eksikliği Hiperaktivite Bozukluğu), beynin dopamin ve
+        noradrenalin adlı kimyasallarında dengesizlik yaratan nörogelişimsel
+        bir tablodur. Genetik temellidir ve yaşam boyu sürebilir.
+      </p>
+
+      <div class="space-y-3 text-slate-700">
+        <p class="flex gap-2"><span class="text-lg">✓</span><span><strong>Genetik temellidir</strong> — Kalıtım oranı %76 (çok yüksek)</span></p>
+        <p class="flex gap-2"><span class="text-lg">✓</span><span><strong>Çocuklukta başlayıp yaşlılığa devam eder</strong> — Geçici değil, kronik</span></p>
+        <p class="flex gap-2"><span class="text-lg">✓</span><span><strong>Hiperaktif görünmeyenler de DEHB'li olabilir</strong> — 3 farklı sunum şekli var</span></p>
+      </div>
+    </div>
+
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">📊 Yaygınlığı</h4>
+
+      <div class="grid grid-cols-2 gap-4 text-sm">
+        <div class="bg-indigo-50 p-4 rounded-lg">
+          <p class="font-bold text-indigo-900">Çocuklarda</p>
+          <p class="text-indigo-700">%3 - %7</p>
+        </div>
+        <div class="bg-emerald-50 p-4 rounded-lg">
+          <p class="font-bold text-emerald-900">Yetişkinlerde</p>
+          <p class="text-emerald-700">%2 - %3</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="glass-card p-6 border-l-4 border-purple-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-3">💭 Sosyal Yargı Sorunu</h4>
+      <p class="text-slate-700 text-sm">
+        DEHB genellikle "tembellik", "disiplin sorunu" veya "kötü parenting" sonucu
+        olarak yanlış algılanır. Oysa beyin yapısından kaynaklanan, tıbbi bir tablodur.
+        Tanı ve tedavi mümkündür.
+      </p>
+    </div>
+
+  </div>
+      </div>
+
+      <!-- Bölüm 2: Belirtiler -->
+      <div id="dehb-section-belirtiler" class="dehb-content">
+  <div class="space-y-6">
+
+    <h3 class="text-2xl font-bold text-slate-900">⚡ DEHB'ye Özgü Belirtiler</h3>
+
+    <!-- 1. Zamansal Miyopi -->
+    <div class="glass-card p-6 border-t-4 border-purple-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">1️⃣ Zamansal Miyopi (Zaman Kavramı Kaybı)</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? Prefrontal korteks (karar merkezi) dopamin eksikliğinden zayıf çalışıyor. Sadece "şimdi" görülüyor.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>"Zaman nasıl geçti?" — 1 saat sanmışken 5 saat olmuş</span></p>
+        <p class="flex gap-2"><span>•</span> <span>İşi bitişinde planlamama → "Son dakika ölüsü"</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Aciliyet hissi olmadan işler kayıp gidiyor</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Randevu ve teslimatları unutma</span></p>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-3 rounded">
+        <strong>Günlük İmpakt:</strong> Dersin anında başlayan ödev kaygısı, sahte aciliyet, son anında panic
+      </p>
+    </div>
+
+    <!-- 2. Zihin Oryantasyon Kaybı -->
+    <div class="glass-card p-6 border-t-4 border-blue-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">2️⃣ Zihin Oryantasyon Kaybı (Varsayılan Mod Ağında Takılma)</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? Beynin "daydream modu" görev sırasında kapanmıyor. Düşünceler, anılar, endişeler araya giriyor.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Sınıfta "orada olanlar ama burada değilim" hissi</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Başlamış okumayı anımsamama (sayfalar geçtikten sonra)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>"Huh? Ne dedin?" — ses duyuyor ama anlam kapmıyor</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Pencereyi/tavana bakma, düşünmeye dalmak</span></p>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-3 rounded">
+        <strong>Tıbbi Adı:</strong> Sluggish Cognitive Tempo (SCT) / Zihinsel Ajitasyon
+      </p>
+    </div>
+
+    <!-- 3. Tepki İnhibisyonu Yetersizliği -->
+    <div class="glass-card p-6 border-t-4 border-red-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">3️⃣ Tepki İnhibisyonu Yetersizliği (Frenleme Gücü Düşüklüğü)</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? Sağ prefrontal korteks (durabilme merkezi) dopamin eksikliği. Dürtü "fil gibi şarj" yapıyor, stop komutu gelmemiş gibi.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Sorgusuz kararlar ("İyi fikir miydi?" sonra dönem)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Telefona şarj olmadan el atış, impulsif satın almalar</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Ders anında konuşmaya başlama (sırasını beklememe)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Öfke patlaması (duygusal tepkiler filtresiz)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Riskli davranış (trafik, harika ama saçma fikirler)</span></p>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-3 rounded">
+        <strong>Yetişkinlikte:</strong> Hiperaktivite "içsel huzursuzluğa" dönüşür — motor hareket yerine "yerinde duramama hissi"
+      </p>
+    </div>
+
+    <!-- 4. Yürütücü İşlev Bozukluğu -->
+    <div class="glass-card p-6 border-t-4 border-amber-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">4️⃣ Yürütücü İşlev Bozukluğu (6 Sistem Arızası)</h4>
+      <p class="text-sm text-slate-600 mb-4 italic">Neden? Prefrontal kortekin "yönetim sistemi" dopamin yetersizliğinden 6 modülde aynı anda çalışmıyor.</p>
+
+      <div class="space-y-3">
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Aktivasyon (Başlangıç)</p>
+          <p class="text-xs text-slate-600">Çalışmaya başlamak imkansız • Uyarı olmadan hareket imkansız • Erteleme</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Odaklanma (Dikkat Tutma)</p>
+          <p class="text-xs text-slate-600">Başladığı işi kurtaramama • Her titrek ses/görüntüye dalga • Birden sıçrama</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Çaba (Enerji Devamlılığı)</p>
+          <p class="text-xs text-slate-600">Kolay işler olsa da tükenmişlik • Kronik yorgunluk (anlaşılmayan)</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Duygu Yönetimi (Emosyonel Freyn Yok)</p>
+          <p class="text-xs text-slate-600">Duygular hayatı idare ediyor • Reddedilme aşırı ağır • Üzüntü → Öfke geçişi hızlı</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Bellek (Çalışma Belleğinde Sorunu)</p>
+          <p class="text-xs text-slate-600">Talimat dinleme ama unutma • Daha fazla bilgi → "Kafamda yerler yerleri yer almıyor"</p>
+        </div>
+        <div class="bg-slate-50 p-3 rounded">
+          <p class="font-semibold text-slate-900 text-sm mb-1">✗ Eylem (Planlama & Sıralama)</p>
+          <p class="text-xs text-slate-600">Büyük görev "kara delik" gibi görünüyor • Neyi ne zaman yapacağı belli değil</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Emosyonel Dysregülasyon -->
+    <div class="glass-card p-6 border-t-4 border-pink-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">5️⃣ Emosyonel Dysregülasyon (Duygular Amplifier)</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? DEHB'de dopamin ağları sosyal ödülü "amplify" ediyor. Duygusal tepkiler 1 değil 10 seviyesinde hissediliyor.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Küçük olumsuzluk → gün boyunca "depresyon"</span></p>
+        <p class="flex gap-2"><span>•</span> <span>"Kimse beni sevmiyor" (bir kişi cevap vermediğinde)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Başarı → aşırı euphoria ve overconfidence</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Başarısızlık → kendini suçlama ve öz-saygı krizi</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Ağlama/öfke atmaları anlık ve yoğun</span></p>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-3 rounded">
+        <strong>Tıbbi Adı:</strong> Rejection Sensitive Dysphoria (RSD) / Reddedilme Hassasiyeti
+      </p>
+    </div>
+
+    <!-- 6. Sosyal İşlev Sorunu -->
+    <div class="glass-card p-6 border-t-4 border-teal-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">6️⃣ Sosyal İşlev Sorunu</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? Prefrontal-limbik bağlantı zayıf → sosyal ipuçları, mimikler anında kaçıyor.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Konuşma sırasını kaçırma, söz kesme</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Sosyal ipuçlarını kaçırma ("Anladı mı?" sezemiyor)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Mühimiyeti eksik taşlama → arkadaşlığa zarar verme</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Konuşma süresi kontrolü → monolog yapma</span></p>
+        <p class="flex gap-2"><span>•</span> <span>"Niye kızgın?" — sinyali almama</span></p>
+      </div>
+    </div>
+
+    <!-- 7. Unutkanlık -->
+    <div class="glass-card p-6 border-t-4 border-cyan-500">
+      <h4 class="text-lg font-bold text-slate-900 mb-2">7️⃣ Unutkanlık & Çalışma Belleği (Not Tutuşu)</h4>
+      <p class="text-sm text-slate-600 mb-3 italic">Neden? Prefrontal beyin anlık bilgiyi "tutuşturamıyor" — hafıza kapatılıyor.</p>
+
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Talimat dinleme ama unutma</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Araçlık (anahtarları, telefonu nereye koydum?)</span></p>
+        <p class="flex gap-2"><span>•</span> <span>İsim/yüz tanıma ama adı yok</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Listeleri yazıp unutma</span></p>
+      </div>
+
+      <p class="text-xs text-slate-500 mt-3 bg-slate-50 p-3 rounded">
+        <strong>Fark:</strong> Bellek kusuru değil, <strong>kurma hatası</strong> (encoding failure)
+      </p>
+    </div>
+
+    <!-- DEHB'nin 3 Türü -->
+    <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🎯 DEHB'nin 3 Türü (Sunum Tipleri)</h4>
+
+      <div class="space-y-4">
+        <div class="bg-white p-4 rounded-lg border-l-4 border-orange-500">
+          <p class="font-bold text-slate-900 text-sm mb-2">Tip 1: Hiperaktif-Dürtüsel (20-30%)</p>
+          <p class="text-xs text-slate-600 mb-2">Hiperaktivite ön planda • Söz kesme, sırasını beklememe • Riskli davranış</p>
+          <p class="text-xs text-indigo-600 font-semibold">✓ Avantajı: Fark edilmesi kolay | ✗ Dezavantajı: "Disiplin sorunu" yanlış etiketi</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border-l-4 border-red-500">
+          <p class="font-bold text-slate-900 text-sm mb-2">Tip 2: Dikkat Eksikliği Baskın (30-40%) ⚠️ EN ÇOK KAÇIRILAN</p>
+          <p class="text-xs text-slate-600 mb-2">"Sessiz DEHB" • Zihin gezintisi • Okuduğunu anımsamama • Yavaş işlem</p>
+          <p class="text-xs text-red-600 font-semibold">✓ Avantajı: "İyi çocuk" | ✗ Dezavantajı: Tanı 10+ yıl gecikilir — KIZ ÇOCUKLARINDA ÖZELLİKLE</p>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border-l-4 border-emerald-500">
+          <p class="font-bold text-slate-900 text-sm mb-2">Tip 3: Kombine (40-50%) — EN YAYGINI</p>
+          <p class="text-xs text-slate-600 mb-2">Her iki tipin belirtileri eş zamanlı • Dürtüsellik + zihin gezintisi • Emosyonel dysregülasyon yüksek</p>
+          <p class="text-xs text-emerald-600 font-semibold">✓ "Tipik DEHB" profili | ✗ Yine de çoğu kaçırılıyor</p>
+        </div>
+      </div>
+
+      <p class="text-xs text-slate-600 mt-4 p-3 bg-yellow-50 rounded border border-yellow-200">
+        <strong>❓ Kendini tanıyor musun?</strong> Hangi tipe yakın gibi hissediyorsan, bir uzmanla konuş.
+        DEHB'nin tüm türleri tedavi edilebiliyor — tanı ilk adım!
+      </p>
+    </div>
+
+  </div>
+      </div>
+
+      <!-- Bölüm 3: Başa Çıkma Stratejileri -->
+      <div id="dehb-section-stratejiler" class="dehb-content">
+  <div class="space-y-6">
+
+    <h3 class="text-2xl font-bold text-slate-900">💡 Dikkat Desteği Stratejileri</h3>
+    <p class="text-slate-600 text-sm">DEHB'li bireyler farklı dikkat değiştiricilerine yanıt veriyor. Hangilerinin sende çalıştığını bulmak işin başı.</p>
+
+    <!-- Görsel Desteği -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🎯 Görsel Desteği</h4>
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Renkli not tutma — her konu farklı renk</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Görevleri yazılı tutmak — beynin tutamayacağı bilgiler görsel hale</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Timer ve görsel reminders — sayfa arka planında alarm saati</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Post-it'ler, diyagramlar — yazı değil görsel bilgi</span></p>
+      </div>
+    </div>
+
+    <!-- İşitsel Desteği -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🔊 İşitsel Desteği</h4>
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Müzik/white noise ile çalışma — beynin arka plana ses koyması dikkati artırabiliyor</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Kendine yüksek sesle talimat verme — bilinç seviyesine getirme</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Podcast, audiobook — okumanın yerine dinleme</span></p>
+      </div>
+    </div>
+
+    <!-- Bedensel Desteği -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">💪 Bedensel Desteği</h4>
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span>Hareket ederek çalışma — otururken değil, ayakta dolaşa dolaşa çalış</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Yer değiştirerek görev yapma — farklı mekanlarda farklı faaliyetler</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Sporla prefrontal dopamin artışı — 20 dakika yürüyüş/çalışma öncesi</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Stress ball, fidget toy — ellerine vermesi, parmaklara iş vermesi</span></p>
+      </div>
+    </div>
+
+    <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 text-sm text-slate-700">
+      <p><strong>🔑 Anahtar Bulgusu:</strong> DEHB'li bireyler aynı dikkat müşfisi ile çalışmıyorlar. Hangisinin sende çalıştığını bulmak için deneyimleme gerekli — 1-2 hafta bir stratejiyi deneyin.</p>
+    </div>
+
+  </div>
+      </div>
+
+      <!-- Bölüm 4: Yaşam İpuçları -->
+      <div id="dehb-section-yasam" class="dehb-content">
+  <div class="space-y-6">
+
+    <h3 class="text-2xl font-bold text-slate-900">🌙 Günlük Yaşamda İpuçları</h3>
+
+    <!-- Uyku & Beslenme -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🛏️ Uyku & Beslenme</h4>
+      <div class="space-y-3 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span><strong>Düzenli uyku rutini kritik</strong> — DEHB'liler uyku problemi yaşarlar (2 saat gecikme). Hergün saatte uyunan/uyanma şart</span></p>
+        <p class="flex gap-2"><span>•</span> <span><strong>Kafein denge gerekli</strong> — Çoğu DEHB'li kahve sevir, ama fazlası stres artırır. Sabah 1-2 fincan uygun</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Proteince zengin kahvaltı — kan şekeri dengeli → dopamin dengeli</span></p>
+      </div>
+    </div>
+
+    <!-- Sosyalleştirme & İlişkiler -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">👥 Sosyalleştirme & İlişkiler</h4>
+      <div class="space-y-3 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span><strong>Reddedilme hassasiyeti yüksek</strong> — DEHB'liler duygusal tepkileri güçlü. Birinin seni reddetmesi günü karartabiliyor. Normal değil, DEHB'nin bir parçası</span></p>
+        <p class="flex gap-2"><span>•</span> <span><strong>Açık iletişim, uyarı</strong> — Çevrene söyle: "Kızgın gibi görünüyorum ama aslında dürtüsellik" veya "Zaman kaybıyorum, hatırlatma gerek"</span></p>
+        <p class="flex gap-2"><span>•</span> <span>Sınırlar koy — söz hakkını koru, aksi takdirde söz kesilmeye alışıyor</span></p>
+      </div>
+    </div>
+
+    <!-- İşbirliği & Çalışma -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">💼 İşbirliği & Çalışma</h4>
+      <div class="space-y-3 text-slate-700 text-sm">
+        <p class="flex gap-2"><span>•</span> <span><strong>Yapılandırılmış ortamlar</strong> — Kaos değil, düzen. Clear, predictable çalışma ortamı</span></p>
+        <p class="flex gap-2"><span>•</span> <span><strong>Belirli kurallar ve zaman yönetimi</strong> — "Şu saatten sonra çalışmıyoruz" kuralları dopamin sistem'i stabilize ediyor</span></p>
+        <p class="flex gap-2"><span>•</span> <span><strong>Sık geribildirim sistemi</strong> — "İyi mi gidiyor?" sık sık söyleme. Dopamin eksikliği → geribildirim açlığı</span></p>
+      </div>
+    </div>
+
+  </div>
+      </div>
+
+      <!-- Bölüm 5: Harici Kaynaklar -->
+      <div id="dehb-section-kaynaklar" class="dehb-content">
+  <div class="space-y-6">
+
+    <h3 class="text-2xl font-bold text-slate-900">🔗 Daha Fazla Bilgi İçin</h3>
+
+    <!-- Uluslararası Kaynaklar -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🌍 Uluslararası Kaynaklar</h4>
+      <div class="space-y-3 text-sm">
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://chadd.org" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            CHADD.org
+          </a>
+          <span class="text-slate-600"> (Children and Adults with ADHD) — En kapsamlı kaynak, resmi organizasyon</span>
+        </p>
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://www.adhd.org" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            ADHD.org
+          </a>
+          <span class="text-slate-600"> (ADHD Association) — Güncel araştırmalar, haberler</span>
+        </p>
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://www.russellbarkley.org" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            Russell Barkley Videos
+          </a>
+          <span class="text-slate-600"> — Bilimsel derinlik, "Understanding ADHD" serileri</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Türkçe Kaynaklar -->
+    <div class="glass-card p-6">
+      <h4 class="text-lg font-bold text-slate-900 mb-4">🇹🇷 Türkçe Kaynaklar</h4>
+      <div class="space-y-3 text-sm">
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://psikiyatri.org.tr" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            Türkiye Psikiyatri Derneği
+          </a>
+          <span class="text-slate-600"> — Resmi bilgi, tanı-tedavi rehberleri</span>
+        </p>
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://bengisemerci.com" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            Prof. Dr. Bengi Semerci
+          </a>
+          <span class="text-slate-600"> — Popüler bilim yazıları, DEHB derinliği</span>
+        </p>
+        <p class="flex gap-2"><span>→</span>
+          <a href="https://dergipark.org.tr" target="_blank" class="text-indigo-600 hover:underline font-semibold">
+            DergiPark
+          </a>
+          <span class="text-slate-600"> — Bilimsel makaleler (türkçe), araştırma kaynakları</span>
+        </p>
+      </div>
+    </div>
+
+    <!-- Önemli Not -->
+    <div class="bg-yellow-50 border-l-4 border-yellow-500 p-6 rounded-lg">
+      <h4 class="text-lg font-bold text-yellow-900 mb-3">⚠️ Önemli Not</h4>
+      <div class="space-y-2 text-slate-700 text-sm">
+        <p><strong>Bu bilgiler eğitim amaçlıdır.</strong> Teşhis, tedavi veya ilaç tavsiyesi değildir.</p>
+        <p><strong>Teşhis ve tedavi için mutlaka bir uzman doktor (psikiyatrist) ile görüşün.</strong></p>
+        <p class="text-xs text-slate-600 italic">FocusAid bu platformu bilgilendirme amacıyla sunmaktadır. Sağlık kararlarında her zaman profesyonel tavsiye alın.</p>
+      </div>
+    </div>
+
+  </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</template>
+
+<!-- ════════════════════════════════════════
      UYGULAMA LAYOUT
      ════════════════════════════════════════ -->
 <div class="flex min-h-screen">
@@ -407,6 +884,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
         <button onclick="loadPage('calendar')" id="nav-calendar" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">📅 Takvim</button>
         <button onclick="loadPage('chatbot')" id="nav-chatbot" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">🧩 Parçalayıcı</button>
         <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">👤 Profil</button>
+        <button onclick="loadPage('dehb-info')" id="nav-dehb-info" class="sidebar-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">ℹ️ DEHB Bilgisi</button>
       </nav>
     </div>
     <div class="space-y-3">
