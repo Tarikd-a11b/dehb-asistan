@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: focusaid-beta
+    env: python
+    plan: free
+    startCommand: python serve.py
+    buildCommand: pip install -r requirements.txt
