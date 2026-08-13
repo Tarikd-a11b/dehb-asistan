@@ -65,6 +65,59 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 .energy-radio-option{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;background:#f8fafc;border-radius:.75rem;cursor:pointer;transition:all .2s ease;font-size:.875rem;font-weight:500}
 .energy-radio-option:hover{background:#f0fdf4;transform:translateX(4px)}
 .save-btn{box-shadow:0 20px 40px -12px rgba(124,58,237,.4)}.save-btn:hover{box-shadow:0 25px 50px -12px rgba(124,58,237,.5)}
+/* ── DEHB Bilgilendirme Platform Stilleri ── */
+
+.dehb-nav-item {
+  /* Mevcut .sidebar-item class'ından inherit ediyor, ek özellikler: */
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-radius: 0.75rem;
+  transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+  color: #64748b;
+  font-weight: 500;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+
+.dehb-nav-item:hover {
+  background-color: #f1f5f9;
+  transform: translateX(4px);
+}
+
+.dehb-nav-item.active-link {
+  background-color: #eef2ff !important;
+  color: #4f46e5 !important;
+  font-weight: 700;
+  border-color: #c7d2fe;
+  box-shadow: 0 2px 8px rgba(99,102,241,.12);
+}
+
+.dehb-content {
+  display: block;
+  animation: fadeInUp 0.3s ease-in-out;
+}
+
+.dehb-content.hidden {
+  display: none;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive: Mobile'da mini nav-bar yatay olması (sonra yapılacak) */
+@media (max-width: 768px) {
+  /* TODO: Mini nav-bar horizontal tab'a dönüşsün */
+}
 </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
