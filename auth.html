@@ -162,13 +162,15 @@ async function signInWithGoogle() {
   // takvim izni uygulama içindeki "Google Takvimi Bağla" düğmesiyle ayrıca
   // alınır (GIS token client, index.html → handleAuthClick).
   //
-  // NOT: redirectTo hâlâ index_2.html — Supabase Redirect URLs listesinde kayıtlı
-  // adres bu. index_2.html artık index.html'e yönlendiren bir köprü. Supabase'e
-  // http://localhost:3000/index.html eklenince burası da index.html yapılabilir.
+  // NOT: redirectTo artık window.location.origin'den türetiliyor (localhost'ta
+  // localhost:3000, Render'da dehb-asistan.onrender.com olur). index_2.html hâlâ
+  // index.html'e yönlendiren bir köprü. Her origin, Supabase Dashboard →
+  // Authentication → URL Configuration → Redirect URLs listesine ayrıca
+  // eklenmeli, yoksa Supabase "requested path is invalid" hatası verir.
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: 'http://localhost:3000/index_2.html'
+      redirectTo: window.location.origin + '/index_2.html'
     }
   });
 
