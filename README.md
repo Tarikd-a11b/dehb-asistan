@@ -4,7 +4,7 @@ DEHB'li kullanıcılar için yapay zeka destekli görev parçalama ve takvim pla
 
 ## 🌐 Canlı Demo
 
-**https://dehb-asistan.onrender.com**
+**[https://dehb-asistan.onrender.com](https://dehb-asistan.onrender.com)**
 
 Google OAuth login, DEHB Bilgilendirme Platformu, "Bugün" ekranı ve Google Calendar entegrasyonu tam olarak canlıda çalışıyor. **Parçalayıcı** (AI görev-bölme) özelliği şu an yalnızca n8n'in yerel olarak çalıştırıldığı bir makineden erişilebiliyor — n8n'i buluta taşıma denemeleri (Render: RAM yetersizliği, Oracle Cloud: ARM kapasite darlığı) henüz sonuçsuz kaldı, bkz. [Bilinen Eksikler](#bilinen-eksikler).
 
