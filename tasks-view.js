@@ -65,20 +65,26 @@ function saatAralik(task) {
 }
 
 const YUK_ETIKET = { low: 'Hafif', medium: 'Orta', high: 'Ağır' };
+// Satırın sol kenar rengi bilişsel yüke göre — Tiimi referansındaki renkli
+// şerit fikri, ama rastgele değil: zaten var olan cognitive_load anlamına bağlı.
+const YUK_KENAR = { low: 'border-emerald-400', medium: 'border-amber-400', high: 'border-rose-400' };
+
+function saatBaslangic(task) {
+  return new Date(task.start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+}
 
 function taskRowHTML(task, todayISO) {
   const etiket = dayLabel(task.day, todayISO);
   const rozet = etiket
-    ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">${etiket}</span>`
+    ? `<span class="text-[10px] font-bold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-full shrink-0">${etiket}</span>`
     : '';
+  const kenar = YUK_KENAR[task.cognitive_load] || 'border-slate-200';
   return `
-    <div class="flex items-center gap-4 p-4 bg-white rounded-2xl border border-slate-100 ${task.completed ? 'opacity-50' : ''}">
+    <div class="flex items-center gap-3 py-2 px-3 bg-white rounded-lg border-l-4 ${kenar} ${task.completed ? 'opacity-50' : ''}">
       <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${task.id}')"
-             class="w-5 h-5 accent-indigo-600 cursor-pointer shrink-0">
-      <div class="min-w-0 flex-1">
-        <p class="font-semibold text-slate-700 truncate ${task.completed ? 'line-through' : ''}">${task.name || 'Görev'}</p>
-        <p class="text-xs text-slate-400">${saatAralik(task)}</p>
-      </div>
+             class="w-4 h-4 accent-indigo-600 cursor-pointer shrink-0">
+      <span class="text-xs font-mono text-slate-400 shrink-0 w-10 tabular-nums">${saatBaslangic(task)}</span>
+      <p class="text-sm font-semibold text-slate-700 truncate flex-1 ${task.completed ? 'line-through' : ''}">${task.name || 'Görev'}</p>
       ${rozet}
     </div>`;
 }

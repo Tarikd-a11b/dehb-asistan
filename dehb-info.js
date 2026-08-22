@@ -30,15 +30,15 @@ function showDehbSection(sectionName) {
     }
   }
 
-  // 3. Mini nav-bar butonlarının aktif durumunu güncelle
+  // 3. Mini nav-bar butonlarının aktif durumunu güncelle — renk her butonun
+  // kendi --nav-accent inline stilinden geliyor (bkz. index.html markup + CSS).
   document.querySelectorAll('.dehb-nav-item').forEach(btn => {
-    btn.classList.remove('active-link', 'bg-indigo-50', 'text-indigo-600', 'shadow-sm');
+    btn.classList.remove('active-link', 'shadow-sm');
   });
 
-  // Şu anki butonunun stilini aktif yap
   const activeBtn = document.getElementById(`dehb-nav-${sectionName}`);
   if (activeBtn) {
-    activeBtn.classList.add('active-link', 'bg-indigo-50', 'text-indigo-600', 'shadow-sm');
+    activeBtn.classList.add('active-link', 'shadow-sm');
   }
 
   // 4. localStorage'a kaydet (sayfa kapanıp açıldığında son bölümü hatırla)
@@ -61,6 +61,81 @@ function showDehbSection(sectionName) {
 function restoreDehbSection() {
   const saved = localStorage.getItem('dehb_active_section') || 'nedir';
   showDehbSection(saved);
+  initDehbSlider();
+}
+
+/**
+ * initDehbSlider()
+ *
+ * Her .dehb-content bölümündeki .glass-card bloklarını (varsa 2+) tek-seferde-
+ * tek-kart gösteren bir slider'a çevirir: ok butonları + nokta göstergeleri +
+ * "3/7" sayaç. Kartların içeriğine dokunmadan sadece taşır — mevcut renkli
+ * kenarlıklar (border-t-4 border-purple-500 vb.) ve numaralar korunur.
+ * data-slider-ready ile idempotent: sayfalar arası geçişte tekrar sarmalanmaz.
+ */
+function initDehbSlider() {
+  document.querySelectorAll('.dehb-content').forEach(section => {
+    const wrapper = section.querySelector(':scope > div');
+    if (!wrapper || wrapper.dataset.sliderReady) return;
+    const cards = [...wrapper.querySelectorAll(':scope > .glass-card')];
+    if (cards.length < 2) return; // tek kart varsa slider'a gerek yok
+
+    wrapper.dataset.sliderReady = '1';
+
+    const sliderWrap = document.createElement('div');
+    sliderWrap.className = 'dehb-slider';
+    cards[0].before(sliderWrap);
+
+    // viewport SADECE kartları kırpar (overflow:hidden + animasyonlu yükseklik).
+    // nav bunun DIŞINDA, sliderWrap'in doğrudan çocuğu — böylece ok/nokta
+    // gezinme çubuğu kart yüksekliği hesaba katılmadığında bile hiç kırpılmaz.
+    // (Önceki bug: nav, yüksekliği karta göre ayarlanan overflow:hidden
+    // kutunun İÇİNDEYDİ, bu yüzden görünmez oluyor, slider kullanılamıyordu.)
+    const viewport = document.createElement('div');
+    viewport.className = 'dehb-slider-viewport';
+    sliderWrap.appendChild(viewport);
+
+    const track = document.createElement('div');
+    track.className = 'dehb-slider-track';
+    cards.forEach(c => { c.classList.add('dehb-slide'); track.appendChild(c); });
+    viewport.appendChild(track);
+
+    const nav = document.createElement('div');
+    nav.className = 'dehb-slider-nav';
+    const dotsHtml = cards.map((_, i) => `<button class="dehb-slider-dot" data-i="${i}" aria-label="${i + 1}. karta git"></button>`).join('');
+    nav.innerHTML = `
+      <button class="dehb-slider-btn" data-dir="-1" aria-label="Önceki">‹</button>
+      <div class="dehb-slider-dots">${dotsHtml}</div>
+      <span class="dehb-slider-counter">1/${cards.length}</span>
+      <button class="dehb-slider-btn" data-dir="1" aria-label="Sonraki">›</button>`;
+    sliderWrap.appendChild(nav);
+
+    const dots = [...nav.querySelectorAll('.dehb-slider-dot')];
+    const counterEl = nav.querySelector('.dehb-slider-counter');
+    let idx = 0;
+    function goTo(i) {
+      idx = Math.max(0, Math.min(cards.length - 1, i));
+      track.style.transform = `translateX(-${idx * 100}%)`;
+      dots.forEach((d, di) => d.classList.toggle('active', di === idx));
+      counterEl.textContent = `${idx + 1}/${cards.length}`;
+      // viewport SADECE aktif kartın boyuna göre yükseklik alır — nav bu
+      // hesaba hiç girmez çünkü artık viewport'un dışında.
+      viewport.style.height = cards[idx].offsetHeight + 'px';
+    }
+    nav.querySelectorAll('.dehb-slider-btn').forEach(btn => {
+      btn.addEventListener('click', () => goTo(idx + Number(btn.dataset.dir)));
+    });
+    dots.forEach(d => d.addEventListener('click', () => goTo(Number(d.dataset.i))));
+    // showDehbSection bir bölümü görünür yaptığında, o an açık olan kartın
+    // yüksekliğini (idx değişmeden) yeniden ölçmek için çağırır.
+    sliderWrap.dehbRefresh = () => goTo(idx);
+    goTo(0);
+    // Google Fonts geç yüklenince (özellikle sayfanın ilk açılışında) kart
+    // yüksekliği font değişince büyüyebiliyor — o zaman ölçülen yükseklik
+    // eskimiş kalır. Fontlar hazır olunca ve kısa bir gecikmeyle bir daha ölç.
+    document.fonts?.ready?.then(() => sliderWrap.dehbRefresh?.());
+    setTimeout(() => sliderWrap.dehbRefresh?.(), 300);
+  });
 }
 
 // Sayfa yüklendiğinde otomatik olarak çalıştır
