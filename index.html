@@ -921,7 +921,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--indigo-main)!importan
 // Supabase Dashboard → Project Settings → API'den al
 const SUPABASE_URL      = FOCUSAID_CONFIG.SUPABASE_URL;
 const SUPABASE_ANON_KEY = FOCUSAID_CONFIG.SUPABASE_ANON_KEY;
-const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Tek client: aynı sayfada iki ayrı createClient() çağrısı (biri burada, biri
+// <head>'de window.supabaseClient) aynı localStorage anahtarını paylaşıp
+// Supabase'in "Multiple GoTrueClient instances" durumuna düşüyordu — token
+// yenileme yarışı, sayfa yenilenince oturumun düşmesine yol açıyordu.
+const sb = window.supabaseClient;
 
 // ── AUTH GUARD ─────────────────────────────────────────────────────────────────
 // getSession() ile anlık kontrol yerine INITIAL_SESSION event'ini bekliyoruz.
@@ -1024,6 +1028,7 @@ function showUserInfo(user) {
 }
 
 async function signOut() {
+  localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
   await sb.auth.signOut();
   window.location.href = 'auth.html';
 }
@@ -1080,6 +1085,7 @@ async function saveProfileToSupabase(profile) {
 const CONFIG = FOCUSAID_CONFIG;
 
 const AppState = { calendar: null, tokenClient: null, gapiReady: false, gisReady: false, googleAccessToken: null, supabaseToken: null };
+const GOOGLE_TOKEN_STORAGE_KEY = 'focusaid_google_token';
 
 // ── GOOGLE AUTH ──
 function gapiLoaded() {
@@ -1093,6 +1099,23 @@ function gapiLoaded() {
 function gisLoaded() {
   AppState.tokenClient = google.accounts.oauth2.initTokenClient({ client_id: CONFIG.GOOGLE_CLIENT_ID, scope: CONFIG.SCOPES, callback: '' });
   AppState.gisReady = true;
+  restoreGoogleToken();
+}
+// Sayfa yenilenince Takvim token'ının hafızadan silinip her seferinde yeniden
+// "Google Takvimi Bağla" istemesini önler — token süresi (~1 saat) dolmadıysa
+// localStorage'dan geri yüklenir. activateGoogleCalendar zaten gapiReady'yi
+// bekliyor, o yüzden burada ek bekleme gerekmiyor.
+function restoreGoogleToken() {
+  try {
+    const raw = localStorage.getItem(GOOGLE_TOKEN_STORAGE_KEY);
+    if (!raw) return;
+    const saved = JSON.parse(raw);
+    if (!saved?.access_token || !saved?.expiresAt || Date.now() >= saved.expiresAt) {
+      localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
+      return;
+    }
+    activateGoogleCalendar(saved.access_token);
+  } catch(e) { localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY); }
 }
 // Google Calendar'ı aktifleştirir: token'ı GAPI'ye set eder, butonu günceller, etkinlikleri yükler
 async function activateGoogleCalendar(token) {
@@ -1119,7 +1142,11 @@ function handleAuthClick() {
   AppState.tokenClient.callback = async (resp) => {
     if (resp.error) return;
     const t = gapi.client.getToken();
-    if (t?.access_token) await activateGoogleCalendar(t.access_token);
+    if (t?.access_token) {
+      const expiresAt = Date.now() + (Number(resp.expires_in || 3600) * 1000);
+      localStorage.setItem(GOOGLE_TOKEN_STORAGE_KEY, JSON.stringify({ access_token: t.access_token, expiresAt }));
+      await activateGoogleCalendar(t.access_token);
+    }
   };
   AppState.tokenClient.requestAccessToken({ prompt: gapi.client.getToken() === null ? 'consent' : '' });
 }
