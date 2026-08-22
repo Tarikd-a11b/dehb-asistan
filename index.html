@@ -1517,6 +1517,14 @@ function handleAuthClick() {
 function initCalendar() {
   const el = document.getElementById('calendar');
   if (!el) return;
+  try {
+    initCalendarUnsafe(el);
+  } catch (e) {
+    console.error('[Takvim] initCalendar çöktü:', e);
+    el.innerHTML = `<div class="p-8 text-center text-red-500">❌ Takvim yüklenemedi: ${(e?.message || e).toString().replace(/</g,'&lt;')}</div>`;
+  }
+}
+function initCalendarUnsafe(el) {
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
@@ -1532,16 +1540,31 @@ function initCalendar() {
     aspectRatio: 1.9,
     nowIndicator: true,
     selectable: true, editable: true,
-    dateClick(info) { openDayView(info.dateStr); },
+    dateClick(info) { try { openDayView(info.dateStr); } catch (e) { console.error('[Takvim] dateClick hata:', e); } },
     // "+N daha" linkine tıklayınca FullCalendar'ın kendi popover'ı yerine
-    // bizim gün-detay modalimiz açılsın (tutarlılık için).
-    moreLinkClick(info) { openDayView(info.dateStr || info.date.toISOString().split('T')[0]); return 'none'; },
-    eventClick(info) { openTaskForm(info.event.startStr.split('T')[0], info.event); },
+    // bizim gün-detay modalimiz açılsın (tutarlılık için). NOT: moreLinkClick'in
+    // argümanında dateStr YOK (dateClick'ten farklı) — info.date kullanılmalı,
+    // ve toISOString() UTC verdiği için yerel tarihi bir gün kaydırabiliyordu;
+    // localDayISO ile düzeltildi. Dönüş değeri FullCalendar'ın kabul ettiği
+    // 'false' — daha önce kullanılan 'none' resmi API'de yok.
+    moreLinkClick(info) {
+      try { openDayView(localDayISO(info.date)); } catch (e) { console.error('[Takvim] moreLinkClick hata:', e); }
+      return false;
+    },
+    eventClick(info) { try { openTaskForm(info.event.startStr.split('T')[0], info.event); } catch (e) { console.error('[Takvim] eventClick hata:', e); } },
     events: async (info, successCb, failureCb) => {
       try {
         const events = [];
         const startDate = info.startStr.split('T')[0];
         const endDate = info.endStr.split('T')[0];
+        // n8n her görev için HEM Supabase satırı HEM Google Calendar etkinliği
+        // oluşturuyor (calendar_event_id ile eşleşiyorlar) — ikisini de ham
+        // haliyle takvime basarsak her görev iki kez görünür. Yoğun kullanıcılarda
+        // (100+ görev) bu hem görsel karmaşa hem de hafta görünümünde onlarca
+        // çakışan etkinliği aynı anda düzenlemeye çalışan FullCalendar için ciddi
+        // bir performans/donma riski yaratıyor. Supabase'te zaten temsil edilen
+        // GCal etkinliklerini burada eleyip tekilleştiriyoruz.
+        const eslenmisGcalIdleri = new Set();
 
         // 1. Supabase'den tasks'ı çek
         try {
@@ -1553,23 +1576,26 @@ function initCalendar() {
             .lte('day', endDate);
 
           if (!tasksError && tasks) {
-            events.push(...tasks.map(task => ({
-              id: `task-${task.id}`,
-              title: task.name || 'Görev',
-              start: task.start_time,
-              end: task.end_time,
-              extendedProps: {
-                description: task.description || '',
-                cognitive_load: task.cognitive_load || 'Orta'
-              },
-              backgroundColor: task.completed ? '#94a3b8' : '#6366f1',
-              borderColor: 'transparent'
-            })));
+            events.push(...tasks.map(task => {
+              if (task.calendar_event_id) eslenmisGcalIdleri.add(task.calendar_event_id);
+              return {
+                id: `task-${task.id}`,
+                title: task.name || 'Görev',
+                start: task.start_time,
+                end: task.end_time,
+                extendedProps: {
+                  description: task.description || '',
+                  cognitive_load: task.cognitive_load || 'Orta'
+                },
+                backgroundColor: task.completed ? '#94a3b8' : '#6366f1',
+                borderColor: 'transparent'
+              };
+            }));
             console.log(`[Takvim] Supabase'den ${tasks.length} görev yüklendi`, tasks.slice(0,3).map(t => ({title: t.title, id: t.id, day: t.day, start_time: t.start_time})));
           }
         } catch(e) { console.warn('[Takvim] Supabase tasks yüklenemedi:', e); }
 
-        // 2. Google Calendar'dan events'ı çek
+        // 2. Google Calendar'dan events'ı çek — Supabase'te zaten temsil edilenler hariç
         if (AppState.gapiReady && AppState.googleAccessToken) {
           try {
             gapi.client.setToken({ access_token: AppState.googleAccessToken });
@@ -1581,7 +1607,8 @@ function initCalendar() {
               orderBy: 'startTime'
             });
             if (resp.result.items) {
-              events.push(...(resp.result.items || []).map(ev => ({
+              const tekilGcalEtkinlikleri = resp.result.items.filter(ev => !eslenmisGcalIdleri.has(ev.id));
+              events.push(...tekilGcalEtkinlikleri.map(ev => ({
                 id: ev.id,
                 title: ev.summary || 'Görev',
                 start: ev.start?.dateTime || ev.start?.date,
@@ -1590,7 +1617,7 @@ function initCalendar() {
                 backgroundColor: (ev.summary || '').includes('Mola') ? '#10b981' : '#8b5cf6',
                 borderColor: 'transparent'
               })));
-              console.log(`[Takvim] Google Calendar'dan ${resp.result.items.length} etkinlik yüklendi`);
+              console.log(`[Takvim] Google Calendar'dan ${resp.result.items.length} etkinlik geldi, ${tekilGcalEtkinlikleri.length} tekil eklendi (${resp.result.items.length - tekilGcalEtkinlikleri.length} zaten Supabase'te vardı)`);
             }
           } catch(e) { console.warn('[Takvim] Google Calendar events yüklenemedi:', e); }
         }
