@@ -6,7 +6,9 @@ DEHB'li kullanıcılar için yapay zeka destekli görev parçalama ve takvim pla
 
 **[https://dehb-asistan.onrender.com](https://dehb-asistan.onrender.com)**
 
-Google OAuth login, DEHB Bilgilendirme Platformu, "Bugün" ekranı ve Google Calendar entegrasyonu tam olarak canlıda çalışıyor. **Parçalayıcı** (AI görev-bölme) özelliği şu an yalnızca n8n'in yerel olarak çalıştırıldığı bir makineden erişilebiliyor — n8n'i buluta taşıma denemeleri (Render: RAM yetersizliği, Oracle Cloud: ARM kapasite darlığı) henüz sonuçsuz kaldı, bkz. [Bilinen Eksikler](#bilinen-eksikler).
+Google OAuth login, DEHB Bilgilendirme Platformu, "Bugün" ekranı, "Projelerim" ekranı ve Google Calendar entegrasyonu tam olarak canlıda çalışıyor. **Parçalayıcı** (AI görev-bölme) özelliği şu an yalnızca n8n'in yerel olarak çalıştırıldığı bir makineden erişilebiliyor — n8n'i buluta taşıma denemeleri (Render: RAM yetersizliği, Oracle Cloud: ARM kapasite darlığı) henüz sonuçsuz kaldı, bkz. [Bilinen Eksikler](#bilinen-eksikler).
+
+Arayüz açık/koyu tema destekliyor (sidebar'daki 🌗 anahtarı, tercih hesaba kalıcı kaydediliyor). "Projelerim" sayfası, n8n'in parçaladığı görevleri proje bazında gruplayıp tek tıkla (bağlı Google Calendar etkinlikleriyle birlikte) silmeyi sağlıyor.
 
 ## Nasıl Çalışır
 
@@ -118,7 +120,7 @@ Tarayıcıda: `http://localhost:3000/auth.html`
 
 ```
 ├── auth.html          # Google OAuth giriş sayfası
-├── index.html         # Ana uygulama (Bugün + chatbot + takvim + profil)
+├── index.html         # Ana uygulama (Bugün + Takvim + Parçalayıcı + Projelerim + Profil + DEHB Bilgisi)
 ├── index_2.html       # index.html'e yönlendirme köprüsü (Supabase redirect URL'i buraya kayıtlı)
 ├── rapor.html         # Rapor bileşeni
 ├── tasks-logic.js     # Görev mantığı — DOM'suz, test edilebilir
@@ -145,4 +147,5 @@ Tarayıcıda: `http://localhost:3000/auth.html`
   - **Oracle Cloud (Always Free ARM):** Kurulum tamamlandı ama Frankfurt bölgesindeki üç
     Availability Domain de saatlerce/günlerce kapasite dolu verdi — bilinen bir Oracle Free Tier
     sorunu, garantili bir çözüm süresi yok.
-- Google access token ~1 saat sonra sürüyor; sürdüğünde "Google Takvimi Bağla" butonuna basmak gerekiyor (otomatik yenileme henüz yok)
+- Google access token ~1 saat sonra sürüyor; süresi dolduğunda "Google Takvimi Bağla" butonuna tekrar basmak gerekiyor (otomatik yenileme henüz yok — token sayfa yenilemeleri arasında localStorage'da kalıcı, ama süresi dolunca yeniden bağlanmak gerekiyor)
+- **Takvim hafta görünümü, yoğun hesaplarda (100+ görev) Render'da bozuk/boş görünebiliyor.** Yerelde 200 çakışan sahte etkinlikle stres testi sorunsuz geçti, ama gerçek bir hesapta (104 görev + 101 Google Calendar etkinliği) hâlâ tekrarlanıyor. Kök neden teşhis edilemedi — DevTools console'da net bir hata mesajı alınamadı. Devam eden bir sorun (2026-08-22).
