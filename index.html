@@ -1651,6 +1651,42 @@ function syncMiniCalendar(dateISO) {
   }
 }
 
+// ── HAFTALIK ÖZET ──
+/**
+ * Bugünü içeren haftanın (Paz–Cmt) tamamlanma oranı.
+ * Büyük takvimin gezinmesinden BAĞIMSIZ: her zaman "bu hafta"yı gösterir.
+ * Gezinmeyle senkron tutmak ek karmaşıklık getirir, karşılığı yok (YAGNI).
+ * Hata YUTULUR: kart "—" gösterir, mini takvim ve büyük takvim çalışmaya devam eder.
+ */
+async function renderWeekOverview() {
+  const textEl = document.getElementById('week-overview-text');
+  const barEl = document.getElementById('week-overview-bar');
+  if (!textEl || !barEl) return;
+
+  try {
+    if (!currentUser) return;
+    const { start, end } = weekRangeISO(localDayISO());
+
+    const { data, error } = await sb
+      .from('tasks')
+      .select('completed')
+      .eq('user_id', currentUser.id)
+      .gte('day', start)
+      .lte('day', end);
+
+    if (error) throw error;
+
+    const toplam = (data || []).length;
+    const biten = (data || []).filter(t => t.completed).length;
+    textEl.textContent = toplam ? `${biten}/${toplam} görev tamamlandı` : 'Bu hafta görev yok';
+    barEl.style.width = toplam ? `${Math.round((biten / toplam) * 100)}%` : '0%';
+  } catch (e) {
+    console.warn('[Haftalık Özet] yüklenemedi:', e);
+    textEl.textContent = '—';
+    barEl.style.width = '0%';
+  }
+}
+
 function initCalendar() {
   const el = document.getElementById('calendar');
   if (!el) return;
@@ -1662,6 +1698,7 @@ function initCalendar() {
     MiniState.month = bm - 1;
     MiniState.selected = bugun;
     renderMiniCalendar();
+    renderWeekOverview();   // await YOK: takvimin açılmasını bekletmez
   } catch (e) {
     console.error('[Takvim] initCalendar çöktü:', e);
     el.innerHTML = `<div class="p-8 text-center text-red-500">❌ Takvim yüklenemedi: ${(e?.message || e).toString().replace(/</g,'&lt;')}</div>`;
