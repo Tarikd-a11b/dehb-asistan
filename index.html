@@ -144,12 +144,11 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    gösteriliyor. */
 .fc-timegrid-event .fc-event-time{display:block!important;font-size:.66rem!important;font-weight:600!important;opacity:.75}
 .fc-timegrid-event .fc-event-title{font-size:.74rem!important;white-space:normal!important;word-break:break-word!important;line-height:1.25!important}
-/* Referans görsellerdeki gibi "derli toplu" ama tam sıkışık değil: 16 satır
-   (07:00-23:00, saatlik) kutunun (640px, bkz. datesSet) biraz üstüne taşıp
-   hafif iç kaydırma yaratıyor — kaydırma TAMAMEN yok denecek kadar değil,
-   ama satırlar okunaklı kalacak kadar geniş (kullanıcı: "sürekli kaydır
-   kaydır olmasın ama kaydırmadan yönde sıkıntım yok"). */
-.fc-timegrid-slot{height:3em!important}
+/* İlk denemede (3em) 700px'lik kutuya sadece ~9 saat sığıp geri kalan 7 saat
+   için belirgin bir scroll gerekiyordu — kullanıcı "sürekli kaydır kaydır
+   olmasın" dedi. 2.3em'e düşürülünce 16 saatin ~14-15'i tek bakışta sığıyor,
+   kalan 1-2 saat için ufak bir kaydırma yeterli. */
+.fc-timegrid-slot{height:2.3em!important}
 /* FullCalendar v6 kendi CSS değişkenleriyle temalanıyor (resmi API) — tek tek
    iç class isimleriyle uğraşmak yerine bunları override etmek daha güvenilir. */
 html.dark .fc{--fc-border-color:var(--border-light);--fc-page-bg-color:transparent;--fc-neutral-bg-color:var(--card-hover-bg);--fc-list-event-hover-bg-color:var(--card-hover-bg);--fc-today-bg-color:var(--indigo-glow)}
@@ -1563,7 +1562,7 @@ function initCalendarUnsafe(el) {
     // okunaksız kalıyordu).
     views: {
       dayGridMonth: { dayMaxEvents: 2 },
-      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '01:00:00', expandRows: true }
+      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '01:00:00', expandRows: true, allDaySlot: false }
     },
     // Hafta görünümü height:'auto' ile sayfayı ~1400px'e kadar şişiriyordu.
     // datesSet ile görünüm değişince kalendarın kendi height'ını değiştiriyoruz:
