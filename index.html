@@ -1573,11 +1573,95 @@ function handleAuthClick() {
 }
 
 // ── TAKVİM ──
+// ── MİNİ AY TAKVİMİ ──
+// İkinci bir FullCalendar örneği DEĞİL: bu iş için gereksiz ağır olurdu.
+// Saf tarih hesabı calendar-logic.js'te, burada yalnızca DOM var.
+const MiniState = { year: 0, month: 0, selected: '' };
+
+// İki harf: tek harfte üç 'P' ve iki 'C' çıkıp ayırt edilemiyordu.
+const MINI_GUN_BASLIKLARI = ['Pa', 'Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct'];
+
+/** Mini takvimi çizer. Hata YUTULUR: yan panel çökse de büyük takvim çalışır. */
+function renderMiniCalendar() {
+  try {
+    const grid = document.getElementById('mini-calendar-grid');
+    const label = document.getElementById('mini-calendar-label');
+    if (!grid || !label) return;
+
+    label.textContent = monthLabel(MiniState.year, MiniState.month);
+    const bugun = localDayISO();
+
+    const basliklar = MINI_GUN_BASLIKLARI
+      .map(g => `<div class="text-[10px] font-black pb-1" style="color:var(--text-soft)">${g}</div>`)
+      .join('');
+
+    const hucreler = buildMonthGrid(MiniState.year, MiniState.month).map(c => {
+      const secili = c.iso === MiniState.selected;
+      const buguneMi = c.iso === bugun;
+      let stil = 'color:var(--text-soft)';
+      if (!c.inMonth) stil = 'color:var(--text-soft);opacity:.35';
+      if (buguneMi) stil = 'color:var(--indigo-main);font-weight:800';
+      if (secili) stil = 'background:var(--indigo-main);color:#fff;font-weight:800';
+      return `<button type="button" data-iso="${c.iso}"
+                class="mini-day w-7 h-7 mx-auto rounded-full text-[11px] transition-colors"
+                style="${stil}">${c.day}</button>`;
+    }).join('');
+
+    grid.innerHTML = basliklar + hucreler;
+
+    grid.querySelectorAll('.mini-day').forEach(b => {
+      b.onclick = () => {
+        const iso = b.dataset.iso;
+        MiniState.selected = iso;
+        AppState.calendar?.gotoDate(iso);
+        renderMiniCalendar();
+      };
+    });
+
+    const prev = document.getElementById('mini-prev');
+    const next = document.getElementById('mini-next');
+    if (prev) prev.onclick = () => {
+      Object.assign(MiniState, shiftMonth(MiniState.year, MiniState.month, -1));
+      renderMiniCalendar();
+    };
+    if (next) next.onclick = () => {
+      Object.assign(MiniState, shiftMonth(MiniState.year, MiniState.month, 1));
+      renderMiniCalendar();
+    };
+  } catch (e) {
+    console.warn('[Mini Takvim] çizilemedi:', e);
+  }
+}
+
+/**
+ * Büyük takvim gezinince mini takvimi hizalar.
+ * SONSUZ DÖNGÜ KORUMASI: yalnızca görünen AY değiştiyse yeniden çizer.
+ * (gotoDate → datesSet → syncMiniCalendar zinciri her seferinde yeniden
+ * çizseydi tıklama sonsuz döngüye girerdi.)
+ */
+function syncMiniCalendar(dateISO) {
+  try {
+    const [y, m] = dateISO.split('-').map(Number);
+    if (MiniState.year === y && MiniState.month === m - 1) return;
+    MiniState.year = y;
+    MiniState.month = m - 1;
+    renderMiniCalendar();
+  } catch (e) {
+    console.warn('[Mini Takvim] senkron edilemedi:', e);
+  }
+}
+
 function initCalendar() {
   const el = document.getElementById('calendar');
   if (!el) return;
   try {
     initCalendarUnsafe(el);
+    const bugun = localDayISO();
+    const [by, bm] = bugun.split('-').map(Number);
+    MiniState.year = by;
+    MiniState.month = bm - 1;
+    MiniState.selected = bugun;
+    renderMiniCalendar();
   } catch (e) {
     console.error('[Takvim] initCalendar çöktü:', e);
     el.innerHTML = `<div class="p-8 text-center text-red-500">❌ Takvim yüklenemedi: ${(e?.message || e).toString().replace(/</g,'&lt;')}</div>`;
@@ -1606,6 +1690,10 @@ function initCalendarUnsafe(el) {
     // hafif iç kaydırma tercih edildi.
     datesSet(info) {
       AppState.calendar?.setOption('height', info.view.type === 'timeGridWeek' ? 700 : 'auto');
+      // info.start görünen aralığın ilk günü; ay görünümünde önceki aya
+      // taşabildiği için ortadaki günü baz alıyoruz.
+      const orta = new Date((info.start.getTime() + info.end.getTime()) / 2);
+      syncMiniCalendar(localDayISO(orta));
     },
     scrollTime: '08:00:00',
     aspectRatio: 1.9,
