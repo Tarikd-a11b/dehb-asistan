@@ -10,6 +10,8 @@ Google OAuth login, DEHB Bilgilendirme Platformu, "Bugün" ekranı, "Projelerim"
 
 Arayüz açık/koyu tema destekliyor (sidebar'daki 🌗 anahtarı, tercih hesaba kalıcı kaydediliyor). "Projelerim" sayfası, n8n'in parçaladığı görevleri proje bazında gruplayıp tek tıkla (bağlı Google Calendar etkinlikleriyle birlikte) silmeyi sağlıyor.
 
+**Takvim** sayfası üç kolonlu: solda mini ay takvimi (büyük takvimle çift yönlü senkron) ve haftalık tamamlanma özeti, sağda ay/hafta görünümü. Hafta görünümündeki kartlar bilişsel yüke göre renklendiriliyor (hafif/orta/ağır) ve içerikleri görevin süresine göre seçiliyor — kısa görevlerde saat gizlenip başlık korunuyor, böylece hiçbir kart okunamaz hale gelmiyor. Bir güne tıklayınca o günün görevleri açılıyor; geçmiş günlere görev eklenemiyor ve gün zaten doluysa (5+ görev) uyarı veriliyor.
+
 ## Nasıl Çalışır
 
 ```
@@ -125,13 +127,14 @@ Tarayıcıda: `http://localhost:3000/auth.html`
 ├── rapor.html         # Rapor bileşeni
 ├── tasks-logic.js     # Görev mantığı — DOM'suz, test edilebilir
 ├── tasks-view.js      # Görev ekranı render + Supabase/GAPI çağrıları
+├── calendar-logic.js  # Takvim tarih hesapları (ay ızgarası, hafta aralığı) — DOM'suz
 ├── doc-intake-logic.js # Yönerge dosyası ayrıştırma mantığı — DOM'suz
 ├── doc-intake.js      # Yönerge dosyası yükleme arayüzü
 ├── serve.py           # Önbelleksiz geliştirme sunucusu (port 3000)
 ├── schema.sql         # Supabase veritabanı şeması
 ├── fix-tasks-*.sql    # tasks tablosu şema/RLS düzeltmeleri
 ├── n8n-workflow-*.json # n8n iş akışı tanımları
-├── test/              # tasks-logic + doc-intake-logic testleri (node --test)
+├── test/              # tasks-logic + doc-intake-logic + calendar-logic testleri (node --test)
 ├── config.example.js  # Konfigürasyon şablonu (bunu kopyala → config.js)
 └── config.js          # Gerçek konfigürasyon (gitignored, paylaşma)
 ```
@@ -148,4 +151,5 @@ Tarayıcıda: `http://localhost:3000/auth.html`
     Availability Domain de saatlerce/günlerce kapasite dolu verdi — bilinen bir Oracle Free Tier
     sorunu, garantili bir çözüm süresi yok.
 - Google access token ~1 saat sonra sürüyor; süresi dolduğunda "Google Takvimi Bağla" butonuna tekrar basmak gerekiyor (otomatik yenileme henüz yok — token sayfa yenilemeleri arasında localStorage'da kalıcı, ama süresi dolunca yeniden bağlanmak gerekiyor)
-- **Takvim hafta görünümü, yoğun hesaplarda (100+ görev) Render'da bozuk/boş görünebiliyor.** Yerelde 200 çakışan sahte etkinlikle stres testi sorunsuz geçti, ama gerçek bir hesapta (104 görev + 101 Google Calendar etkinliği) hâlâ tekrarlanıyor. Kök neden teşhis edilemedi — DevTools console'da net bir hata mesajı alınamadı. Devam eden bir sorun (2026-08-22).
+- Google Calendar'daki **tüm gün süren etkinlikler** hafta görünümünde görünmüyor (hafta görünümü yalnızca saatli etkinlikleri gösterecek şekilde ayarlı); ay görünümünde görünüyorlar.
+- Çok kısa görevlerde (20 dakikanın altı) kart başlığı birkaç piksel kırpılabiliyor. n8n'in ürettiği tipik 25–50 dakikalık seanslar sorunsuz.
