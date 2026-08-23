@@ -140,16 +140,18 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    kaplıyordu). Saat etiketi kaldırıldı (dikey konum zaten saati gösteriyor),
    taşma kesinlikle engellendi, başlık dar sütunda satır satır sarılıyor. */
 .fc-timegrid-event{overflow:hidden!important}
-/* Saatlik slotlara (01:00:00) geçince dar sütun taşma riski azaldı, TimeFrame
-   referansındaki gibi saat aralığı küçük/soluk metin olarak kart içinde tekrar
-   gösteriliyor. */
-.fc-timegrid-event .fc-event-time{display:block!important;font-size:.66rem!important;font-weight:600!important;opacity:.75}
-.fc-timegrid-event .fc-event-title{font-size:.74rem!important;white-space:normal!important;word-break:break-word!important;line-height:1.25!important}
-/* İlk denemede (3em) 700px'lik kutuya sadece ~9 saat sığıp geri kalan 7 saat
-   için belirgin bir scroll gerekiyordu — kullanıcı "sürekli kaydır kaydır
-   olmasın" dedi. 2.3em'e düşürülünce 16 saatin ~14-15'i tek bakışta sığıyor,
-   kalan 1-2 saat için ufak bir kaydırma yeterli. */
-.fc-timegrid-slot{height:2.3em!important}
+/* Kart içeriği artık eventContent ile kod tarafından üretiliyor (bkz.
+   initCalendarUnsafe): saat yalnızca ≥45dk'lık kartlarda basılıyor, bu yüzden
+   CSS'in saat etiketini gizlemesine/zorlamasına gerek kalmadı. */
+.fc-ozel-kart{padding:1px 2px;min-width:0}
+.fc-ozel-saat{font-size:.62rem;font-weight:700;opacity:.85;line-height:1.2}
+.fc-ozel-baslik{font-size:.72rem;font-weight:700;line-height:1.2;overflow:hidden;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+/* Satır yüksekliği: 16 saat × 2.8em ≈ 717px. ~700px'lik kutuda (bkz. datesSet)
+   başlık satırı düşülünce ~70-100px'lik hafif bir taşma kalıyor — kartların
+   okunaklı kalması için kabul edilen bilinçli denge. Değiştirirsen Step 8'deki
+   ölçümü tekrar çalıştır. */
+.fc-timegrid-slot{height:2.8em!important}
 /* FullCalendar v6 kendi CSS değişkenleriyle temalanıyor (resmi API) — tek tek
    iç class isimleriyle uğraşmak yerine bunları override etmek daha güvenilir. */
 html.dark .fc{--fc-border-color:var(--border-light);--fc-page-bg-color:transparent;--fc-neutral-bg-color:var(--card-hover-bg);--fc-list-event-hover-bg-color:var(--card-hover-bg);--fc-today-bg-color:var(--indigo-glow)}
@@ -1704,6 +1706,19 @@ function initCalendar() {
     el.innerHTML = `<div class="p-8 text-center text-red-500">❌ Takvim yüklenemedi: ${(e?.message || e).toString().replace(/</g,'&lt;')}</div>`;
   }
 }
+// Kart renkleri bilişsel yüke bağlı — Bugün ekranındaki YUK_KENAR ile aynı
+// anlam ekseni (yeşil=hafif, amber=orta, kırmızımsı=ağır). Renk dekoratif
+// değil, bilgi taşıyor: DEHB kullanıcısı için gün planının ağırlığı bir
+// bakışta görünmeli.
+// NOT: veritabanında hem 'low/medium/high' hem eski 'Hafif/Orta/Ağır'
+// değerleri bulunabiliyor, ikisi de eşlenmiş.
+const YUK_RENK = {
+  low: '#059669', medium: '#d97706', high: '#e11d48',
+  Hafif: '#059669', Orta: '#d97706', Ağır: '#e11d48'
+};
+const RENK_TAMAMLANAN = '#64748b';
+const RENK_GCAL = '#9333ea';
+const RENK_MOLA = '#0d9488';
 function initCalendarUnsafe(el) {
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
@@ -1733,6 +1748,32 @@ function initCalendarUnsafe(el) {
       syncMiniCalendar(localDayISO(orta));
     },
     scrollTime: '08:00:00',
+    // Kartın içeriğini süreye göre seçiyoruz. ÖNCEKİ SORUN: saat + başlık
+    // her zaman birlikte basılıyordu; kısa görevlerde kutuya sığmayıp
+    // overflow:hidden ikisini birden kırpıyor, kart boş renkli bir dikdörtgene
+    // dönüyordu. 45 dakikanın altındaki kartlarda saat gizlenir, başlık kalır.
+    eventContent(arg) {
+      const baslik = arg.event.title || 'Görev';
+      if (arg.view.type !== 'timeGridWeek') return true;   // ay görünümü FullCalendar'ın kendi render'ında kalsın
+
+      const bas = arg.event.start, bit = arg.event.end;
+      const dakika = (bas && bit) ? (bit - bas) / 60000 : 0;
+      const kutu = document.createElement('div');
+      kutu.className = 'fc-ozel-kart';
+
+      if (dakika >= 45) {
+        const saat = document.createElement('div');
+        saat.className = 'fc-ozel-saat';
+        saat.textContent = arg.timeText;
+        kutu.appendChild(saat);
+      }
+      const ad = document.createElement('div');
+      ad.className = 'fc-ozel-baslik';
+      ad.textContent = baslik;
+      kutu.appendChild(ad);
+
+      return { domNodes: [kutu] };
+    },
     aspectRatio: 1.9,
     nowIndicator: true,
     selectable: true, editable: true,
@@ -1783,8 +1824,10 @@ function initCalendarUnsafe(el) {
                   description: task.description || '',
                   cognitive_load: task.cognitive_load || 'Orta'
                 },
-                backgroundColor: task.completed ? '#e2e8f0' : '#ede9fe',
-                textColor: task.completed ? '#64748b' : '#4338ca',
+                backgroundColor: task.completed
+                  ? RENK_TAMAMLANAN
+                  : (YUK_RENK[task.cognitive_load] || YUK_RENK.medium),
+                textColor: '#ffffff',
                 borderColor: 'transparent'
               };
             }));
@@ -1811,8 +1854,8 @@ function initCalendarUnsafe(el) {
                 start: ev.start?.dateTime || ev.start?.date,
                 end: ev.end?.dateTime || ev.end?.date,
                 extendedProps: { description: ev.description || '' },
-                backgroundColor: (ev.summary || '').includes('Mola') ? '#d1fae5' : '#f3e8ff',
-                textColor: (ev.summary || '').includes('Mola') ? '#047857' : '#7c3aed',
+                backgroundColor: (ev.summary || '').includes('Mola') ? RENK_MOLA : RENK_GCAL,
+                textColor: '#ffffff',
                 borderColor: 'transparent'
               })));
               console.log(`[Takvim] Google Calendar'dan ${resp.result.items.length} etkinlik geldi, ${tekilGcalEtkinlikleri.length} tekil eklendi (${resp.result.items.length - tekilGcalEtkinlikleri.length} zaten Supabase'te vardı)`);
