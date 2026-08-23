@@ -1697,14 +1697,15 @@ function initCalendar() {
 // değil, bilgi taşıyor: DEHB kullanıcısı için gün planının ağırlığı bir
 // bakışta görünmeli.
 // NOT: veritabanında hem 'low/medium/high' hem eski 'Hafif/Orta/Ağır'
-// değerleri bulunabiliyor, ikisi de eşlenmiş.
+// değerleri bulunabiliyor, ikisi de eşlenmiş. Tonlar, beyaz yazı metni küçük
+// font boyutlarında WCAG AA 4.5:1 kontrast eşiğini karşılamak için bir adım koyulaştırılmıştır.
 const YUK_RENK = {
-  low: '#059669', medium: '#d97706', high: '#e11d48',
-  Hafif: '#059669', Orta: '#d97706', Ağır: '#e11d48'
+  low: '#047857', medium: '#b45309', high: '#e11d48',
+  Hafif: '#047857', Orta: '#b45309', Ağır: '#e11d48'
 };
 const RENK_TAMAMLANAN = '#64748b';
 const RENK_GCAL = '#9333ea';
-const RENK_MOLA = '#0d9488';
+const RENK_MOLA = '#0f766e';
 function initCalendarUnsafe(el) {
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
