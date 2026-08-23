@@ -139,14 +139,22 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    taşıp komşu göreve bulaşıyordu (overflow:visible + saat etiketi yer
    kaplıyordu). Saat etiketi kaldırıldı (dikey konum zaten saati gösteriyor),
    taşma kesinlikle engellendi, başlık dar sütunda satır satır sarılıyor. */
-.fc-timegrid-event{overflow:hidden!important}
+/* .fc-event'in 6px dikey padding'i hafta görünümünde felaket: 25 dakikalık bir
+   görev kartı 18px, bunun 12px'ini padding yiyor. Ay görünümünde rahat duruyor,
+   o yüzden yalnızca timegrid'de daraltılıyor. */
+.fc-timegrid-event{overflow:hidden!important;padding:1px 6px!important}
 /* Kart içeriği artık eventContent ile kod tarafından üretiliyor (bkz.
    initCalendarUnsafe): saat yalnızca ≥45dk'lık kartlarda basılıyor, bu yüzden
    CSS'in saat etiketini gizlemesine/zorlamasına gerek kalmadı. */
-.fc-ozel-kart{padding:1px 2px;min-width:0}
-.fc-ozel-saat{font-size:.62rem;font-weight:700;opacity:.85;line-height:1.2}
+.fc-ozel-kart{min-width:0}
+.fc-ozel-saat{font-size:.62rem;font-weight:700;opacity:.85;line-height:1.15}
+/* Satır sayısı sabit değil: eventContent kartı süreye göre --satir ile ayarlıyor.
+   Sabit line-clamp:3 kart yüksekliğine duyarsızdı, kısa görevlerde başlığı
+   satır ortasından kesiyordu. line-clamp:1 tek satırı "..." ile kırpar. */
 .fc-ozel-baslik{font-size:.72rem;font-weight:700;line-height:1.2;overflow:hidden;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;word-break:break-word}
+  display:-webkit-box;-webkit-line-clamp:var(--satir,1);-webkit-box-orient:vertical;word-break:break-word}
+/* Çok kısa görevlerde (30dk altı) tek satır bile taşıyordu; yazı biraz küçülüyor. */
+.fc-ozel-kart--mini .fc-ozel-baslik{font-size:.62rem;line-height:1.1}
 /* Satır yüksekliği: 16 saat × 2.8em ≈ 717px. ~700px'lik kutuda (bkz. datesSet)
    başlık satırı düşülünce ~70-100px'lik hafif bir taşma kalıyor — kartların
    okunaklı kalması için kabul edilen bilinçli denge. Değiştirirsen Step 8'deki
@@ -1747,6 +1755,10 @@ function initCalendarUnsafe(el) {
       const dakika = (bas && bit) ? (bit - bas) / 60000 : 0;
       const kutu = document.createElement('div');
       kutu.className = 'fc-ozel-kart';
+      // Karta sığacak satır sayısı: 45px/saat slot yüksekliğinde bir satır ~13.8px.
+      // 60dk = 45px -> saat + 2 satır; 90dk+ -> saat + 3 satır; altındakiler tek satır.
+      kutu.style.setProperty('--satir', dakika >= 90 ? 3 : dakika >= 60 ? 2 : 1);
+      if (dakika > 0 && dakika < 30) kutu.classList.add('fc-ozel-kart--mini');
 
       if (dakika >= 45) {
         const saat = document.createElement('div');
