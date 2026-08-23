@@ -40,7 +40,11 @@ def generate_config_js():
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
-        if self.path == '/config.js':
+        # Render'da SUPABASE_URL env var'ı tanımlı olduğu için config.js oradan
+        # üretilir. Yerelde bu env var yok — o zaman diskteki gerçek config.js
+        # (gitignored, kişisel anahtarları içeren) olduğu gibi sunulmalı,
+        # yoksa her zaman PROJE_ID placeholder'ı dönüp yerel girişi kırıyordu.
+        if self.path == '/config.js' and os.environ.get('SUPABASE_URL'):
             self.send_response(200)
             self.send_header('Content-type', 'application/javascript')
             self.end_headers()

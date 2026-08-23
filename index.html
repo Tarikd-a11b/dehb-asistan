@@ -119,8 +119,8 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
 .fc-daygrid-day.fc-day-today{background-color:var(--indigo-glow)!important}
 .fc-col-header-cell{padding:12px 0!important;text-transform:uppercase;font-size:.7rem;letter-spacing:.1em;color:var(--text-soft)}
 .fc-daygrid-day-number{font-weight:600;color:var(--text-soft);padding:10px!important}
-.fc-event{cursor:pointer;border-radius:8px!important;padding:4px 6px!important;font-size:0.8rem!important;line-height:1.3!important;overflow:visible!important}
-.fc-event-title{display:block!important;font-weight:600!important;padding:0 2px!important;white-space:normal!important}
+.fc-event{cursor:pointer;border-radius:14px!important;padding:6px 8px!important;font-size:0.8rem!important;line-height:1.3!important;overflow:visible!important;box-shadow:0 2px 6px rgba(15,23,42,.06)}
+.fc-event-title{display:block!important;font-weight:700!important;padding:0 2px!important;white-space:normal!important}
 /* Ay görünümü: hücre başına en fazla 2 görev önizlemesi (kısa, tek satır) —
    gerisi "+N daha" linkine gizleniyor, ona veya güne tıklayınca tüm görevler
    openDayView modalinde açılıyor. Önceki tam-boy kutulardan çok daha kısa
@@ -139,9 +139,17 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    kaplıyordu). Saat etiketi kaldırıldı (dikey konum zaten saati gösteriyor),
    taşma kesinlikle engellendi, başlık dar sütunda satır satır sarılıyor. */
 .fc-timegrid-event{overflow:hidden!important}
-.fc-timegrid-event .fc-event-time{display:none!important}
-.fc-timegrid-event .fc-event-title{font-size:.72rem!important;white-space:normal!important;word-break:break-word!important;line-height:1.25!important}
-.fc-timegrid-slot{height:2.8em!important}
+/* Saatlik slotlara (01:00:00) geçince dar sütun taşma riski azaldı, TimeFrame
+   referansındaki gibi saat aralığı küçük/soluk metin olarak kart içinde tekrar
+   gösteriliyor. */
+.fc-timegrid-event .fc-event-time{display:block!important;font-size:.66rem!important;font-weight:600!important;opacity:.75}
+.fc-timegrid-event .fc-event-title{font-size:.74rem!important;white-space:normal!important;word-break:break-word!important;line-height:1.25!important}
+/* Referans görsellerdeki gibi "derli toplu" ama tam sıkışık değil: 16 satır
+   (07:00-23:00, saatlik) kutunun (640px, bkz. datesSet) biraz üstüne taşıp
+   hafif iç kaydırma yaratıyor — kaydırma TAMAMEN yok denecek kadar değil,
+   ama satırlar okunaklı kalacak kadar geniş (kullanıcı: "sürekli kaydır
+   kaydır olmasın ama kaydırmadan yönde sıkıntım yok"). */
+.fc-timegrid-slot{height:3em!important}
 /* FullCalendar v6 kendi CSS değişkenleriyle temalanıyor (resmi API) — tek tek
    iç class isimleriyle uğraşmak yerine bunları override etmek daha güvenilir. */
 html.dark .fc{--fc-border-color:var(--border-light);--fc-page-bg-color:transparent;--fc-neutral-bg-color:var(--card-hover-bg);--fc-list-event-hover-bg-color:var(--card-hover-bg);--fc-today-bg-color:var(--indigo-glow)}
@@ -1092,6 +1100,26 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
      JAVASCRIPT
      ════════════════════════════════════════ -->
 <script>
+// ── GEÇİCİ TEŞHİS: hafta görünümü "Uncaught (in promise)" hatasının kaynağını
+// bulmak için — normalde stack trace'siz görünüyordu, bu global handler'lar
+// tam stack'i hem console'a hem ekrana yazdırıp konsolda görünür kılıyor.
+// Kök neden bulununca bu blok kaldırılacak.
+window.addEventListener('unhandledrejection', (ev) => {
+  const detay = ev.reason?.stack || ev.reason?.message || JSON.stringify(ev.reason);
+  console.error('[TEŞHİS] Yakalanmamış promise reddi:', detay, ev.reason);
+  const el = document.getElementById('teshis-hata-kutusu') || (() => {
+    const d = document.createElement('div');
+    d.id = 'teshis-hata-kutusu';
+    d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#7f1d1d;color:#fff;font:11px monospace;padding:8px;z-index:99999;white-space:pre-wrap;';
+    document.body.appendChild(d);
+    return d;
+  })();
+  el.textContent += '\n\n[unhandledrejection] ' + detay;
+});
+window.addEventListener('error', (ev) => {
+  console.error('[TEŞHİS] Yakalanmamış hata:', ev.error?.stack || ev.message, ev);
+});
+
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
 // Supabase Dashboard → Project Settings → API'den al
 const SUPABASE_URL      = FOCUSAID_CONFIG.SUPABASE_URL;
@@ -1535,8 +1563,20 @@ function initCalendarUnsafe(el) {
     // okunaksız kalıyordu).
     views: {
       dayGridMonth: { dayMaxEvents: 2 },
-      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '00:30:00', expandRows: true }
+      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '01:00:00', expandRows: true }
     },
+    // Hafta görünümü height:'auto' ile sayfayı ~1400px'e kadar şişiriyordu.
+    // datesSet ile görünüm değişince kalendarın kendi height'ını değiştiriyoruz:
+    // ay 'auto' kalsın, hafta sabit 700px'lik bir kutuya sığıp İÇİNDE kaysın
+    // (FullCalendar bunu height sabitlenince otomatik yapıyor). 16 saatlik
+    // satır toplamı kutudan biraz taşıyor — bilerek: kullanıcı "kaydırmadan
+    // yönde sıkıntım yok, sürekli kaydır kaydır olmasın" dedi, o yüzden
+    // TAMAMEN sıkıştırmak (satırları okunmaz kılmak) yerine hafif taşma +
+    // hafif iç kaydırma tercih edildi.
+    datesSet(info) {
+      AppState.calendar?.setOption('height', info.view.type === 'timeGridWeek' ? 700 : 'auto');
+    },
+    scrollTime: '08:00:00',
     aspectRatio: 1.9,
     nowIndicator: true,
     selectable: true, editable: true,
@@ -1587,7 +1627,8 @@ function initCalendarUnsafe(el) {
                   description: task.description || '',
                   cognitive_load: task.cognitive_load || 'Orta'
                 },
-                backgroundColor: task.completed ? '#94a3b8' : '#6366f1',
+                backgroundColor: task.completed ? '#e2e8f0' : '#ede9fe',
+                textColor: task.completed ? '#64748b' : '#4338ca',
                 borderColor: 'transparent'
               };
             }));
@@ -1614,7 +1655,8 @@ function initCalendarUnsafe(el) {
                 start: ev.start?.dateTime || ev.start?.date,
                 end: ev.end?.dateTime || ev.end?.date,
                 extendedProps: { description: ev.description || '' },
-                backgroundColor: (ev.summary || '').includes('Mola') ? '#10b981' : '#8b5cf6',
+                backgroundColor: (ev.summary || '').includes('Mola') ? '#d1fae5' : '#f3e8ff',
+                textColor: (ev.summary || '').includes('Mola') ? '#047857' : '#7c3aed',
                 borderColor: 'transparent'
               })));
               console.log(`[Takvim] Google Calendar'dan ${resp.result.items.length} etkinlik geldi, ${tekilGcalEtkinlikleri.length} tekil eklendi (${resp.result.items.length - tekilGcalEtkinlikleri.length} zaten Supabase'te vardı)`);
