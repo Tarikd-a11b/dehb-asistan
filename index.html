@@ -323,11 +323,12 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
   </div>
   <!-- Gün Detayları Modal -->
   <div id="day-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 animate-slide-in" onclick="closeDayModal(event)">
-    <div class="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 animate-slide-in" onclick="event.stopPropagation()">
+    <div class="rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 animate-slide-in"
+         style="background:var(--glass-white);border:1px solid var(--border-light)" onclick="event.stopPropagation()">
       <div class="flex justify-between items-start mb-8">
         <div>
           <p class="text-indigo-600 font-bold text-sm uppercase tracking-widest mb-2">Seçilen Gün</p>
-          <h2 id="day-modal-date" class="text-3xl font-bold text-slate-900">-</h2>
+          <h2 id="day-modal-date" class="text-3xl font-bold" style="color:var(--text-main)">-</h2>
         </div>
         <button onclick="closeDayModal()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -337,7 +338,8 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
         <div class="text-center text-slate-400 py-8">Yükleniyor...</div>
       </div>
       <div class="mt-8 pt-6 border-t border-slate-200 flex gap-3">
-        <button onclick="closeDayModal()" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all">Kapat</button>
+        <button onclick="closeDayModal()" class="flex-1 py-3 rounded-xl font-bold transition-all"
+                style="background:var(--card-hover-bg);color:var(--text-main)">Kapat</button>
         <button onclick="openNewTaskForDay()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ Yeni Görev</button>
       </div>
     </div>
@@ -377,9 +379,9 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
     <div class="flex-1 min-w-[350px] glass-card p-6 shadow-2xl">
       <div id="calendar"></div>
     </div>
-    <div id="task-form-panel" class="w-full xl:w-[480px] glass-card p-10 bg-white shadow-2xl border-l-4 border-indigo-500 hidden animate-slide-in">
+    <div id="task-form-panel" class="w-full xl:w-[480px] glass-card p-10 shadow-2xl border-l-4 border-indigo-500 hidden animate-slide-in">
       <div class="flex justify-between items-start mb-8">
-        <h3 class="text-2xl font-bold text-slate-800">Görev Detayları</h3>
+        <h3 class="text-2xl font-bold" style="color:var(--text-main)">Görev Detayları</h3>
         <button onclick="closeForm()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
@@ -392,21 +394,25 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
         <div class="grid grid-cols-1 gap-6">
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Planlanan Tarih</label>
-            <input type="date" id="task-date" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium">
+            <input type="date" id="task-date" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium"
+                   style="background:var(--input-bg);color:var(--text-main)">
           </div>
           <div class="flex gap-4">
             <div class="flex-1">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Başlangıç</label>
-              <input type="time" id="task-start" onchange="updateEndTime()" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-indigo-600">
+              <input type="time" id="task-start" onchange="updateEndTime()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-indigo-600"
+                     style="background:var(--input-bg)">
             </div>
             <div class="flex-1">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tahmini Bitiş</label>
-              <input type="time" id="task-end" class="w-full bg-slate-50 p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-slate-400">
+              <input type="time" id="task-end" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold"
+                     style="background:var(--input-bg);color:var(--text-soft)">
             </div>
           </div>
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ek Detaylar</label>
-            <textarea id="task-desc" placeholder="Notlarını veya n8n için ipuçlarını buraya yazabilirsin..." class="w-full bg-slate-50 p-5 rounded-3xl h-32 border border-transparent focus:border-indigo-200 outline-none resize-none text-sm leading-relaxed"></textarea>
+            <textarea id="task-desc" placeholder="Notlarını veya n8n için ipuçlarını buraya yazabilirsin..." class="w-full p-5 rounded-3xl h-32 border border-transparent focus:border-indigo-200 outline-none resize-none text-sm leading-relaxed"
+                      style="background:var(--input-bg);color:var(--text-main)"></textarea>
           </div>
         </div>
         <div class="flex gap-4 pt-4">
@@ -1133,26 +1139,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
      JAVASCRIPT
      ════════════════════════════════════════ -->
 <script>
-// ── GEÇİCİ TEŞHİS: hafta görünümü "Uncaught (in promise)" hatasının kaynağını
-// bulmak için — normalde stack trace'siz görünüyordu, bu global handler'lar
-// tam stack'i hem console'a hem ekrana yazdırıp konsolda görünür kılıyor.
-// Kök neden bulununca bu blok kaldırılacak.
-window.addEventListener('unhandledrejection', (ev) => {
-  const detay = ev.reason?.stack || ev.reason?.message || JSON.stringify(ev.reason);
-  console.error('[TEŞHİS] Yakalanmamış promise reddi:', detay, ev.reason);
-  const el = document.getElementById('teshis-hata-kutusu') || (() => {
-    const d = document.createElement('div');
-    d.id = 'teshis-hata-kutusu';
-    d.style.cssText = 'position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#7f1d1d;color:#fff;font:11px monospace;padding:8px;z-index:99999;white-space:pre-wrap;';
-    document.body.appendChild(d);
-    return d;
-  })();
-  el.textContent += '\n\n[unhandledrejection] ' + detay;
-});
-window.addEventListener('error', (ev) => {
-  console.error('[TEŞHİS] Yakalanmamış hata:', ev.error?.stack || ev.message, ev);
-});
-
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
 // Supabase Dashboard → Project Settings → API'den al
 const SUPABASE_URL      = FOCUSAID_CONFIG.SUPABASE_URL;
