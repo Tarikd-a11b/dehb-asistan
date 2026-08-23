@@ -70,3 +70,49 @@ test('weekRangeISO ay sinirini asan haftayi dogru verir', () => {
   // 1 Eylul 2026 Sali → hafta 30 Agustos Pazar - 5 Eylul Cumartesi
   assert.deepStrictEqual(C.weekRangeISO('2026-09-01'), { start: '2026-08-30', end: '2026-09-05' });
 });
+
+// ── isPastDay ──
+test('isPastDay dunu gecmis sayar', () => {
+  assert.strictEqual(C.isPastDay('2026-08-22', '2026-08-23'), true);
+});
+
+test('isPastDay BUGUNU gecmis SAYMAZ', () => {
+  // Bugune gorev eklenebilmeli; sinir hatasi burada olur.
+  assert.strictEqual(C.isPastDay('2026-08-23', '2026-08-23'), false);
+});
+
+test('isPastDay yarini gecmis saymaz', () => {
+  assert.strictEqual(C.isPastDay('2026-08-24', '2026-08-23'), false);
+});
+
+test('isPastDay ay sinirini dogru asar', () => {
+  // Sozluk sirasi kronolojik sirayla ayni mi: 31 Agustos < 1 Eylul
+  assert.strictEqual(C.isPastDay('2026-08-31', '2026-09-01'), true);
+  assert.strictEqual(C.isPastDay('2026-09-01', '2026-08-31'), false);
+});
+
+test('isPastDay yil sinirini dogru asar', () => {
+  assert.strictEqual(C.isPastDay('2025-12-31', '2026-01-01'), true);
+  assert.strictEqual(C.isPastDay('2026-01-01', '2025-12-31'), false);
+});
+
+test('isPastDay tek haneli ay/gunde de dogru siralar', () => {
+  // Sifir dolgu olmasaydi '2026-9-01' < '2026-10-01' string olarak YANLIS cikardi.
+  // localDayISO/_iso her zaman dolguladigi icin bu format garanti.
+  assert.strictEqual(C.isPastDay('2026-09-05', '2026-10-01'), true);
+  assert.strictEqual(C.isPastDay('2026-10-01', '2026-09-05'), false);
+});
+
+// ── isBusyDay ──
+test('isBusyDay esigin altinda false, esikte ve ustunde true', () => {
+  assert.strictEqual(C.YOGUN_GUN_ESIGI, 5);
+  assert.strictEqual(C.isBusyDay(4), false);
+  assert.strictEqual(C.isBusyDay(5), true);
+  assert.strictEqual(C.isBusyDay(9), true);
+});
+
+test('isBusyDay 0/undefined/null ile patlamaz', () => {
+  assert.strictEqual(C.isBusyDay(0), false);
+  assert.strictEqual(C.isBusyDay(undefined), false);
+  assert.strictEqual(C.isBusyDay(null), false);
+});

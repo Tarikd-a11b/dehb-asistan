@@ -1914,6 +1914,14 @@ async function openDayView(dateStr) {
   const formatter = new Intl.DateTimeFormat('tr-TR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   dateEl.textContent = formatter.format(date);
 
+  // Ham tarihi modalda sakla. openNewTaskForDay bunu okur — EKRANDAKİ METNİ DEĞİL.
+  // Eskiden tarih 'day-modal-date'in textContent'inden geri okunuyordu ama orada
+  // "23 Ağustos 2026 Pazar" gibi yerelleştirilmiş metin var; new Date() bunu
+  // ayrıştıramayıp Invalid Date veriyor, toISOString() de RangeError fırlatıyordu.
+  // Sonuç: "+ Yeni Görev" hiç çalışmıyordu.
+  modal.dataset.iso = dateStr;
+  modal.dataset.gorevSayisi = '0';
+
   // Yükleniyor göster
   tasksList.innerHTML = '<div class="text-center text-slate-400 py-8">Görevler yükleniyor...</div>';
   modal.classList.remove('hidden');
@@ -1928,6 +1936,9 @@ async function openDayView(dateStr) {
       .order('start_time', { ascending: true });
 
     if (error) throw error;
+
+    // Yoğun gün uyarısı bu sayıyı kullanıyor (bkz. openNewTaskForDay).
+    modal.dataset.gorevSayisi = String(data?.length || 0);
 
     if (!data || data.length === 0) {
       tasksList.innerHTML = '<div class="text-center text-slate-400 py-8">📭 Bu gün için görev yok</div>';
@@ -1974,13 +1985,25 @@ function closeDayModal(event) {
 }
 
 function openNewTaskForDay() {
-  const dateStr = document.getElementById('day-modal-date')?.textContent;
-  if (!dateStr) return;
-  // Tarihi YYYY-MM-DD format'ına çevir
-  const date = new Date(dateStr);
-  const dateInput = date.toISOString().split('T')[0];
+  const modal = document.getElementById('day-modal');
+  const gunISO = modal?.dataset.iso;
+  if (!gunISO) return;
+
+  // Geçmiş gün: ENGELLE. Biten bir güne plan yapmak takvimi kirletiyor ve
+  // "Bugün" ekranındaki devreden-görev mantığıyla çakışıyor.
+  if (isPastDay(gunISO, localDayISO())) {
+    showToast('Geçmiş günlere görev ekleyemezsin!', 'error');
+    return;   // modal açık kalsın; kullanıcı o günü görmeye devam etsin
+  }
+
+  // Yoğun gün: UYAR ama engelleme. Karar kullanıcının.
+  const gorevSayisi = Number(modal.dataset.gorevSayisi || 0);
+  if (isBusyDay(gorevSayisi)) {
+    showToast(`Bu gün zaten dolu görünüyor (${gorevSayisi} görev). Yine de ekleyebilirsin.`, 'info');
+  }
+
   closeDayModal();
-  openTaskForm(dateInput);
+  openTaskForm(gunISO);
 }
 
 function updateEndTime() {
@@ -2000,6 +2023,9 @@ async function saveTaskToGoogle() {
   const desc  = document.getElementById('task-desc')?.value ?? '';
   if (!title) { showToast('Bir başlık girmelisin kral! ⚠️', 'error'); return; }
   if (!date || !start || !end) { showToast('Tarih ve saat alanlarını doldur!', 'error'); return; }
+  // İkinci savunma hattı: form açıldıktan sonra tarih alanı elle geçmişe
+  // çekilebiliyor, o yüzden kontrol openNewTaskForDay'de bırakılamaz.
+  if (isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
   const btn = document.querySelector('button[onclick="saveTaskToGoogle()"]');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
   try {
@@ -2017,6 +2043,8 @@ async function triggerN8N_Split() {
   const desc  = document.getElementById('task-desc')?.value ?? '';
   const date  = document.getElementById('task-date')?.value;
   if (!title) { showToast('Parçalamak için bir başlık girmelisin kral! ⚠️', 'error'); return; }
+  // Parçalayıcı da aynı form tarihine görev yazıyor — aynı kural burada da geçerli.
+  if (date && isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
   const btn = document.querySelector('button[onclick="triggerN8N_Split()"]');
   const orig = btn?.innerHTML;
   if (btn) { btn.innerHTML = '⏳ Analiz Ediyor...'; btn.disabled = true; }

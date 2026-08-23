@@ -56,7 +56,28 @@ function weekRangeISO(dateISO) {
   return { start: _iso(bas), end: _iso(son) };
 }
 
+/**
+ * Bir gün bugünden ÖNCE mi? Bugün "geçmiş" SAYILMAZ (bugüne görev eklenebilir).
+ *
+ * Düz string karşılaştırması bilinçli: 'YYYY-MM-DD' sıfır dolgulu olduğu için
+ * sözlük sırası kronolojik sırayla birebir aynı. Date nesnesine çevirmek hem
+ * gereksiz hem de bu projede daha önce UTC kaymasına yol açmış bir yol.
+ */
+function isPastDay(dayISO, todayISO) {
+  return dayISO < todayISO;
+}
+
+// Bir günde bu kadar (veya daha fazla) görev varsa kullanıcı uyarılır — engellenmez.
+// DEHB'de aşırı dolu bir gün planı erteleme/donma tetikleyebiliyor; amaç bloklamak
+// değil, "bugünü fazla doldurdun" sinyalini görünür kılmak.
+const YOGUN_GUN_ESIGI = 5;
+
+function isBusyDay(gorevSayisi) {
+  return (gorevSayisi || 0) >= YOGUN_GUN_ESIGI;
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { AY_ADLARI, buildMonthGrid, monthLabel, shiftMonth, weekRangeISO };
+  module.exports = { AY_ADLARI, buildMonthGrid, monthLabel, shiftMonth, weekRangeISO,
+                     isPastDay, isBusyDay, YOGUN_GUN_ESIGI };
 }
