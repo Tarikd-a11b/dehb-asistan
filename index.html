@@ -147,7 +147,10 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    initCalendarUnsafe): saat yalnızca ≥45dk'lık kartlarda basılıyor, bu yüzden
    CSS'in saat etiketini gizlemesine/zorlamasına gerek kalmadı. */
 .fc-ozel-kart{min-width:0}
-.fc-ozel-saat{font-size:.62rem;font-weight:700;opacity:.85;line-height:1.15}
+/* opacity YOK: .85 alfa beyaz yaziyi 3.71-4.43:1'e dusuruyordu, yani kart
+   renklerini WCAG AA icin koyulastirmak bosa gidiyordu. Saat yazisi zaten
+   daha kucuk punto ile ikincil duruyor, ayrica soluklastirmaya gerek yok. */
+.fc-ozel-saat{font-size:.62rem;font-weight:700;line-height:1.15}
 /* Satır sayısı sabit değil: eventContent kartı süreye göre --satir ile ayarlıyor.
    Sabit line-clamp:3 kart yüksekliğine duyarsızdı, kısa görevlerde başlığı
    satır ortasından kesiyordu. line-clamp:1 tek satırı "..." ile kırpar. */
@@ -1687,6 +1690,11 @@ function initCalendar() {
   const el = document.getElementById('calendar');
   if (!el) return;
   try {
+    // Takvim sayfasina her donuste loadPage DOM'u siliyor ama FullCalendar
+    // ornegi kendi window/document dinleyicilerini ve nowIndicator'in
+    // setTimeout zincirini birakmiyor. destroy() cagrilmazsa her ziyarette
+    // bir tane daha birikiyor.
+    AppState.calendar?.destroy();
     initCalendarUnsafe(el);
     const bugun = localDayISO();
     const [by, bm] = bugun.split('-').map(Number);
@@ -1717,6 +1725,12 @@ const RENK_MOLA = '#0f766e';
 function initCalendarUnsafe(el) {
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
+    // firstDay ACIKCA 0: yuklu FullCalendar paketi locales:[] ile geliyor, yani
+    // locale:'tr' sessizce ingilizceye dusuyor ve haftayi Pazar'dan basliyor.
+    // Mini takvim ve "Bu Hafta" araligi da Pazar-baslangicli. Biri gun locale
+    // paketini eklerse gercek 'tr' locale'i dow:1 (Pazartesi) getirip sessiz bir
+    // kayma yaratirdi; bu satir bunu engelliyor.
+    firstDay: 0,
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
     height: 'auto',
     // Ay ve hafta görünümü farklı boyutlanıyor: ay hücre başına en fazla 2
@@ -1748,7 +1762,7 @@ function initCalendarUnsafe(el) {
     // overflow:hidden ikisini birden kırpıyor, kart boş renkli bir dikdörtgene
     // dönüyordu. 45 dakikanın altındaki kartlarda saat gizlenir, başlık kalır.
     eventContent(arg) {
-      const baslik = arg.event.title || 'Görev';
+      const baslik = (arg.event.title || '').trim() || 'Görev';
       if (arg.view.type !== 'timeGridWeek') return true;   // ay görünümü FullCalendar'ın kendi render'ında kalsın
 
       const bas = arg.event.start, bit = arg.event.end;
@@ -1816,7 +1830,7 @@ function initCalendarUnsafe(el) {
               if (task.calendar_event_id) eslenmisGcalIdleri.add(task.calendar_event_id);
               return {
                 id: `task-${task.id}`,
-                title: task.name || 'Görev',
+                title: (task.name || '').trim() || 'Görev',
                 start: task.start_time,
                 end: task.end_time,
                 extendedProps: {

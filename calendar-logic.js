@@ -23,7 +23,8 @@ function _iso(date) {
 
 /**
  * Bir ayın 6x7'lik takvim ızgarası. Hafta PAZAR başlar (büyük takvim
- * locale:'tr' ile Pazar-başlangıçlı render ediliyor, hizalı olmalı).
+ * initCalendarUnsafe içinde açıkça verilen firstDay:0 ile Pazar-başlangıçlı
+ * render ediliyor, hizalı olmalı — bu modül o değerle senkron kalmalı).
  * Baştaki ve sondaki taşma günleri inMonth:false ile işaretlenir.
  * Ay uzunluğu ve artık yıl Date yapıcısının kendi taşma davranışına bırakılmış.
  */
