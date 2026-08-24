@@ -12,7 +12,9 @@ Arayüz açık/koyu tema destekliyor (sidebar'daki 🌗 anahtarı, tercih hesaba
 
 **Takvim** sayfası üç kolonlu: solda mini ay takvimi (büyük takvimle çift yönlü senkron) ve haftalık tamamlanma özeti, sağda ay/hafta görünümü. Hafta görünümündeki kartlar bilişsel yüke göre renklendiriliyor (hafif/orta/ağır) ve içerikleri görevin süresine göre seçiliyor — kısa görevlerde saat gizlenip başlık korunuyor, böylece hiçbir kart okunamaz hale gelmiyor. Bir güne tıklayınca o günün görevleri açılıyor; geçmiş günlere görev eklenemiyor ve gün zaten doluysa (5+ görev) uyarı veriliyor. Google Calendar'ın tüm gün süren etkinlikleri (tatil, izin vb.) hafta görünümünde üstteki "Tüm gün" şeridinde gösteriliyor. Yan paneldeki "+ Yeni Görev" mini takvimde seçili olan güne göre açılıyor.
 
-Görev formundaki **Kaydet** her durumda Supabase'e yazıyor; Google Calendar bağlıysa etkinlik oraya da açılıp `calendar_event_id` ile eşleniyor (takvim bu alanla tekilleştirdiği için görev iki kez görünmüyor), bağlı değilse görev yine kaydediliyor ve kullanıcı bilgilendiriliyor. Böylece elle eklenen görev, n8n'in ürettiği görevlerle aynı veri modelinde: "Bugün" ve "Projelerim" ekranlarında da görünüyor.
+Görev formunda tek bir **Ekle** butonu var; üstündeki **"🧩 AI ile parçalara böl"** kutusu varsayılan olarak açık ve hangi yolun izleneceğini belirliyor. İşaretliyse görev n8n'e gidip mikro adımlara bölünüyor; işaretli değilse tek görev olarak kaydediliyor. n8n'e ulaşılamıyorsa kutu form açılırken otomatik kapanıp kilitleniyor ve sebebi yazıyor — çalışmayan bir seçenek işaretli kalmıyor. (Erişilebilirlik yoklaması `HEAD` + `no-cors` ile yapılıyor: `POST` atmak gerçek bir workflow çalıştırırdı.)
+
+Her iki yol da Supabase'i kaynak doğruluk kabul ediyor. Tek görev kaydında satır önce `tasks` tablosuna yazılıyor, Google Calendar bağlıysa etkinlik oraya da açılıp `calendar_event_id` ile eşleniyor (takvim bu alanla tekilleştirdiği için görev iki kez görünmüyor); bağlı değilse görev yine kaydediliyor ve kullanıcı bilgilendiriliyor. Böylece elle eklenen görev, n8n'in ürettiği görevlerle aynı veri modelinde: "Bugün" ve "Projelerim" ekranlarında da görünüyor.
 
 ## Nasıl Çalışır
 

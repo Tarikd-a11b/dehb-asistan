@@ -440,9 +440,20 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
                       style="background:var(--input-bg);color:var(--text-main)"></textarea>
           </div>
         </div>
-        <div class="flex gap-4 pt-4">
-          <button onclick="saveTask()" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Kaydet</button>
-          <button onclick="triggerN8N_Split()" class="flex-1 bg-emerald-50 text-emerald-600 px-6 rounded-2xl font-bold border border-emerald-100 hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-2"><span>🧩</span> Parçala</button>
+        <!-- Tek eylem + varsayılan AÇIK parçalama seçeneği. Eskiden burada iki
+             rakip buton vardı ("Kaydet" birincil, "Parçala" ikincil) ve kullanıcıyı
+             her görevde bir karara zorluyordu — üstelik hiyerarşi tersti: uygulamanın
+             asıl işi parçalamak. Artık tek karar var ve varsayılanı doğru. -->
+        <div class="pt-4">
+          <label id="split-toggle" class="flex items-start gap-3 mb-4 cursor-pointer select-none">
+            <input type="checkbox" id="task-split" checked class="mt-0.5 w-5 h-5 rounded accent-indigo-600 cursor-pointer">
+            <span>
+              <span class="block text-sm font-bold" style="color:var(--text-main)">🧩 AI ile parçalara böl</span>
+              <span class="block text-xs mt-0.5" style="color:var(--text-soft)">Görevi mikro adımlara ayırıp saatlerine yerleştirir.</span>
+              <span id="split-note" class="hidden text-xs mt-1 font-semibold text-amber-600"></span>
+            </span>
+          </label>
+          <button onclick="submitTaskForm()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Ekle</button>
         </div>
       </div>
     </div>
@@ -1950,6 +1961,7 @@ function openTaskForm(date, ev = null) {
   updateEndTime();
   panel.classList.remove('hidden');
   panel.classList.add('animate-slide-in');
+  ayarlaParcalaSecenegi();   // await YOK: form hemen açılsın, kutu ölçüm gelince güncellenir
   document.getElementById('task-title')?.focus();
 }
 function closeForm() { document.getElementById('task-form-panel')?.classList.add('hidden'); }
@@ -2111,6 +2123,74 @@ function updateEndTime() {
   if (el) el.value = `${String((h+1)%24).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
+// ── GÖREV EKLEME: TEK GİRİŞ ──
+// Formun tek butonu buradan geçiyor; hangi yolun izleneceğini "parçala"
+// kutusu belirliyor. İki ayrı buton yerine tek karar (bkz. form markup'ı).
+function submitTaskForm() {
+  const kutu = document.getElementById('task-split');
+  return (kutu?.checked && !kutu.disabled) ? triggerN8N_Split() : saveTask();
+}
+
+/** Formun tek gönder butonu. İki akış da aynı butonu kilitleyip serbest bırakıyor. */
+const EKLE_ETIKETI = 'Ekle';
+function formGonderButonu() {
+  return document.querySelector('button[onclick="submitTaskForm()"]');
+}
+
+// n8n ölçümü bu süre boyunca yeniden kullanılıyor: form her açılışta ağ turu
+// atmasın, ama kullanıcı n8n'i açarsa bir dakika içinde kendiliğinden fark edilsin.
+const N8N_KONTROL_OMRU_MS = 60000;
+let _n8nSonKontrol = { zaman: 0, ulasilabilir: null };
+
+/**
+ * n8n webhook'una ulaşılabiliyor mu?
+ *
+ * HEAD + no-cors bilinçli: webhook'a POST atmak GERÇEK bir workflow çalıştırırdı,
+ * yoklama uğruna görev üretmek kabul edilemez. no-cors yanıtı opak olduğu için
+ * durum kodunu okuyamıyoruz — zaten umursamıyoruz, tek soru "sunucu orada mı".
+ * Canlıda (https) yerel http://localhost:5678 adresine istek zaten karma-içerik
+ * kuralıyla engelleniyor; o da doğru cevabı veriyor: ulaşılamıyor.
+ */
+async function n8nUlasilabilirMi() {
+  const simdi = Date.now();
+  if (_n8nSonKontrol.ulasilabilir !== null && simdi - _n8nSonKontrol.zaman < N8N_KONTROL_OMRU_MS) {
+    return _n8nSonKontrol.ulasilabilir;
+  }
+  let ulasilabilir = false;
+  try {
+    await fetch(CONFIG.N8N_WEBHOOK, { method: 'HEAD', mode: 'no-cors', cache: 'no-store',
+                                      signal: AbortSignal.timeout(2500) });
+    ulasilabilir = true;
+  } catch (e) {
+    console.warn('[n8n] ulaşılamıyor:', e?.message || e);
+  }
+  _n8nSonKontrol = { zaman: simdi, ulasilabilir };
+  return ulasilabilir;
+}
+
+/**
+ * Parçalama seçeneğini forma göre ayarlar: varsayılan AÇIK (uygulamanın asıl işi bu),
+ * ama n8n'e ulaşılamıyorsa kapatılıp kilitleniyor ve sebebi yazılıyor. Çalışmayan bir
+ * seçeneği işaretli bırakıp kullanıcıyı hata toast'ıyla karşılamak en kötüsü olurdu.
+ */
+async function ayarlaParcalaSecenegi() {
+  const kutu = document.getElementById('task-split');
+  const not  = document.getElementById('split-note');
+  if (!kutu) return;
+  kutu.checked = true;
+  kutu.disabled = false;
+  not?.classList.add('hidden');
+
+  if (await n8nUlasilabilirMi()) return;
+
+  kutu.checked = false;
+  kutu.disabled = true;
+  if (not) {
+    not.textContent = 'n8n şu an çalışmıyor — görev bölünmeden tek parça eklenecek.';
+    not.classList.remove('hidden');
+  }
+}
+
 // ── GÖREVİ KAYDET ──
 /**
  * Görevi Google Calendar'a DA işler. Best-effort: bağlı değilse ya da API hata
@@ -2164,7 +2244,7 @@ async function saveTask() {
   const satir = buildTaskRow({ dayISO: date, start, end, title, summary: desc });
   if (!satir) { showToast('Bitiş saati başlangıçtan sonra olmalı!', 'error'); return; }
 
-  const btn = document.querySelector('button[onclick="saveTask()"]');
+  const btn = formGonderButonu();
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
   try {
     const { data, error } = await window.supabaseClient
@@ -2195,7 +2275,7 @@ async function saveTask() {
     console.error('[Görev] kaydedilemedi:', e);
     showToast('❌ Görev kaydedilemedi: ' + (e?.message || 'bilinmeyen hata'), 'error');
   }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = EKLE_ETIKETI; } }
 }
 
 // ── n8n PARÇALAYICI (TAKVİM FORMU) ──
@@ -2206,16 +2286,15 @@ async function triggerN8N_Split() {
   if (!title) { showToast('Parçalamak için bir başlık girmelisin kral! ⚠️', 'error'); return; }
   // Parçalayıcı da aynı form tarihine görev yazıyor — aynı kural burada da geçerli.
   if (date && isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
-  const btn = document.querySelector('button[onclick="triggerN8N_Split()"]');
-  const orig = btn?.innerHTML;
-  if (btn) { btn.innerHTML = '⏳ Analiz Ediyor...'; btn.disabled = true; }
+  const btn = formGonderButonu();
+  if (btn) { btn.textContent = '⏳ Analiz Ediyor...'; btn.disabled = true; }
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
   try {
     const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: profile, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null }) });
     if (res.ok) { showToast('🧩 Görev parçalandı!', 'success'); AppState.calendar?.refetchEvents(); closeForm(); }
     else throw new Error('n8n ' + res.status);
   } catch(e) { showToast('❌ n8n ulaşılamadı. Webhook açık mı?', 'error'); }
-  finally { if (btn) { btn.innerHTML = orig; btn.disabled = false; } }
+  finally { if (btn) { btn.textContent = EKLE_ETIKETI; btn.disabled = false; } }
 }
 
 // ── n8n CHATBOT ──
