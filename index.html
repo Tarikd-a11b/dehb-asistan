@@ -1700,6 +1700,11 @@ async function baglaOturumTokeniyle(token) {
   try {
     if (AppState.googleAccessToken) return;            // zaten bağlı
     if (!await tokenTakvimeYetiyorMu(token)) return;   // izin verilmemiş
+    // İkinci kontrol: doğrulama sürerken restoreGoogleToken → yenilemeyiDene
+    // yolu bağlantıyı çoktan kurmuş olabilir (ikisi de sayfa açılışında koşuyor).
+    // Bu satır olmadan her açılışta takvim iki kez aktifleştiriliyor ve
+    // gereksiz bir Google isteği daha atılıyordu.
+    if (AppState.googleAccessToken) return;
     // Google provider_token'ının kalan ömrünü söylemiyor; ~1 saat varsayıp
     // saklıyoruz. Süre dolarsa istek 401 döner ve kullanıcı elle bağlar.
     localStorage.setItem(GOOGLE_TOKEN_STORAGE_KEY,
