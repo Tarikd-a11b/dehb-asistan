@@ -1225,9 +1225,13 @@ async function _onSession(session) {
   currentUser = session.user;
   showUserInfo(currentUser);
   if (session.access_token)  AppState.supabaseToken = session.access_token;
-  // NOT: session.provider_token'ı takvime bağlamak İÇİN KULLANMA — Supabase'in Google
-  // OAuth'unda calendar.events scope'u bilerek yok, bu token'la events.list 403 verir.
-  // Takvim izni SADECE "Google Takvimi Bağla" butonundaki GIS tokenClient'tan gelir.
+  // Giriş artık takvim iznini de istiyor (bkz. auth.html'deki `scopes`), o yüzden
+  // Supabase oturumundaki provider_token doğrudan Google API token'ı oluyor:
+  // kullanıcı ayrıca "Google Takvimi Bağla"ya basmak zorunda kalmıyor.
+  // ESKİ NOT (artık geçersiz): "provider_token'ı KULLANMA, scope yok, 403 verir."
+  // Yine de körlemesine güvenmiyoruz — kullanıcı izni reddetmiş olabilir, o yüzden
+  // token'ın takvime gerçekten yettiği ÖLÇÜLÜP öyle bağlanıyor (bkz. tokenTakvimeYetiyorMu).
+  if (session.provider_token) baglaOturumTokeniyle(session.provider_token);
   await loadProfileFromSupabase();
   // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
   // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
@@ -1582,6 +1586,52 @@ async function activateGoogleCalendar(token) {
     }
   }
   AppState.calendar?.refetchEvents();
+}
+
+/**
+ * Token takvime yetiyor mu? Tek satırlık salt-okunur bir istekle ölçülür.
+ * Gerekli: giriş sırasında kullanıcı takvim iznini REDDETMİŞ olabilir; o durumda
+ * provider_token yine gelir ama events.list 403 döner. Ölçmeden bağlarsak buton
+ * "✓ Takvim Bağlandı" der, kullanıcı bağlandığını sanır ve ilk yazmada patlar.
+ */
+async function tokenTakvimeYetiyorMu(token) {
+  let beklendi = 0;
+  while (!AppState.gapiReady && beklendi < 8000) {
+    await new Promise(r => setTimeout(r, 200));
+    beklendi += 200;
+  }
+  if (!AppState.gapiReady) return false;
+  try {
+    gapi.client.setToken({ access_token: token });
+    await gapi.client.calendar.events.list({ calendarId: 'primary', maxResults: 1 });
+    return true;
+  } catch (e) {
+    console.warn('[Takvim] oturum token\'ı takvime yetmiyor:', e?.result?.error?.message || e?.message);
+    return false;
+  }
+}
+
+/**
+ * Girişten gelen provider_token ile takvimi bağlar. Hata YUTULUR: bağlanamazsa
+ * kullanıcı "Google Takvimi Bağla" butonuyla elle bağlayabiliyor.
+ *
+ * Süre: Google access token'ı ~1 saat yaşıyor ve sessizce yenilenemiyor
+ * (yenileme refresh_token + client secret ister, tarayıcıda tutulamaz).
+ * Bu yüzden token yerel olarak saklanıyor ve süresi dolunca buton geri geliyor.
+ */
+async function baglaOturumTokeniyle(token) {
+  try {
+    if (AppState.googleAccessToken) return;            // zaten bağlı
+    if (!await tokenTakvimeYetiyorMu(token)) return;   // izin verilmemiş
+    // Google provider_token'ının kalan ömrünü söylemiyor; ~1 saat varsayıp
+    // saklıyoruz. Süre dolarsa istek 401 döner ve kullanıcı elle bağlar.
+    localStorage.setItem(GOOGLE_TOKEN_STORAGE_KEY,
+      JSON.stringify({ access_token: token, expiresAt: Date.now() + 3600 * 1000 }));
+    await activateGoogleCalendar(token);
+    console.log('[Takvim] giriş oturumundan otomatik bağlandı');
+  } catch (e) {
+    console.warn('[Takvim] otomatik bağlanamadı:', e);
+  }
 }
 
 function handleAuthClick() {

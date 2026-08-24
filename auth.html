@@ -170,7 +170,13 @@ async function signInWithGoogle() {
   const { error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + '/index_2.html'
+      redirectTo: window.location.origin + '/index_2.html',
+      // Takvim izni GİRİŞTE isteniyor: kullanıcı zaten Google hesabıyla giriyor,
+      // ayrıca "Google Takvimi Bağla" butonuna basmak zorunda kalmasın. İzin
+      // verilirse Supabase oturumu `provider_token` ile geliyor ve index.html
+      // takvimi kendiliğinden bağlıyor (bkz. _onSession).
+      // Kullanıcı izni REDDEDEBİLİR — o yüzden buton bir yedek yol olarak duruyor.
+      scopes: 'https://www.googleapis.com/auth/calendar.events'
     }
   });
 
