@@ -15,6 +15,9 @@ import http.server
 import socketserver
 import os
 import json
+import urllib.request
+import urllib.error
+import urllib.parse
 
 PORT = int(os.environ.get('PORT', 3000))
 
@@ -38,7 +41,82 @@ def generate_config_js():
     return js_content.encode('utf-8')
 
 
+GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token'
+
+
+def refresh_google_access_token(refresh_token):
+    """Refresh token'i yeni bir access token'a cevirir.
+
+    Client secret SUNUCUDA kaliyor -- bu ucun tek varlik sebebi bu. Tarayici
+    secret'i tutamayacagi icin yenilemeyi kendi basina yapamaz.
+
+    Donus: (http_durumu, govde_sozlugu). Token'lar LOGLANMAZ.
+    """
+    client_id = os.environ.get('GOOGLE_CLIENT_ID')
+    client_secret = os.environ.get('GOOGLE_CLIENT_SECRET')
+    if not client_id or not client_secret:
+        # Yapilandirma eksik: uygulama bunu gorup "Takvimi Bagla" butonuna dusuyor.
+        return 503, {'error': 'not_configured',
+                     'message': 'GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET tanimli degil'}
+
+    veri = urllib.parse.urlencode({
+        'client_id': client_id,
+        'client_secret': client_secret,
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token',
+    }).encode('utf-8')
+
+    istek = urllib.request.Request(GOOGLE_TOKEN_URL, data=veri,
+                                   headers={'Content-Type': 'application/x-www-form-urlencoded'})
+    try:
+        with urllib.request.urlopen(istek, timeout=10) as yanit:
+            sonuc = json.loads(yanit.read().decode('utf-8'))
+        return 200, {'access_token': sonuc.get('access_token'),
+                     'expires_in': sonuc.get('expires_in', 3600)}
+    except urllib.error.HTTPError as e:
+        # Google'in gerekcesini gecir (invalid_grant = kullanici izni geri aldi
+        # ya da token suresi doldu) ama govdeyi oldugu gibi yansitma.
+        try:
+            ayrinti = json.loads(e.read().decode('utf-8')).get('error', 'unknown')
+        except Exception:
+            ayrinti = 'unknown'
+        print('[refresh] Google reddetti:', e.code, ayrinti)
+        return 400, {'error': ayrinti}
+    except Exception as e:
+        print('[refresh] istek basarisiz:', type(e).__name__)
+        return 502, {'error': 'upstream_failure'}
+
+
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
+    def _json_yanit(self, durum, govde):
+        cikti = json.dumps(govde).encode('utf-8')
+        self.send_response(durum)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Content-Length', str(len(cikti)))
+        self.end_headers()
+        self.wfile.write(cikti)
+
+    def do_POST(self):
+        if self.path != '/api/google/refresh':
+            self._json_yanit(404, {'error': 'not_found'})
+            return
+        try:
+            uzunluk = int(self.headers.get('Content-Length') or 0)
+            if uzunluk <= 0 or uzunluk > 8192:      # refresh token birkac yuz bayt
+                self._json_yanit(400, {'error': 'bad_request'})
+                return
+            govde = json.loads(self.rfile.read(uzunluk).decode('utf-8'))
+            refresh_token = (govde or {}).get('refresh_token')
+            if not refresh_token or not isinstance(refresh_token, str):
+                self._json_yanit(400, {'error': 'refresh_token_required'})
+                return
+        except Exception:
+            self._json_yanit(400, {'error': 'bad_request'})
+            return
+
+        durum, yanit = refresh_google_access_token(refresh_token)
+        self._json_yanit(durum, yanit)
+
     def do_GET(self):
         # Render'da SUPABASE_URL env var'ı tanımlı olduğu için config.js oradan
         # üretilir. Yerelde bu env var yok — o zaman diskteki gerçek config.js

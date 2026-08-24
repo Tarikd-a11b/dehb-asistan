@@ -54,6 +54,12 @@ Kullanıcı görev girer
 cp config.example.js config.js
 ```
 
+Sunucu tarafında (Render → Environment ya da yerelde ortam değişkeni olarak) ayrıca
+**`GOOGLE_CLIENT_SECRET`** tanımlı olmalı. Bu değer tarayıcıya HİÇ gönderilmiyor;
+yalnızca `serve.py` içindeki `/api/google/refresh` ucu, süresi dolan Google token'ını
+sessizce yenilemek için kullanıyor. Tanımlı değilse uygulama çalışmaya devam eder,
+sadece otomatik yenileme devre dışı kalır ve kullanıcı takvimi elle bağlar.
+
 `config.js` içinde doldurulacak alanlar:
 
 ```js
@@ -69,7 +75,9 @@ const FOCUSAID_CONFIG = {
 
 ### 3. Supabase Kurulumu
 
-`schema.sql` dosyasını Supabase SQL Editor'de çalıştırın.
+`schema.sql` dosyasını Supabase SQL Editor'de çalıştırın. Var olan bir kurulumu
+güncelliyorsanız `add-google-refresh-token.sql` dosyasını da çalıştırın (Google
+takvim bağlantısının kendiliğinden yenilenmesi için gereken kolonu ekler).
 
 Ardından `tasks` tablosuna gerekli kolonları ekleyin:
 
@@ -137,6 +145,7 @@ Tarayıcıda: `http://localhost:3000/auth.html`
 ├── serve.py           # Önbelleksiz geliştirme sunucusu (port 3000)
 ├── schema.sql         # Supabase veritabanı şeması
 ├── fix-tasks-*.sql    # tasks tablosu şema/RLS düzeltmeleri
+├── add-google-refresh-token.sql # profiles.google_refresh_token kolonu
 ├── n8n-workflow-*.json # n8n iş akışı tanımları
 ├── test/              # tasks-logic + doc-intake-logic + calendar-logic testleri (node --test)
 ├── config.example.js  # Konfigürasyon şablonu (bunu kopyala → config.js)
@@ -154,7 +163,7 @@ Tarayıcıda: `http://localhost:3000/auth.html`
   - **Oracle Cloud (Always Free ARM):** Kurulum tamamlandı ama Frankfurt bölgesindeki üç
     Availability Domain de saatlerce/günlerce kapasite dolu verdi — bilinen bir Oracle Free Tier
     sorunu, garantili bir çözüm süresi yok.
-- Google access token ~1 saat sonra sürüyor; süresi dolduğunda "Google Takvimi Bağla" butonuna tekrar basmak gerekiyor (otomatik yenileme henüz yok — token sayfa yenilemeleri arasında localStorage'da kalıcı, ama süresi dolunca yeniden bağlanmak gerekiyor). Görev **kaydetmek** için bağlantı gerekmiyor (aşağıya bak); bağlantı yalnızca görevin Google Calendar'a da işlenmesi, tamamlandı/erteleme değişikliklerinin oraya yansıması ve FocusAid dışı etkinliklerin takvimde görünmesi için gerekli.
+- Google takvim bağlantısı girişte kuruluyor ve süresi dolunca sunucu üzerinden **sessizce yenileniyor** (`serve.py` → `/api/google/refresh`; yenileme `GOOGLE_CLIENT_SECRET` gerektirdiği için tarayıcıda yapılamıyor). Yenileme anahtarı kullanıcının kendi `profiles` satırında duruyor, RLS ile yalnızca sahibine açık. Kullanıcı Google hesabından izni geri alırsa yenileme `invalid_grant` ile başarısız olur; anahtar temizlenir ve "Google Takvimi Bağla" butonu yedek yol olarak devreye girer. Görev **kaydetmek** için bağlantı hiç gerekmiyor; bağlantı yalnızca görevin Google Calendar'a da işlenmesi, tamamlandı/erteleme değişikliklerinin oraya yansıması ve FocusAid dışı etkinliklerin takvimde görünmesi için gerekli.
 - Hafta görünümünün araç çubuğu ve gün adları İngilizce, hafta Pazar'dan başlıyor: kurulu
   `fullcalendar@6.1.8/index.global.min.js` paketi `locales:[]` ile geldiği için `locale:'tr'`
   sessizce İngilizceye düşüyor. Gerçek `tr` locale paketi eklenirse hafta başlangıcı (`firstDay`),

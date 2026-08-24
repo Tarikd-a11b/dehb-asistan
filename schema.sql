@@ -31,6 +31,10 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   stim_pref         TEXT        DEFAULT 'fidget',
   superpowers       JSONB       DEFAULT '[]',
 
+  -- Google OAuth refresh token (access_type=offline ile giriste alinir).
+  -- Yalnizca satirin sahibi okuyabilir/yazabilir; RLS politikalari asagida.
+  google_refresh_token TEXT,
+
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );

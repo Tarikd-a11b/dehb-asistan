@@ -146,6 +146,13 @@ sb.auth.onAuthStateChange((event, session) => {
 });
 
 // ── GOOGLE İLE GİRİŞ ────────────────────────────────────────────────────────
+// Bu tarayıcıda Google'dan zaten bir yenileme anahtarı alındı mı?
+// (index.html anahtarı profile yazarken işaretliyor.)
+const GCAL_OFFLINE_BAYRAGI = 'focusaid_gcal_offline';
+function cihazdaYenilemeAnahtariVar() {
+  try { return localStorage.getItem(GCAL_OFFLINE_BAYRAGI) === '1'; } catch (e) { return false; }
+}
+
 async function signInWithGoogle() {
   const btn    = document.getElementById('google-login-btn');
   const errEl  = document.getElementById('error-msg');
@@ -176,7 +183,22 @@ async function signInWithGoogle() {
       // verilirse Supabase oturumu `provider_token` ile geliyor ve index.html
       // takvimi kendiliğinden bağlıyor (bkz. _onSession).
       // Kullanıcı izni REDDEDEBİLİR — o yüzden buton bir yedek yol olarak duruyor.
-      scopes: 'https://www.googleapis.com/auth/calendar.events'
+      scopes: 'https://www.googleapis.com/auth/calendar.events',
+      // access_type=offline: Google'dan access token'ın YANINDA bir refresh token
+      // da iste. Access token ~1 saat yaşıyor; refresh token'la sunucu tarafında
+      // sessizce yenilenebiliyor (bkz. serve.py /api/google/refresh), böylece
+      // kullanıcı her saat başı "Google Takvimi Bağla"ya basmak zorunda kalmıyor.
+      // prompt=consent: Google refresh token'ı YALNIZCA izin ekranı gösterildiğinde
+      // veriyor. Bu olmadan, izni önceden vermiş bir kullanıcı (yani mevcut herkes)
+      // hiç refresh token almaz ve yenileme sessizce hiç çalışmaz.
+      //
+      // Ama izin ekranını HER girişte göstermek de gereksiz sürtünme. Bu cihazda
+      // bir kez alındıysa (index.html yenileme anahtarını saklarken bu bayrağı
+      // yazıyor) sonraki girişlerde atlanıyor. Anahtar geçersizleşirse bayrak
+      // temizleniyor ve bir sonraki girişte izin ekranı geri geliyor.
+      queryParams: cihazdaYenilemeAnahtariVar()
+        ? { access_type: 'offline' }
+        : { access_type: 'offline', prompt: 'consent' }
     }
   });
 

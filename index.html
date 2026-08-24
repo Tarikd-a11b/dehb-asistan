@@ -1232,6 +1232,10 @@ async function _onSession(session) {
   // Yine de körlemesine güvenmiyoruz — kullanıcı izni reddetmiş olabilir, o yüzden
   // token'ın takvime gerçekten yettiği ÖLÇÜLÜP öyle bağlanıyor (bkz. tokenTakvimeYetiyorMu).
   if (session.provider_token) baglaOturumTokeniyle(session.provider_token);
+  // Refresh token YALNIZCA giriş anında, o da izin ekranı gösterildiyse geliyor
+  // (bkz. auth.html'deki access_type=offline + prompt=consent). Kaçırılırsa bir
+  // daha ele geçmez, o yüzden hemen profile yazılıyor.
+  if (session.provider_refresh_token) saklaYenilemeTokeni(session.provider_refresh_token);
   await loadProfileFromSupabase();
   // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
   // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
@@ -1559,14 +1563,87 @@ function gisLoaded() {
 function restoreGoogleToken() {
   try {
     const raw = localStorage.getItem(GOOGLE_TOKEN_STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) { yenilemeyiDene(); return; }
     const saved = JSON.parse(raw);
     if (!saved?.access_token || !saved?.expiresAt || Date.now() >= saved.expiresAt) {
+      // Süre dolmuş: eskiden burada iş biterdi ve kullanıcı takvimi elle
+      // bağlamak zorunda kalırdı. Artık refresh token'la sessizce yenileniyor.
       localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
+      yenilemeyiDene();
       return;
     }
     activateGoogleCalendar(saved.access_token);
-  } catch(e) { localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY); }
+  } catch(e) {
+    localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
+    yenilemeyiDene();
+  }
+}
+
+/**
+ * Refresh token'ı kullanıcının kendi profil satırına yazar (RLS: yalnızca sahibi
+ * okuyup yazabiliyor). localStorage yerine burada duruyor ki başka bir cihazda
+ * ilk açılışta da takvim kendiliğinden bağlansın.
+ * Hata YUTULUR: saklanamazsa yalnızca otomatik yenileme çalışmaz, giriş bozulmaz.
+ */
+async function saklaYenilemeTokeni(refreshToken) {
+  try {
+    const { error } = await window.supabaseClient
+      .from('profiles')
+      .update({ google_refresh_token: refreshToken })
+      .eq('id', currentUser?.id);
+    if (error) throw error;
+    // auth.html bunu görüp bir sonraki girişte izin ekranını atlıyor.
+    try { localStorage.setItem('focusaid_gcal_offline', '1'); } catch (e) {}
+    console.log('[Takvim] yenileme anahtarı saklandı');
+  } catch (e) {
+    console.warn('[Takvim] yenileme anahtarı saklanamadı:', e?.message || e);
+  }
+}
+
+/**
+ * Access token'ın süresi dolduysa sunucu üzerinden sessizce yeniler.
+ *
+ * Yenileme İSTEMCİ SECRET'I gerektiriyor, o yüzden tarayıcıda yapılamaz —
+ * refresh token serve.py'deki /api/google/refresh ucuna gönderiliyor, secret
+ * orada duruyor (bkz. GOOGLE_CLIENT_SECRET ortam değişkeni).
+ *
+ * Hata YUTULUR: yenilenemezse kullanıcı "Google Takvimi Bağla" butonuyla elle
+ * bağlayabiliyor — yani en kötü ihtimalde eski davranışa dönülüyor.
+ */
+async function yenilemeyiDene() {
+  try {
+    if (!currentUser?.id) return;                       // oturum henüz kurulmadı
+    const { data, error } = await window.supabaseClient
+      .from('profiles').select('google_refresh_token').eq('id', currentUser.id).single();
+    if (error || !data?.google_refresh_token) return;   // hiç izin alınmamış
+
+    const res = await fetch('/api/google/refresh', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: data.google_refresh_token })
+    });
+    const govde = await res.json().catch(() => ({}));
+    if (!res.ok || !govde.access_token) {
+      console.warn('[Takvim] token yenilenemedi:', govde.error || res.status);
+      // invalid_grant: kullanıcı izni geri almış ya da token iptal olmuş.
+      // Ölü anahtarı temizle ki her açılışta boşuna denenmesin.
+      if (govde.error === 'invalid_grant') {
+        await window.supabaseClient.from('profiles')
+          .update({ google_refresh_token: null }).eq('id', currentUser.id);
+        // Bayrağı da temizle ki bir sonraki giriş izin ekranını gösterip
+        // yeni bir yenileme anahtarı alsın.
+        try { localStorage.removeItem('focusaid_gcal_offline'); } catch (e) {}
+      }
+      return;
+    }
+    localStorage.setItem(GOOGLE_TOKEN_STORAGE_KEY, JSON.stringify({
+      access_token: govde.access_token,
+      expiresAt: Date.now() + (Number(govde.expires_in || 3600) * 1000)
+    }));
+    await activateGoogleCalendar(govde.access_token);
+    console.log('[Takvim] token sessizce yenilendi');
+  } catch (e) {
+    console.warn('[Takvim] yenileme denemesi başarısız:', e?.message || e);
+  }
 }
 // Google Calendar'ı aktifleştirir: token'ı GAPI'ye set eder, butonu günceller, etkinlikleri yükler
 async function activateGoogleCalendar(token) {
