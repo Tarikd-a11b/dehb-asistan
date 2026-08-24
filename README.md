@@ -10,7 +10,7 @@ Google OAuth login, DEHB Bilgilendirme Platformu, "Bugün" ekranı, "Projelerim"
 
 Arayüz açık/koyu tema destekliyor (sidebar'daki 🌗 anahtarı, tercih hesaba kalıcı kaydediliyor). "Projelerim" sayfası, n8n'in parçaladığı görevleri proje bazında gruplayıp tek tıkla (bağlı Google Calendar etkinlikleriyle birlikte) silmeyi sağlıyor.
 
-**Takvim** sayfası üç kolonlu: solda mini ay takvimi (büyük takvimle çift yönlü senkron) ve haftalık tamamlanma özeti, sağda ay/hafta görünümü. Hafta görünümündeki kartlar bilişsel yüke göre renklendiriliyor (hafif/orta/ağır) ve içerikleri görevin süresine göre seçiliyor — kısa görevlerde saat gizlenip başlık korunuyor, böylece hiçbir kart okunamaz hale gelmiyor. Bir güne tıklayınca o günün görevleri açılıyor; geçmiş günlere görev eklenemiyor ve gün zaten doluysa (5+ görev) uyarı veriliyor.
+**Takvim** sayfası üç kolonlu: solda mini ay takvimi (büyük takvimle çift yönlü senkron) ve haftalık tamamlanma özeti, sağda ay/hafta görünümü. Hafta görünümündeki kartlar bilişsel yüke göre renklendiriliyor (hafif/orta/ağır) ve içerikleri görevin süresine göre seçiliyor — kısa görevlerde saat gizlenip başlık korunuyor, böylece hiçbir kart okunamaz hale gelmiyor. Bir güne tıklayınca o günün görevleri açılıyor; geçmiş günlere görev eklenemiyor ve gün zaten doluysa (5+ görev) uyarı veriliyor. Google Calendar'ın tüm gün süren etkinlikleri (tatil, izin vb.) hafta görünümünde üstteki "Tüm gün" şeridinde gösteriliyor. Yan paneldeki "+ Yeni Görev" mini takvimde seçili olan güne göre açılıyor.
 
 ## Nasıl Çalışır
 
@@ -151,5 +151,7 @@ Tarayıcıda: `http://localhost:3000/auth.html`
     Availability Domain de saatlerce/günlerce kapasite dolu verdi — bilinen bir Oracle Free Tier
     sorunu, garantili bir çözüm süresi yok.
 - Google access token ~1 saat sonra sürüyor; süresi dolduğunda "Google Takvimi Bağla" butonuna tekrar basmak gerekiyor (otomatik yenileme henüz yok — token sayfa yenilemeleri arasında localStorage'da kalıcı, ama süresi dolunca yeniden bağlanmak gerekiyor)
-- Google Calendar'daki **tüm gün süren etkinlikler** hafta görünümünde görünmüyor (hafta görünümü yalnızca saatli etkinlikleri gösterecek şekilde ayarlı); ay görünümünde görünüyorlar.
-- Çok kısa görevlerde (20 dakikanın altı) kart başlığı birkaç piksel kırpılabiliyor. n8n'in ürettiği tipik 25–50 dakikalık seanslar sorunsuz.
+- Hafta görünümünün araç çubuğu ve gün adları İngilizce, hafta Pazar'dan başlıyor: kurulu
+  `fullcalendar@6.1.8/index.global.min.js` paketi `locales:[]` ile geldiği için `locale:'tr'`
+  sessizce İngilizceye düşüyor. Gerçek `tr` locale paketi eklenirse hafta başlangıcı (`firstDay`),
+  mini takvim ve haftalık özet birlikte güncellenmeli.

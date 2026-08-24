@@ -116,3 +116,43 @@ test('isBusyDay 0/undefined/null ile patlamaz', () => {
   assert.strictEqual(C.isBusyDay(undefined), false);
   assert.strictEqual(C.isBusyDay(null), false);
 });
+
+// ── cardLayout ──
+test('cardLayout satir sayisini sureye gore secer', () => {
+  assert.strictEqual(C.cardLayout(30).satir, 1);
+  assert.strictEqual(C.cardLayout(59).satir, 1);
+  assert.strictEqual(C.cardLayout(60).satir, 2);
+  assert.strictEqual(C.cardLayout(89).satir, 2);
+  assert.strictEqual(C.cardLayout(90).satir, 3);
+  assert.strictEqual(C.cardLayout(240).satir, 3);
+});
+
+test('cardLayout saati yalnizca 45dk ve uzerinde gosterir', () => {
+  // 45dk'nin altinda saat + baslik birlikte kutuya sigmiyor, saat gizleniyor.
+  assert.strictEqual(C.cardLayout(44).saatGoster, false);
+  assert.strictEqual(C.cardLayout(45).saatGoster, true);
+});
+
+test('cardLayout kisa kart esigi 30dk, esikte kapali', () => {
+  assert.strictEqual(C.KISA_OLAY_DK, 30);
+  assert.strictEqual(C.cardLayout(20).kisa, true);
+  assert.strictEqual(C.cardLayout(29).kisa, true);
+  assert.strictEqual(C.cardLayout(30).kisa, false);
+});
+
+test('cardLayout sure bilinmiyorsa (0/negatif) tek satira duser, kisa DEGILDIR', () => {
+  // Bitisi olmayan etkinlikte dakika 0 gelir; kenarligi kaldirmak icin sebep yok.
+  for (const dk of [0, -5, undefined, null, NaN]) {
+    const k = C.cardLayout(dk);
+    assert.strictEqual(k.satir, 1, `satir ${dk}`);
+    assert.strictEqual(k.kisa, false, `kisa ${dk}`);
+    assert.strictEqual(k.saatGoster, false, `saat ${dk}`);
+  }
+});
+
+// ── heightForView ──
+test('heightForView hafta 700, digerleri auto', () => {
+  assert.strictEqual(C.heightForView('timeGridWeek'), 700);
+  assert.strictEqual(C.heightForView('dayGridMonth'), 'auto');
+  assert.strictEqual(C.heightForView('timeGridDay'), 'auto');
+});

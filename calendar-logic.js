@@ -76,8 +76,43 @@ function isBusyDay(gorevSayisi) {
   return (gorevSayisi || 0) >= YOGUN_GUN_ESIGI;
 }
 
+// ── HAFTA GÖRÜNÜMÜ KART BİÇİMİ ──
+// Bu eşiğin ALTINDAKİ kartlarda FullCalendar'ın kendi 1px'lik üst+alt kenarlığı
+// ve dikey padding'i, kartın toplam yüksekliğinin yarısına yakınını yiyor:
+// 20dk'lık bir kart 2.8em'lik saat satırında ~15px, kenarlık+padding 4px alınca
+// geriye 11px kalıyor ve 10.9px'lik başlık satırı kılpayı taşıp kırpılıyordu.
+// Bu süreden kısa kartlarda kenarlık ve dikey padding sıfırlanıyor (bkz. .fc-olay-kisa).
+const KISA_OLAY_DK = 30;
+
+/**
+ * Kartın içeriği süreye göre değişir: kısa kartlarda saat gizlenir (dikey konum
+ * zaten saati gösteriyor), satır sayısı kartın gerçek yüksekliğine göre seçilir.
+ * Sabit line-clamp kart yüksekliğine duyarsızdı ve başlığı satır ortasından kesiyordu.
+ */
+function cardLayout(dakika) {
+  const dk = dakika > 0 ? dakika : 0;
+  return {
+    satir: dk >= 90 ? 3 : dk >= 60 ? 2 : 1,
+    saatGoster: dk >= 45,
+    // Tek bayrak, iki ayrı yerde kullanılıyor: kartın İÇİNDEKİ yazı küçülüyor
+    // (.fc-ozel-kart--mini) ve kartın KENDİSİNDEN kenarlık/padding kalkıyor
+    // (.fc-olay-kisa). İkisi de aynı eşiğe bağlı, ayrı alan tutmak gereksiz.
+    kisa: dk > 0 && dk < KISA_OLAY_DK
+  };
+}
+
+/**
+ * Görünüme göre takvim yüksekliği. Ay 'auto' (içerik kadar), hafta sabit 700px'lik
+ * bir kutuda İÇİNDE kayar — 'auto' ile hafta görünümü sayfayı ~1400px'e şişiriyordu.
+ * datesSet bu değeri her gezinmede DEĞİL, yalnızca değiştiğinde uygular.
+ */
+function heightForView(viewType) {
+  return viewType === 'timeGridWeek' ? 700 : 'auto';
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AY_ADLARI, buildMonthGrid, monthLabel, shiftMonth, weekRangeISO,
-                     isPastDay, isBusyDay, YOGUN_GUN_ESIGI };
+                     isPastDay, isBusyDay, YOGUN_GUN_ESIGI,
+                     cardLayout, heightForView, KISA_OLAY_DK };
 }

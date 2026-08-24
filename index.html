@@ -127,6 +127,15 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
    openDayView modalinde açılıyor. Önceki tam-boy kutulardan çok daha kısa
    hücreler ama tamamen soyut nokta da değil — küçük bir önizleme. */
 .fc-daygrid-day-frame{min-height:78px!important}
+/* 78px AY hücreleri için. Hafta görünümündeki tüm-gün şeridi de aynı daygrid
+   yapısını kullanıyor, kural oraya SIZIYOR: içi bomboş bir şerit 78px yer
+   kaplıyor (ölçüldü) ve 700px'lik kutuda kaydırma taşmasını 132px'ten 214px'e
+   çıkarıyordu. Şerit içeriği kadar olsun. */
+.fc-timegrid .fc-daygrid-day-frame{min-height:0!important}
+/* Şeridin sol etiketi ("Tüm gün") dar eksen sütununda İKİ satıra sarıp şeridi
+   48px'e çıkarıyordu (ölçüldü: cushion 48px, satır yüksekliği 24px). Küçük punto
+   + tek satır: şerit artık içeriği kadar yer kaplıyor. */
+.fc-timegrid-axis-cushion{font-size:.62rem!important;line-height:1.2!important;white-space:nowrap!important;padding:2px 4px!important}
 .fc-daygrid-day-number{padding:6px 8px!important;font-size:.8rem!important}
 .fc-daygrid-day-events{padding:0 3px 3px!important;min-height:0!important}
 .fc-daygrid-event-harness{margin:0 0 2px!important}
@@ -158,6 +167,11 @@ html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{colo
   display:-webkit-box;-webkit-line-clamp:var(--satir,1);-webkit-box-orient:vertical;word-break:break-word}
 /* Çok kısa görevlerde (30dk altı) tek satır bile taşıyordu; yazı biraz küçülüyor. */
 .fc-ozel-kart--mini .fc-ozel-baslik{font-size:.62rem;line-height:1.1}
+/* 30dk altı kartlarda kenarlık + dikey padding SIFIR (sınıfı eventClassNames veriyor).
+   1px üst + 1px alt kenarlık ve 1px+1px padding, ~15px'lik bir kartın 4px'ini
+   yiyip başlık satırının altını kırpıyordu. Kenarlık kartın kendi rengiyle aynı
+   olduğu için kaldırılması görünümü değiştirmiyor, yalnızca yer açıyor. */
+.fc-timegrid-event.fc-olay-kisa{border-width:0!important;padding:0 6px!important}
 /* Satır yüksekliği: 16 saat × 2.8em ≈ 717px. ~700px'lik kutuda (bkz. datesSet)
    başlık satırı düşülünce ~70-100px'lik hafif bir taşma kalıyor — kartların
    okunaklı kalması için kabul edilen bilinçli denge. Değiştirirsen Step 8'deki
@@ -382,7 +396,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
         </div>
       </div>
 
-      <button onclick="openTaskForm(localDayISO())"
+      <button onclick="openNewTaskForSelectedDay()"
               class="w-full py-3 rounded-2xl font-bold text-white transition-all active:scale-95"
               style="background:var(--indigo-main)">+ Yeni Görev</button>
     </aside>
@@ -1504,7 +1518,9 @@ async function saveProfileToSupabase(profile) {
 // ── CONFIG ──
 const CONFIG = FOCUSAID_CONFIG;
 
-const AppState = { calendar: null, tokenClient: null, gapiReady: false, gisReady: false, googleAccessToken: null, supabaseToken: null };
+// calendarHeight: takvime EN SON uygulanan height. datesSet bunu karsilastirip
+// gereksiz setOption/re-render'i atliyor (bkz. heightForView).
+const AppState = { calendar: null, calendarHeight: null, tokenClient: null, gapiReady: false, gisReady: false, googleAccessToken: null, supabaseToken: null };
 const GOOGLE_TOKEN_STORAGE_KEY = 'focusaid_google_token';
 
 // ── GOOGLE AUTH ──
@@ -1722,7 +1738,16 @@ const YUK_RENK = {
 const RENK_TAMAMLANAN = '#64748b';
 const RENK_GCAL = '#9333ea';
 const RENK_MOLA = '#0f766e';
+/** FullCalendar etkinliginin dakika cinsinden suresi; bitisi yoksa 0. */
+function eventMinutes(ev) {
+  const bas = ev?.start, bit = ev?.end;
+  return (bas && bit) ? (bit - bas) / 60000 : 0;
+}
+
 function initCalendarUnsafe(el) {
+  // Yeni ornek asagidaki height:'auto' ile aciliyor; datesSet'in karsilastirma
+  // yaptigi durum onceki ornekten kalmasin (bkz. initCalendar'daki destroy()).
+  AppState.calendarHeight = 'auto';
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
     // firstDay ACIKCA 0: yuklu FullCalendar paketi locales:[] ile geliyor, yani
@@ -1739,7 +1764,13 @@ function initCalendarUnsafe(el) {
     // okunaksız kalıyordu).
     views: {
       dayGridMonth: { dayMaxEvents: 2 },
-      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '01:00:00', expandRows: true, allDaySlot: false }
+      // allDaySlot ACIK: kapaliyken Google Calendar'in tum-gun etkinlikleri
+      // (tatiller, dogum gunleri, "izin" gibi kayitlar) hafta gorunumunde HIC
+      // gorunmuyordu — ay gorunumune gecmeden fark edilemiyorlardi. dayMaxEvents
+      // burada YALNIZCA tum-gun seridini sinirlar (saat izgarasini degil): serit
+      // kalabalik bir haftada 700px'lik kutuyu yiyecek kadar buyuyemesin.
+      timeGridWeek: { slotMinTime: '07:00:00', slotMaxTime: '23:00:00', slotDuration: '01:00:00', expandRows: true,
+                      allDaySlot: true, allDayText: 'Tüm gün', dayMaxEvents: 2 }
     },
     // Hafta görünümü height:'auto' ile sayfayı ~1400px'e kadar şişiriyordu.
     // datesSet ile görünüm değişince kalendarın kendi height'ını değiştiriyoruz:
@@ -1750,7 +1781,14 @@ function initCalendarUnsafe(el) {
     // TAMAMEN sıkıştırmak (satırları okunmaz kılmak) yerine hafif taşma +
     // hafif iç kaydırma tercih edildi.
     datesSet(info) {
-      AppState.calendar?.setOption('height', info.view.type === 'timeGridWeek' ? 700 : 'auto');
+      // setOption HER gezinmede degil, yalnizca yukseklik gercekten degistiginde:
+      // setOption tam bir re-render tetikliyor, ayni ay icinde ileri-geri gezinirken
+      // (ve mini takvim gotoDate cagirdiginda) bu render bosa gidiyordu.
+      const yukseklik = heightForView(info.view.type);
+      if (yukseklik !== AppState.calendarHeight) {
+        AppState.calendarHeight = yukseklik;
+        AppState.calendar?.setOption('height', yukseklik);
+      }
       // info.start görünen aralığın ilk günü; ay görünümünde önceki aya
       // taşabildiği için ortadaki günü baz alıyoruz.
       const orta = new Date((info.start.getTime() + info.end.getTime()) / 2);
@@ -1764,17 +1802,20 @@ function initCalendarUnsafe(el) {
     eventContent(arg) {
       const baslik = (arg.event.title || '').trim() || 'Görev';
       if (arg.view.type !== 'timeGridWeek') return true;   // ay görünümü FullCalendar'ın kendi render'ında kalsın
+      // Tüm-gün etkinlikleri saat ızgarasında değil üstteki şeritte duruyor; süreye
+      // bağlı kart mantığı orada anlamsız (arg.timeText de boş gelir).
+      if (arg.event.allDay) return true;
 
-      const bas = arg.event.start, bit = arg.event.end;
-      const dakika = (bas && bit) ? (bit - bas) / 60000 : 0;
+      const dakika = eventMinutes(arg.event);
+      const bicim = cardLayout(dakika);
       const kutu = document.createElement('div');
       kutu.className = 'fc-ozel-kart';
       // Karta sığacak satır sayısı: 45px/saat slot yüksekliğinde bir satır ~13.8px.
       // 60dk = 45px -> saat + 2 satır; 90dk+ -> saat + 3 satır; altındakiler tek satır.
-      kutu.style.setProperty('--satir', dakika >= 90 ? 3 : dakika >= 60 ? 2 : 1);
-      if (dakika > 0 && dakika < 30) kutu.classList.add('fc-ozel-kart--mini');
+      kutu.style.setProperty('--satir', bicim.satir);
+      if (bicim.kisa) kutu.classList.add('fc-ozel-kart--mini');
 
-      if (dakika >= 45) {
+      if (bicim.saatGoster) {
         const saat = document.createElement('div');
         saat.className = 'fc-ozel-saat';
         saat.textContent = arg.timeText;
@@ -1786,6 +1827,14 @@ function initCalendarUnsafe(el) {
       kutu.appendChild(ad);
 
       return { domNodes: [kutu] };
+    },
+    // 20dk'lik bir kart hafta gorunumunde ~15px; FullCalendar'in kendi 1px ust+alt
+    // kenarligi ve dikey padding'i bunun 4px'ini aliyor, geriye kalan yer 10.9px'lik
+    // baslik satirina KILPAYI yetmiyor ve satirin alti kirpiliyordu. Kisa kartlarda
+    // ikisi de sifirlaniyor (bkz. .fc-olay-kisa) — kenarlik zaten kart rengiyle ayni.
+    eventClassNames(arg) {
+      if (arg.view.type !== 'timeGridWeek' || arg.event.allDay) return [];
+      return cardLayout(eventMinutes(arg.event)).kisa ? ['fc-olay-kisa'] : [];
     },
     aspectRatio: 1.9,
     nowIndicator: true,
@@ -1922,6 +1971,11 @@ async function openDayView(dateStr) {
   modal.dataset.iso = dateStr;
   modal.dataset.gorevSayisi = '0';
 
+  // Seçim mini takvimde de işaretlensin: yan paneldeki "+ Yeni Görev" bu seçimi
+  // kullanıyor, kullanıcının az önce tıkladığı günle tutarlı olmalı.
+  MiniState.selected = dateStr;
+  renderMiniCalendar();
+
   // Yükleniyor göster
   tasksList.innerHTML = '<div class="text-center text-slate-400 py-8">Görevler yükleniyor...</div>';
   modal.classList.remove('hidden');
@@ -1984,25 +2038,65 @@ function closeDayModal(event) {
   document.getElementById('day-modal')?.classList.add('hidden');
 }
 
+/**
+ * Geçmiş gün: ENGELLE. Biten bir güne plan yapmak takvimi kirletiyor ve
+ * "Bugün" ekranındaki devreden-görev mantığıyla çakışıyor.
+ * Görev eklemenin İKİ girişi var (gün modalı ve yan panel), kural tek yerde durmalı.
+ */
+function gunEklemeyeAcikMi(gunISO) {
+  if (isPastDay(gunISO, localDayISO())) {
+    showToast('Geçmiş günlere görev ekleyemezsin!', 'error');
+    return false;
+  }
+  return true;
+}
+
+/** Yoğun gün: UYAR ama engelleme. Karar kullanıcının. */
+function yogunGunUyar(gorevSayisi) {
+  if (isBusyDay(gorevSayisi)) {
+    showToast(`Bu gün zaten dolu görünüyor (${gorevSayisi} görev). Yine de ekleyebilirsin.`, 'info');
+  }
+}
+
+/** Bir günün görev sayısı. Hata YUTULUR: sayı alınamazsa uyarı atlanır, form yine açılır. */
+async function countTasksForDay(gunISO) {
+  try {
+    const { count, error } = await window.supabaseClient
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', currentUser?.id)
+      .eq('day', gunISO);
+    if (error) throw error;
+    return count || 0;
+  } catch (e) {
+    console.warn('[Takvim] gün görev sayısı alınamadı:', e);
+    return 0;
+  }
+}
+
+// Gün modalındaki "+ Yeni Görev".
 function openNewTaskForDay() {
   const modal = document.getElementById('day-modal');
   const gunISO = modal?.dataset.iso;
   if (!gunISO) return;
+  if (!gunEklemeyeAcikMi(gunISO)) return;   // modal açık kalsın; kullanıcı o günü görmeye devam etsin
 
-  // Geçmiş gün: ENGELLE. Biten bir güne plan yapmak takvimi kirletiyor ve
-  // "Bugün" ekranındaki devreden-görev mantığıyla çakışıyor.
-  if (isPastDay(gunISO, localDayISO())) {
-    showToast('Geçmiş günlere görev ekleyemezsin!', 'error');
-    return;   // modal açık kalsın; kullanıcı o günü görmeye devam etsin
-  }
-
-  // Yoğun gün: UYAR ama engelleme. Karar kullanıcının.
-  const gorevSayisi = Number(modal.dataset.gorevSayisi || 0);
-  if (isBusyDay(gorevSayisi)) {
-    showToast(`Bu gün zaten dolu görünüyor (${gorevSayisi} görev). Yine de ekleyebilirsin.`, 'info');
-  }
-
+  // Modal o günün görevlerini zaten çekti, sayı dataset'te hazır — ağ turu gerekmiyor.
+  yogunGunUyar(Number(modal.dataset.gorevSayisi || 0));
   closeDayModal();
+  openTaskForm(gunISO);
+}
+
+/**
+ * Yan paneldeki "+ Yeni Görev": mini takvimde SEÇİLİ günü açar.
+ * Eskiden koşulsuz localDayISO() (bugün) açıyordu — kullanıcı mini takvimden
+ * başka bir gün seçtikten sonra bile forma bugünün tarihi geliyor, seçim
+ * sessizce yok sayılıyordu. Gün modalıyla aynı kurallar burada da geçerli.
+ */
+async function openNewTaskForSelectedDay() {
+  const gunISO = MiniState.selected || localDayISO();
+  if (!gunEklemeyeAcikMi(gunISO)) return;   // geçmiş gün: sayım için ağa çıkmaya gerek yok
+  yogunGunUyar(await countTasksForDay(gunISO));
   openTaskForm(gunISO);
 }
 
