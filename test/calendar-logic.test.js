@@ -156,3 +156,43 @@ test('heightForView hafta 700, digerleri auto', () => {
   assert.strictEqual(C.heightForView('dayGridMonth'), 'auto');
   assert.strictEqual(C.heightForView('timeGridDay'), 'auto');
 });
+
+// ── buildTaskRow ──
+// NOT: testler saat dilimi BAGIMSIZ. Beklenen ISO metnini yazmak yerine
+// start_time'i geri cozup yerel saatini kontrol ediyoruz — CI'da baska bir
+// dilimde kosarsa da gecerli kalir.
+test('buildTaskRow yerel saatleri UTC ISO olarak yazar, day yerel kalir', () => {
+  const r = C.buildTaskRow({ dayISO: '2026-08-27', start: '20:00', end: '21:30',
+                             title: '  Rapor taslagi  ', summary: '  notlar  ' });
+  assert.strictEqual(r.day, '2026-08-27');
+  assert.strictEqual(r.name, 'Rapor taslagi');       // basi/sonu kirpilir
+  assert.strictEqual(r.summary, 'notlar');
+  const bas = new Date(r.start_time), bit = new Date(r.end_time);
+  assert.strictEqual(bas.getHours(), 20);
+  assert.strictEqual(bas.getMinutes(), 0);
+  assert.strictEqual(bas.getDate(), 27);
+  assert.strictEqual((bit - bas) / 60000, 90);
+  assert.ok(r.start_time.endsWith('Z'), 'UTC ISO bekleniyor');
+});
+
+test('buildTaskRow varsayilanlari: orta bilissel yuk, tamamlanmamis', () => {
+  const r = C.buildTaskRow({ dayISO: '2026-08-27', start: '09:00', end: '09:25', title: 'X' });
+  assert.strictEqual(r.cognitive_load, 'medium');
+  assert.strictEqual(r.completed, false);
+  assert.strictEqual(r.summary, null);   // bos aciklama null olur, '' degil
+});
+
+test('buildTaskRow bitis baslangictan sonra degilse null doner', () => {
+  const ortak = { dayISO: '2026-08-27', title: 'X' };
+  assert.strictEqual(C.buildTaskRow({ ...ortak, start: '10:00', end: '09:00' }), null);
+  assert.strictEqual(C.buildTaskRow({ ...ortak, start: '10:00', end: '10:00' }), null);
+  assert.ok(C.buildTaskRow({ ...ortak, start: '10:00', end: '10:01' }));
+});
+
+test('buildTaskRow eksik alanda null doner, patlamaz', () => {
+  assert.strictEqual(C.buildTaskRow(), null);
+  assert.strictEqual(C.buildTaskRow({}), null);
+  assert.strictEqual(C.buildTaskRow({ dayISO: '2026-08-27', start: '10:00', end: '11:00', title: '   ' }), null);
+  assert.strictEqual(C.buildTaskRow({ dayISO: '', start: '10:00', end: '11:00', title: 'X' }), null);
+  assert.strictEqual(C.buildTaskRow({ dayISO: 'gecersiz', start: '10:00', end: '11:00', title: 'X' }), null);
+});

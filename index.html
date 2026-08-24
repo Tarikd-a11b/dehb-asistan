@@ -441,7 +441,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
           </div>
         </div>
         <div class="flex gap-4 pt-4">
-          <button onclick="saveTaskToGoogle()" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Takvime İşle</button>
+          <button onclick="saveTask()" class="flex-[2] bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Kaydet</button>
           <button onclick="triggerN8N_Split()" class="flex-1 bg-emerald-50 text-emerald-600 px-6 rounded-2xl font-bold border border-emerald-100 hover:bg-emerald-100 active:scale-95 transition-all flex items-center justify-center gap-2"><span>🧩</span> Parçala</button>
         </div>
       </div>
@@ -1883,7 +1883,10 @@ function initCalendarUnsafe(el) {
                 start: task.start_time,
                 end: task.end_time,
                 extendedProps: {
-                  description: task.description || '',
+                  // Supabase'de açıklama `summary` kolonunda (n8n de oraya yazıyor).
+                  // Burada `task.description` okunuyordu — tabloda öyle bir kolon
+                  // yok, yani açıklama hiçbir zaman görünmüyordu.
+                  description: task.summary || '',
                   cognitive_load: task.cognitive_load || 'Orta'
                 },
                 backgroundColor: task.completed
@@ -2012,7 +2015,7 @@ async function openDayView(dateStr) {
           <div class="flex justify-between items-start gap-4 mb-3">
             <div class="flex-1">
               <h4 class="font-bold text-slate-900 text-lg">${task.name || task.title || 'Görev'}</h4>
-              <p class="text-sm text-slate-600 mt-1">${task.description || ''}</p>
+              <p class="text-sm text-slate-600 mt-1">${task.summary || ''}</p>
             </div>
             <span class="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${statusColor}">${statusText}</span>
           </div>
@@ -2108,8 +2111,45 @@ function updateEndTime() {
   if (el) el.value = `${String((h+1)%24).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
 }
 
-// ── GOOGLE'A KAYDET ──
-async function saveTaskToGoogle() {
+// ── GÖREVİ KAYDET ──
+/**
+ * Görevi Google Calendar'a DA işler. Best-effort: bağlı değilse ya da API hata
+ * verirse görev yine Supabase'de durur, akış bozulmaz.
+ * @returns {{durum:'islendi'|'baglisiz'|'hata', id?:string}}
+ */
+async function takvimeIsle(satir) {
+  if (!AppState.gapiReady || !AppState.googleAccessToken) return { durum: 'baglisiz' };
+  try {
+    const resp = await gapi.client.calendar.events.insert({
+      calendarId: 'primary',
+      resource: {
+        summary: satir.name,
+        description: satir.summary || '',
+        // start_time/end_time zaten UTC ISO ('...Z'); timeZone etkinliğin
+        // görüntüleneceği dilim olarak veriliyor, anı kaydırmıyor.
+        start: { dateTime: satir.start_time, timeZone: CONFIG.TIMEZONE },
+        end:   { dateTime: satir.end_time,   timeZone: CONFIG.TIMEZONE }
+      }
+    });
+    return { durum: 'islendi', id: resp?.result?.id || null };
+  } catch (e) {
+    console.warn('[Görev] Google Calendar etkinliği oluşturulamadı:', e);
+    return { durum: 'hata' };
+  }
+}
+
+/**
+ * Kaynak doğruluk SUPABASE: görev önce `tasks` tablosuna yazılır, Google'a
+ * işlemek ikinci ve isteğe bağlı adımdır.
+ *
+ * ESKİDEN (adı `saveTaskToGoogle`'dı) yalnızca Google'a yazıyordu; bunun üç
+ * sonucu vardı: (1) takvim bağlı değilse görev hiç kaydedilmiyordu, (2) kaydedilen
+ * görevin Supabase satırı olmadığı için "Bugün" ve "Projelerim" ekranlarında
+ * (ikisi de `tasks` tablosunu okur) hiç görünmüyordu, (3) token'ın süresi
+ * dolduğunda takvimden de kayboluyordu. Artık elle eklenen görev de n8n'in
+ * ürettiği görevlerle aynı veri modelinde.
+ */
+async function saveTask() {
   const title = document.getElementById('task-title')?.value?.trim();
   const date  = document.getElementById('task-date')?.value;
   const start = document.getElementById('task-start')?.value;
@@ -2120,15 +2160,42 @@ async function saveTaskToGoogle() {
   // İkinci savunma hattı: form açıldıktan sonra tarih alanı elle geçmişe
   // çekilebiliyor, o yüzden kontrol openNewTaskForDay'de bırakılamaz.
   if (isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
-  const btn = document.querySelector('button[onclick="saveTaskToGoogle()"]');
+
+  const satir = buildTaskRow({ dayISO: date, start, end, title, summary: desc });
+  if (!satir) { showToast('Bitiş saati başlangıçtan sonra olmalı!', 'error'); return; }
+
+  const btn = document.querySelector('button[onclick="saveTask()"]');
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
   try {
-    await gapi.client.calendar.events.insert({ calendarId: 'primary', resource: { summary: title, description: desc, start: { dateTime: `${date}T${start}:00`, timeZone: CONFIG.TIMEZONE }, end: { dateTime: `${date}T${end}:00`, timeZone: CONFIG.TIMEZONE } } });
+    const { data, error } = await window.supabaseClient
+      .from('tasks')
+      .insert({ ...satir, user_id: currentUser?.id })
+      .select('id')
+      .single();
+    if (error) throw error;
+
+    const takvim = await takvimeIsle(satir);
+    // Etkinlik id'sini geri yaz: takvim iki kaynağı bu alanla eşleştirip
+    // tekilleştiriyor (bkz. events geri çağrısı), yoksa görev iki kez görünür.
+    if (takvim.id) {
+      const { error: eslemeHatasi } = await window.supabaseClient
+        .from('tasks').update({ calendar_event_id: takvim.id }).eq('id', data.id);
+      if (eslemeHatasi) console.warn('[Görev] calendar_event_id yazılamadı:', eslemeHatasi);
+    }
+
     AppState.calendar?.refetchEvents();
     closeForm();
-    showToast('✅ Görev takvime işlendi!', 'success');
-  } catch(e) { showToast('❌ Google bağlantısını kontrol et kral!', 'error'); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = 'Takvime İşle'; } }
+    showToast(
+      takvim.durum === 'islendi'  ? '✅ Görev kaydedildi ve takvime işlendi!'
+      : takvim.durum === 'baglisiz' ? '✅ Görev kaydedildi. (Google Takvim bağlı değil)'
+      : '✅ Görev kaydedildi, ama Google Takvim etkinliği oluşturulamadı.',
+      takvim.durum === 'islendi' ? 'success' : 'info'
+    );
+  } catch (e) {
+    console.error('[Görev] kaydedilemedi:', e);
+    showToast('❌ Görev kaydedilemedi: ' + (e?.message || 'bilinmeyen hata'), 'error');
+  }
+  finally { if (btn) { btn.disabled = false; btn.textContent = 'Kaydet'; } }
 }
 
 // ── n8n PARÇALAYICI (TAKVİM FORMU) ──

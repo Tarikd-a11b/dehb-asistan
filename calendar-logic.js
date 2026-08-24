@@ -110,9 +110,46 @@ function heightForView(viewType) {
   return viewType === 'timeGridWeek' ? 700 : 'auto';
 }
 
+/**
+ * Görev formundaki alanlardan Supabase `tasks` satırı üretir (user_id hariç —
+ * onu çağıran ekler, bu katman oturumu bilmez).
+ *
+ * Saat alanları YEREL kabul edilir; `start_time`/`end_time` UTC ISO olarak
+ * yazılır (tasks-logic.js'teki computeSnooze ile aynı biçim), `day` ise yerel
+ * takvim günü olarak kalır. Karışık görünüyor ama kasıtlı: `day` bir takvim
+ * günü, `start_time` bir zaman anı.
+ *
+ * Geçersiz girdide null döner — bitiş başlangıçtan SONRA olmalı. Bu kontrol
+ * eskiden yoktu: görev yalnızca Google'a yazıldığı için ters saat aralığını
+ * Google API'si reddediyordu. Artık satır kendi veritabanımıza gittiğinden
+ * reddedecek bir merci yok, kontrol buraya taşındı.
+ */
+function buildTaskRow(alanlar) {
+  const { dayISO, start, end, title, summary } = alanlar || {};
+  const ad = (title || '').trim();
+  if (!dayISO || !start || !end || !ad) return null;
+
+  const bas = new Date(`${dayISO}T${start}:00`);
+  const bit = new Date(`${dayISO}T${end}:00`);
+  if (Number.isNaN(bas.getTime()) || Number.isNaN(bit.getTime())) return null;
+  if (bit <= bas) return null;
+
+  return {
+    name: ad,
+    summary: (summary || '').trim() || null,
+    day: dayISO,
+    start_time: bas.toISOString(),
+    end_time: bit.toISOString(),
+    // Elle eklenen görevde bilişsel yük sorulmuyor; takvim kartının rengi
+    // belirsiz kalmasın diye orta kabul ediliyor (YUK_RENK'in varsayılanı da bu).
+    cognitive_load: 'medium',
+    completed: false
+  };
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AY_ADLARI, buildMonthGrid, monthLabel, shiftMonth, weekRangeISO,
                      isPastDay, isBusyDay, YOGUN_GUN_ESIGI,
-                     cardLayout, heightForView, KISA_OLAY_DK };
+                     cardLayout, heightForView, KISA_OLAY_DK, buildTaskRow };
 }
