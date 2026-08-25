@@ -24,6 +24,11 @@
 window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_URL, FOCUSAID_CONFIG.SUPABASE_ANON_KEY);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js"></script>
+<!-- Turkce locale AYRI paketten geliyor: `fullcalendar` bundle'i locales:[] ile
+     dogar, o yuzden locale:'tr' sessizce ingilizceye dusuyordu. Gercek locale
+     @fullcalendar/core altinda duruyor (403 bayt) ve FullCalendar.globalLocales'e
+     kendini ekliyor - ana bundle'DAN SONRA yuklenmeli. -->
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/tr.global.min.js"></script>
 <script src="tasks-logic.js"></script>
 <script src="calendar-logic.js"></script>
 <script src="tasks-view.js"></script>
@@ -1780,7 +1785,9 @@ function handleAuthClick() {
 const MiniState = { year: 0, month: 0, selected: '' };
 
 // İki harf: tek harfte üç 'P' ve iki 'C' çıkıp ayırt edilemiyordu.
-const MINI_GUN_BASLIKLARI = ['Pa', 'Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct'];
+// Pazartesi'den basliyor: buyuk takvim gercek 'tr' locale'iyle (dow:1) oyle
+// render ediliyor, iki izgara hizali kalmali (bkz. buildMonthGrid).
+const MINI_GUN_BASLIKLARI = ['Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct', 'Pa'];
 
 /** Mini takvimi çizer. Hata YUTULUR: yan panel çökse de büyük takvim çalışır. */
 function renderMiniCalendar() {
@@ -1936,12 +1943,10 @@ function initCalendarUnsafe(el) {
   AppState.calendarHeight = 'auto';
   AppState.calendar = new FullCalendar.Calendar(el, {
     initialView: 'dayGridMonth', locale: 'tr',
-    // firstDay ACIKCA 0: yuklu FullCalendar paketi locales:[] ile geliyor, yani
-    // locale:'tr' sessizce ingilizceye dusuyor ve haftayi Pazar'dan basliyor.
-    // Mini takvim ve "Bu Hafta" araligi da Pazar-baslangicli. Biri gun locale
-    // paketini eklerse gercek 'tr' locale'i dow:1 (Pazartesi) getirip sessiz bir
-    // kayma yaratirdi; bu satir bunu engelliyor.
-    firstDay: 0,
+    // firstDay ARTIK VERILMIYOR: gercek 'tr' locale paketi yuklendigi icin
+    // (bkz. <head>'deki tr.global.min.js) hafta basi locale'den dow:1 olarak
+    // geliyor. Elle sabitlemek locale ile celisir ve mini takvimden kaydirirdi.
+    // buildMonthGrid ve weekRangeISO de Pazartesi-baslangicli.
     headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
     height: 'auto',
     // Ay ve hafta görünümü farklı boyutlanıyor: ay hücre başına en fazla 2

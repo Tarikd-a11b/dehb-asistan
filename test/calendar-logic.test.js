@@ -7,13 +7,14 @@ test('buildMonthGrid 42 hucre dondurur', () => {
   assert.strictEqual(C.buildMonthGrid(2026, 7).length, 42);
 });
 
-test('buildMonthGrid ayin ilk gununu dogru sutuna yerlestirir', () => {
-  // 1 Agustos 2026 Cumartesi (getDay() === 6) → ilk hucre 26 Temmuz Pazar
+test('buildMonthGrid ayin ilk gununu dogru sutuna yerlestirir (hafta Pazartesi baslar)', () => {
+  // 1 Agustos 2026 Cumartesi → Pazartesi-baslangicli izgarada 6. sutun (index 5),
+  // ilk hucre 27 Temmuz Pazartesi. (Pazar-baslangicliyken 26 Temmuz Pazar idi.)
   const grid = C.buildMonthGrid(2026, 7);
-  assert.strictEqual(grid[0].iso, '2026-07-26');
+  assert.strictEqual(grid[0].iso, '2026-07-27');
   assert.strictEqual(grid[0].inMonth, false);
-  assert.strictEqual(grid[6].iso, '2026-08-01');
-  assert.strictEqual(grid[6].inMonth, true);
+  assert.strictEqual(grid[5].iso, '2026-08-01');
+  assert.strictEqual(grid[5].inMonth, true);
 });
 
 test('buildMonthGrid ay sonu tasmasini isaretler', () => {
@@ -34,6 +35,19 @@ test('buildMonthGrid artik yilda 29 Subati icerir', () => {
 test('buildMonthGrid artik olmayan yilda 29 Subat icermez', () => {
   const grid = C.buildMonthGrid(2027, 1);
   assert.strictEqual(grid.find(c => c.iso === '2027-02-29'), undefined);
+});
+
+test('buildMonthGrid Pazar gunu SON sutuna duser', () => {
+  // 2 Agustos 2026 Pazar → Pazartesi-baslangicli haftanin 7. hucresi (index 6).
+  const grid = C.buildMonthGrid(2026, 7);
+  assert.strictEqual(grid[6].iso, '2026-08-02');
+});
+
+test('buildMonthGrid ayin 1i Pazartesi ise tasma OLMADAN baslar', () => {
+  // 1 Haziran 2026 Pazartesi → ilk hucre dogrudan 1 Haziran.
+  const grid = C.buildMonthGrid(2026, 5);
+  assert.strictEqual(grid[0].iso, '2026-06-01');
+  assert.strictEqual(grid[0].inMonth, true);
 });
 
 test('buildMonthGrid UTC kaymasi yapmaz', () => {
@@ -57,18 +71,25 @@ test('shiftMonth yil sinirini asar', () => {
 });
 
 // ── weekRangeISO ──
-test('weekRangeISO pazar-cumartesi araligini verir', () => {
-  // 26 Agustos 2026 Carsamba → hafta 23 Agustos Pazar - 29 Agustos Cumartesi
-  assert.deepStrictEqual(C.weekRangeISO('2026-08-26'), { start: '2026-08-23', end: '2026-08-29' });
+test('weekRangeISO pazartesi-pazar araligini verir', () => {
+  // 26 Agustos 2026 Carsamba → hafta 24 Agustos Pazartesi - 30 Agustos Pazar
+  assert.deepStrictEqual(C.weekRangeISO('2026-08-26'), { start: '2026-08-24', end: '2026-08-30' });
 });
 
-test('weekRangeISO pazar gunu verilince o gunu baslangic sayar', () => {
-  assert.deepStrictEqual(C.weekRangeISO('2026-08-23'), { start: '2026-08-23', end: '2026-08-29' });
+test('weekRangeISO pazartesi verilince o gunu baslangic sayar', () => {
+  assert.deepStrictEqual(C.weekRangeISO('2026-08-24'), { start: '2026-08-24', end: '2026-08-30' });
+});
+
+test('weekRangeISO PAZAR gunu verilince haftayi GERIYE sayar (sinir vakasi)', () => {
+  // 30 Agustos 2026 Pazar, Pazartesi-baslangicli haftanin SON gunu:
+  // hafta 24 Agustos'ta baslar, 30 Agustos'ta biter. Pazar-baslangicli
+  // mantikta bu gun yeni bir haftanin ILK gunu sayilirdi - kritik fark.
+  assert.deepStrictEqual(C.weekRangeISO('2026-08-30'), { start: '2026-08-24', end: '2026-08-30' });
 });
 
 test('weekRangeISO ay sinirini asan haftayi dogru verir', () => {
-  // 1 Eylul 2026 Sali → hafta 30 Agustos Pazar - 5 Eylul Cumartesi
-  assert.deepStrictEqual(C.weekRangeISO('2026-09-01'), { start: '2026-08-30', end: '2026-09-05' });
+  // 1 Eylul 2026 Sali → hafta 31 Agustos Pazartesi - 6 Eylul Pazar
+  assert.deepStrictEqual(C.weekRangeISO('2026-09-01'), { start: '2026-08-31', end: '2026-09-06' });
 });
 
 // ── isPastDay ──

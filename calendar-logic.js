@@ -22,14 +22,15 @@ function _iso(date) {
 }
 
 /**
- * Bir ayın 6x7'lik takvim ızgarası. Hafta PAZAR başlar (büyük takvim
- * initCalendarUnsafe içinde açıkça verilen firstDay:0 ile Pazar-başlangıçlı
- * render ediliyor, hizalı olmalı — bu modül o değerle senkron kalmalı).
+ * Bir ayın 6x7'lik takvim ızgarası. Hafta PAZARTESİ başlar: büyük takvim
+ * gerçek 'tr' locale paketiyle (dow:1) render ediliyor, mini takvim onunla
+ * hizalı kalmalı. Türkiye'de hafta Pazartesi başladığı için doğrusu da bu.
  * Baştaki ve sondaki taşma günleri inMonth:false ile işaretlenir.
  * Ay uzunluğu ve artık yıl Date yapıcısının kendi taşma davranışına bırakılmış.
  */
 function buildMonthGrid(year, month) {
-  const kayma = new Date(year, month, 1).getDay();   // 0 = Pazar
+  // getDay() 0=Pazar veriyor; +6 %7 ile 0=Pazartesi'ye kaydırılıyor.
+  const kayma = (new Date(year, month, 1).getDay() + 6) % 7;
   const hucreler = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(year, month, 1 - kayma + i);
@@ -47,11 +48,16 @@ function shiftMonth(year, month, delta) {
   return { year: d.getFullYear(), month: d.getMonth() };
 }
 
-/** dateISO'yu içeren haftanın (Pazar–Cumartesi) sınırları. */
+/**
+ * dateISO'yu içeren haftanın (Pazartesi–Pazar) sınırları.
+ * "Bu Hafta" tamamlanma kartı bunu kullanıyor; büyük takvimin locale'i
+ * (dow:1) ve mini takvim ızgarasıyla aynı hafta tanımını paylaşmalı,
+ * yoksa kart takvimde görünenden başka bir aralığı sayar.
+ */
 function weekRangeISO(dateISO) {
   const [y, m, d] = dateISO.split('-').map(Number);
   const gun = new Date(y, m - 1, d);
-  const bas = new Date(y, m - 1, d - gun.getDay());
+  const bas = new Date(y, m - 1, d - ((gun.getDay() + 6) % 7));
   const son = new Date(bas.getFullYear(), bas.getMonth(), bas.getDate() + 6);
   return { start: _iso(bas), end: _iso(son) };
 }
