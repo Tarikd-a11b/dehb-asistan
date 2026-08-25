@@ -196,9 +196,14 @@ async function signInWithGoogle() {
       // bir kez alındıysa (index.html yenileme anahtarını saklarken bu bayrağı
       // yazıyor) sonraki girişlerde atlanıyor. Anahtar geçersizleşirse bayrak
       // temizleniyor ve bir sonraki girişte izin ekranı geri geliyor.
+      // prompt'a select_account DA ekleniyor: tarayıcıda tek bir Google hesabı
+      // açıksa Google hesap seçme ekranını tamamen atlayıp anında geri
+      // döndürüyordu — kullanıcıya "uygulama tek bir maile kilitlenmiş" gibi
+      // görünüyordu. Artık her girişte hangi hesapla girileceği soruluyor.
+      // Google boşlukla ayrılmış birden çok prompt değeri kabul ediyor.
       queryParams: cihazdaYenilemeAnahtariVar()
-        ? { access_type: 'offline' }
-        : { access_type: 'offline', prompt: 'consent' }
+        ? { access_type: 'offline', prompt: 'select_account' }
+        : { access_type: 'offline', prompt: 'consent select_account' }
     }
   });
 

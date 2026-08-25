@@ -1160,7 +1160,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
           </div>
         </div>
       </div>
-      <button id="auth-btn" onclick="handleAuthClick()" class="w-full py-2.5 text-[10px] font-black border border-slate-200 rounded-xl hover:bg-slate-50 transition uppercase tracking-widest text-slate-400">Google Takvimi Bağla</button>
+      <button id="auth-btn" onclick="handleAuthClick()" disabled class="w-full py-2.5 text-[10px] font-black border border-slate-200 rounded-xl hover:bg-slate-50 transition uppercase tracking-widest text-slate-400">Takvim bağlanıyor…</button>
       <button onclick="signOut()" class="w-full py-2 text-[9px] font-bold border border-red-100 rounded-xl hover:bg-red-50 transition uppercase tracking-widest text-red-400">Çıkış Yap</button>
     </div>
   </aside>
@@ -1231,7 +1231,11 @@ async function _onSession(session) {
   // ESKİ NOT (artık geçersiz): "provider_token'ı KULLANMA, scope yok, 403 verir."
   // Yine de körlemesine güvenmiyoruz — kullanıcı izni reddetmiş olabilir, o yüzden
   // token'ın takvime gerçekten yettiği ÖLÇÜLÜP öyle bağlanıyor (bkz. tokenTakvimeYetiyorMu).
-  if (session.provider_token) baglaOturumTokeniyle(session.provider_token);
+  if (session.provider_token) {
+    baglaOturumTokeniyle(session.provider_token).finally(() => otoBaglanmaBitti('oturum'));
+  } else {
+    otoBaglanmaBitti('oturum');
+  }
   // Refresh token YALNIZCA giriş anında, o da izin ekranı gösterildiyse geliyor
   // (bkz. auth.html'deki access_type=offline + prompt=consent). Kaçırılırsa bir
   // daha ele geçmez, o yüzden hemen profile yazılıyor.
@@ -1542,6 +1546,50 @@ const CONFIG = FOCUSAID_CONFIG;
 const AppState = { calendar: null, calendarHeight: null, tokenClient: null, gapiReady: false, gisReady: false, googleAccessToken: null, supabaseToken: null };
 const GOOGLE_TOKEN_STORAGE_KEY = 'focusaid_google_token';
 
+/**
+ * Takvim butonunun ÜÇ durumu var. Eskiden yalnızca iki tane vardı ('Bağla' ve
+ * '✓ Bağlandı') ve buton açılışta 'Google Takvimi Bağla' yazıyordu — oysa otomatik
+ * bağlanma ~7 saniye sürüyor (ölçüldü: gapi yüklenmesi + Google'a doğrulama isteği,
+ * yenileme yolunda ayrıca Supabase sorgusu + /api/google/refresh). Kullanıcı o 7
+ * saniyede yan panele bakıp takvimin bağlanmadığını sanıyordu. Artık 'bağlanıyor'
+ * durumuyla açılıyor ve gerçekten başarısız olursa 'Bağla'ya düşüyor.
+ */
+function takvimButonDurumu(durum) {
+  const btn = document.getElementById('auth-btn');
+  if (!btn) return;
+  btn.classList.remove('text-emerald-600', 'border-emerald-200');
+  if (durum === 'bagli') {
+    btn.textContent = '✓ Takvim Bağlandı';
+    btn.classList.add('text-emerald-600', 'border-emerald-200');
+    btn.disabled = true;
+  } else if (durum === 'baglaniyor') {
+    btn.textContent = 'Takvim bağlanıyor…';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Google Takvimi Bağla';
+    btn.disabled = false;
+  }
+}
+
+/**
+ * Otomatik bağlanma İKİ yoldan denenir ve hangisinin kazanacağı önceden belli
+ * değil: (a) önbellekteki token / refresh token ile yenileme (gisLoaded →
+ * restoreGoogleToken), (b) giriş oturumundaki provider_token (_onSession).
+ * Buton ancak İKİSİ de bitip hiçbiri bağlanamamışsa 'Bağla'ya dönmeli —
+ * yoksa hâlâ sürmekte olan bir bağlanmanın ortasında kullanıcıyı elle
+ * bağlamaya çağırırdık.
+ */
+const _otoBaglanma = { onbellek: false, oturum: false };
+function otoBaglanmaBitti(yol) {
+  _otoBaglanma[yol] = true;
+  if (!_otoBaglanma.onbellek || !_otoBaglanma.oturum) return;
+  if (!AppState.googleAccessToken) takvimButonDurumu('bagla');
+}
+// Güvenlik ağı: GIS betiği hiç yüklenmezse (reklam engelleyici, ağ hatası) o yol
+// hiç 'bitti' demez ve buton sonsuza dek 'bağlanıyor'da kalırdı. 12 sn sonra
+// ikisini de bitmiş say — 7 sn'lik normal süreye rahat pay bırakıyor.
+setTimeout(() => { otoBaglanmaBitti('onbellek'); otoBaglanmaBitti('oturum'); }, 12000);
+
 // ── GOOGLE AUTH ──
 function gapiLoaded() {
   gapi.load('client', async () => {
@@ -1563,19 +1611,19 @@ function gisLoaded() {
 function restoreGoogleToken() {
   try {
     const raw = localStorage.getItem(GOOGLE_TOKEN_STORAGE_KEY);
-    if (!raw) { yenilemeyiDene(); return; }
+    if (!raw) { yenilemeyiDene().finally(() => otoBaglanmaBitti('onbellek')); return; }
     const saved = JSON.parse(raw);
     if (!saved?.access_token || !saved?.expiresAt || Date.now() >= saved.expiresAt) {
       // Süre dolmuş: eskiden burada iş biterdi ve kullanıcı takvimi elle
       // bağlamak zorunda kalırdı. Artık refresh token'la sessizce yenileniyor.
       localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
-      yenilemeyiDene();
+      yenilemeyiDene().finally(() => otoBaglanmaBitti('onbellek'));
       return;
     }
-    activateGoogleCalendar(saved.access_token);
+    activateGoogleCalendar(saved.access_token).finally(() => otoBaglanmaBitti('onbellek'));
   } catch(e) {
     localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
-    yenilemeyiDene();
+    yenilemeyiDene().finally(() => otoBaglanmaBitti('onbellek'));
   }
 }
 
@@ -1655,12 +1703,7 @@ async function activateGoogleCalendar(token) {
   }
   if (AppState.gapiReady) {
     gapi.client.setToken({ access_token: token });
-    const btn = document.getElementById('auth-btn');
-    if (btn) {
-      btn.textContent = '✓ Takvim Bağlandı';
-      btn.classList.add('text-emerald-600', 'border-emerald-200');
-      btn.disabled = true;
-    }
+    takvimButonDurumu('bagli');
   }
   AppState.calendar?.refetchEvents();
 }
