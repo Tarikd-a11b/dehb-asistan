@@ -1,0 +1,68 @@
+# FocusAid n8n — 1 GB'lik ucuz/ücretsiz VM için ayarlanmış kurulum.
+# Caddy önde durur (ücretsiz HTTPS + CORS), n8n arkada, dışarıya port açmaz.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN}
+      - ACME_EMAIL=${ACME_EMAIL}
+      - FRONTEND_ORIGIN=${FRONTEND_ORIGIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - n8n
+
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    # Port DIŞARIYA açılmıyor; sadece Caddy erişiyor.
+    expose:
+      - "5678"
+    environment:
+      # --- Adres / webhook ---
+      - N8N_HOST=${DOMAIN}
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - N8N_WEBHOOK_URL=https://${DOMAIN}/
+      - N8N_EDITOR_BASE_URL=https://${DOMAIN}/
+      - GENERIC_TIMEZONE=Europe/Istanbul
+      - TZ=Europe/Istanbul
+
+      # --- Veritabanı: SQLite (yerel diskte) ---
+      # Render'daki çöküşün bir sebebi Supabase Postgres'e ulaşamamaktı.
+      # Kendi diskimiz olduğu için SQLite hem daha az RAM yer hem de dış
+      # bağımlılığı tamamen kaldırır.
+      - DB_TYPE=sqlite
+
+      # --- 1 GB RAM için kısıtlar ---
+      - NODE_OPTIONS=--max-old-space-size=512
+      # Task runner bu n8n surumunde ZORUNLU (kapatilamiyor). Ayri bir Node
+      # sureci olarak aciliyor; 1 GB'lik makinede yavas basladigi icin grant
+      # token omrunu uzatiyoruz, yoksa broker'a 403 ile reddediliyor.
+      - N8N_RUNNERS_GRANT_TOKEN_TTL=300
+      - N8N_DIAGNOSTICS_ENABLED=false
+      - N8N_VERSION_NOTIFICATIONS_ENABLED=false
+      - N8N_PERSONALIZATION_ENABLED=false
+      # Çalışma geçmişini biriktirme — SQLite şişerse RAM de şişer.
+      - EXECUTIONS_DATA_PRUNE=true
+      - EXECUTIONS_DATA_MAX_AGE=72
+      - EXECUTIONS_DATA_SAVE_ON_SUCCESS=none
+      - EXECUTIONS_DATA_SAVE_ON_ERROR=all
+
+      # --- Güvenlik ---
+      # Credential'lar bu anahtarla şifrelenir. DEĞİŞTİRİRSEN kayıtlı
+      # credential'lar okunamaz hale gelir. .env icinde, yedegini al.
+      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY}
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  caddy_data:
+  caddy_config:
+  n8n_data:

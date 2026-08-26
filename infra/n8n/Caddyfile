@@ -1,0 +1,29 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$DOMAIN} {
+	encode gzip
+
+	# --- CORS ---
+	# Tarayıcı, https://dehb-asistan.onrender.com sayfasından buraya POST atarken
+	# önce OPTIONS (preflight) yollar. n8n bunu tek başına doğru cevaplamaz,
+	# o yüzden Caddy katmanında hallediyoruz. Yoksa "Parçala" CORS hatası verir.
+	@preflight method OPTIONS
+	handle @preflight {
+		header Access-Control-Allow-Origin "{$FRONTEND_ORIGIN}"
+		header Access-Control-Allow-Methods "GET, POST, OPTIONS"
+		header Access-Control-Allow-Headers "Content-Type, Authorization, X-Focusaid-Secret"
+		header Access-Control-Max-Age "86400"
+		respond "" 204
+	}
+
+	# CORS basligini BURADA EKLEME. n8n'in webhook node'u kendi
+	# Access-Control-Allow-Origin'ini uretiyor; burada bir tane daha
+	# eklersek baslik iki kez donuyor ve tarayici cevabi tamamen reddediyor
+	# ("contains multiple values"). Preflight'i yukarida biz karsiliyoruz,
+	# gercek istegin CORS'unu n8n'e birakiyoruz.
+	handle {
+		reverse_proxy n8n:5678
+	}
+}
