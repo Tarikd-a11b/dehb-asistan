@@ -63,7 +63,10 @@ async function analyzeDocument(text, fileName) {
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ documentText: text, fileName, today: bugun })
+    // supabaseToken vekilde kimlik dogrulamasi icin gerekli (serve.py
+    // /api/n8n/analyze); token yoksa istek 401 doner.
+    body: JSON.stringify({ documentText: text, fileName, today: bugun,
+                           supabaseToken: (typeof AppState !== 'undefined') ? AppState.supabaseToken : null })
   });
   if (!res.ok) throw new Error('analiz ' + res.status);
 
