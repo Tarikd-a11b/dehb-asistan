@@ -1,0 +1,3 @@
+# Bu dosyalar Linux sunucuda calisiyor. Windows'ta CRLF ile checkout edilirlerse
+# scp sonrasi bash `\r` hatasi verir ve kurulum ilk satirda patlar.
+* text eol=lf
