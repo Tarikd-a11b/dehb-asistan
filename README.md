@@ -142,6 +142,8 @@ güncelliyorsan `add-google-refresh-token.sql` ve `fix-tasks-*.sql` dosyaların�
 `git push` deploy tetiklemiyor: servisin tüm deploy geçmişi "Manually triggered via Dashboard" ve
 GitHub↔Render bağlantısı push olaylarını iletmiyor (repoda webhook yok, Render GitHub App'inin bu
 repoya erişimi kesilmiş olabilir — `github.com/settings/installations` → Render → repository access).
+2026-08-27'de Render GitHub App'ine repo erişimi yeniden verildi; otomatik deploy'un gerçekten
+tetiklenip tetiklenmediği bu commit ile ölçülüyor (KANARYA-2026-08-27).
 Bağlantı onarılana kadar her değişiklik için: Render Dashboard → `dehb-asistan` → **Manual Deploy →
 Deploy latest commit** (~30 sn). Doğrulaması:
 `curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>`.
