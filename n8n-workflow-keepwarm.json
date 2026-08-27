@@ -13,7 +13,7 @@
       "parameters": {
         "width": 560,
         "height": 340,
-        "content": "## Render'i uyanik tutar\n\nRender ucretsiz plani **15 dakika** trafik almazsa servisi uyutuyor; sonraki ziyaretci\n~1 dakika bekliyor. Bu akis 10 dakikada bir anasayfayi GET'leyerek servisi ayakta tutar.\n\n**Saat penceresi bilincli, kaldirmayin:** Render her workspace'e ayda **750 instance saati**\nveriyor. 7/24 uyanik tutmak ~730 saat eder, yani butun butceyi yer ve ayin sonunda servis\nASKIYA ALINABILIR. Cron `*/10 8-23,0 * * *` + workflow timezone `Europe/Istanbul` =\nher gun **08:00-00:59**, ~17 saat/gun ≈ 520 saat/ay. Geri kalan ~230 saat gercek trafige\nve emniyet payina kalir.\n\nPencereyi genisletirsen once 750 saat hesabini yeniden yap.\n\nKimlik dogrulama gerekmiyor. Basarili calistirmalar kaydedilmiyor; Executions'ta bir sey\ngorurseniz o bir HATADIR — ping duşmüş demektir."
+        "content": "## Render'i uyanik tutar\n\nRender ucretsiz plani **15 dakika** trafik almazsa servisi uyutuyor; sonraki ziyaretci\n~1 dakika bekliyor. Bu akis 10 dakikada bir GET atarak servisi ayakta tutar.\n\n**Neden `/config.js`, anasayfa degil:** anasayfa 150 KB, `/config.js` 809 bayt. Uyandirma\netkisi ayni (ikisi de serve.py'yi calistirir) ama anasayfayi ping'lemek ayda ~477 MB yerdi\n— 5 GB'lik bant genisligi kotasinin %9.5'i ve sitenin gercek trafiginin ~18 kati.\nBu haliyle ayda ~2.5 MB.\n\n**Saat penceresi bilincli, kaldirmayin:** Render her workspace'e ayda **750 instance saati**\nveriyor. 7/24 uyanik tutmak ~730 saat eder, yani butun butceyi yer ve ayin sonunda servis\nASKIYA ALINABILIR. Cron `*/10 8-23,0 * * *` + workflow timezone `Europe/Istanbul` =\nher gun **08:00-00:59**, ~17 saat/gun ≈ 520 saat/ay. Geri kalan ~230 saat gercek trafige\nve emniyet payina kalir.\n\nPencereyi genisletirsen once 750 saat hesabini yeniden yap.\n\nKimlik dogrulama gerekmiyor. Basarili calistirmalar kaydedilmiyor; Executions'ta bir sey\ngorurseniz o bir HATADIR — ping duşmüş demektir."
       }
     },
     {
@@ -46,7 +46,7 @@
         300
       ],
       "parameters": {
-        "url": "https://dehb-asistan.onrender.com/",
+        "url": "https://dehb-asistan.onrender.com/config.js",
         "options": {
           "timeout": 90000
         }

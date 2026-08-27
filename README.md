@@ -199,8 +199,10 @@ bloke eder.
   sessiz atlama davranışının kendisi duruyor; görev `calendar_event_id` boş kalarak kaydedilebiliyor.
 - **Render'ın ücretsiz planı 15 dakika trafik almazsa servisi uyutuyor**; uyandırma ~1 dakika
   sürüyor ve o sırada ziyaretçi Render'ın yükleniyor ekranını görüyor. Hafifletmesi
-  `n8n-workflow-keepwarm.json`: n8n 10 dakikada bir anasayfayı GET'liyor, böylece gündüz
-  saatlerinde servis uyumuyor. Pencere bilinçli olarak **08:00-01:00** (Europe/Istanbul) —
+  `n8n-workflow-keepwarm.json`: n8n 10 dakikada bir `/config.js`'i GET'liyor, böylece gündüz
+  saatlerinde servis uyumuyor. (Anasayfa değil `/config.js`, çünkü uyandırma etkisi aynı ama
+  809 bayt yerine 150 KB indirmek ayda ~477 MB tutuyordu — 5 GB'lik bant genişliği kotasının
+  %9.5'i. Bu haliyle ~2.5 MB.) Pencere bilinçli olarak **08:00-01:00** (Europe/Istanbul) —
   Render workspace başına ayda **750 instance saati** veriyor, 7/24 uyanık tutmak ~730 saatle
   bütçenin tamamını yer ve ay sonunda servisi askıya aldırabilir; bu pencere ~520 saat tutuyor.
   Pencereyi genişletmeden önce o hesabı yeniden yap.
