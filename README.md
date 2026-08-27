@@ -188,10 +188,10 @@ bloke eder.
 
 ## Bilinen Eksikler
 
-- **Takvim senkronu başarısız olduğunda kullanıcıya yine "Takvimin düzenlendi" deniyor.** n8n'deki
-  takvim node'ları `onError: continue` ile geçiyor — bu bilinçli bir tercih, çünkü takvim yazılamasa
-  bile görevin Supabase'e kaydedilmesi isteniyor. Ama akış durmadığı için başarı mesajı da
-  değişmiyor; görev `calendar_event_id` boş kalarak kaydediliyor ve kullanıcı takvimine hiçbir şeyin
-  düşmediğini fark etmiyor. Mesajın gerçek sonuca göre ayrışması gerekiyor.
+- **Takvim senkronu sessizce atlanabiliyor.** n8n'deki takvim node'ları `onError: continue` ile
+  geçiyor — bu bilinçli bir tercih, çünkü takvim yazılamasa bile görevin Supabase'e kaydedilmesi
+  isteniyor. Kullanıcı artık yanlış bilgilendirilmiyor: n8n cevabındaki `takvimeYazilan` / `toplam`
+  sayaçlarına göre mesaj hepsi / hiçbiri / kısmi durumlarını ayırıyor (`parcalamaSonucMesaji`). Ama
+  sessiz atlama davranışının kendisi duruyor; görev `calendar_event_id` boş kalarak kaydedilebiliyor.
 - Render'ın ücretsiz planı hareketsizlikte servisi uyutuyor; ilk istek 50 saniyeye kadar
   gecikebiliyor.
