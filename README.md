@@ -138,6 +138,13 @@ Birkaç not:
 güncelliyorsan `add-google-refresh-token.sql` ve `fix-tasks-*.sql` dosyalarını da çalıştır
 (hepsi idempotent).
 
+**⚠️ Deploy:** Render'da **otomatik deploy kapalı** — `git push` tek başına canlıya bir şey
+çıkarmaz. Değişikliği yayına almak için Render Dashboard → `dehb-asistan` → **Manual Deploy →
+Deploy latest commit**. Deploy ~30 saniye sürer; doğrulaması:
+`curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>`.
+`render.yaml` servisin nasıl ayakta durduğunu ve hangi ortam değişkenlerine ihtiyaç duyduğunu
+belgeler, ama canlı servis panelden elle kurulduğu için o dosya deploy'u **sürmez**.
+
 **Kendi n8n'ini kurmak istersen:** tam kurulum kiti `infra/n8n/` altında — `kur.sh`,
 `docker-compose.yml`, `Caddyfile`, `oracle-cloud-init.txt` ve adım adım `KURULUM.md`.
 Workflow tanımları (`n8n-workflow-*.json`) **ayrı ayrı** import edilmeli; hepsi tek canvas'a

@@ -1,7 +1,59 @@
+# FocusAid — Render servis tanımı (Blueprint)
+#
+# ⚠️ CANLI SERVİS ŞU AN BU DOSYADAN YÖNETİLMİYOR.
+# `dehb-asistan` servisi Render panelinden elle oluşturuldu, Blueprint'e bağlı değil.
+# Dolayısıyla buradaki `autoDeploy` dahil hiçbir ayar canlıya kendiliğinden geçmez —
+# gerçek ayarlar Render Dashboard → dehb-asistan → Settings altında.
+#
+# 🚨 Panelde OTOMATİK DEPLOY KAPALI: `git push` tek başına canlıya bir şey çıkarmaz.
+# Ön yüzde değişiklik yaptıysan: Dashboard → dehb-asistan → Manual Deploy →
+# "Deploy latest commit". Deploy ~30 saniye sürer. Doğrulama:
+#   curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>
+#
+# Bu dosya iki işe yarıyor: (1) servisin nasıl ayakta durduğunu ve hangi ortam
+# değişkenlerine ihtiyaç duyduğunu belgeliyor, (2) servis bir gün Blueprint'ten
+# yeniden kurulmak istenirse hazır duruyor.
+
 services:
   - type: web
-    name: focusaid-beta
-    env: python
-    plan: free
-    startCommand: python serve.py
-    buildCommand: pip install -r requirements.txt
+    name: dehb-asistan          # canlı servisin GERÇEK adı (eskiden yanlışlıkla "focusaid-beta" yazıyordu)
+    runtime: python             # `env:` alanı Render tarafından kullanımdan kaldırıldı
+    plan: free                  # ücretsiz plan hareketsizlikte uyur; ilk istek 50 sn'ye kadar gecikebilir
+    region: virginia
+    branch: main
+    autoDeploy: true            # yalnızca servis Blueprint'e bağlanırsa geçerli olur (yukarıdaki nota bak)
+    buildCommand: pip install -r requirements.txt   # bağımlılık yok, serve.py sadece standart kütüphane kullanıyor
+    startCommand: python serve.py                   # PORT'u Render veriyor, serve.py onu okuyor
+
+    envVars:
+      # Hiçbiri repoya yazılmaz: sync:false = "değeri panelden elle gir".
+      # serve.py bunları config.js'e enjekte eder ya da sunucu tarafında kullanır.
+
+      # — Tarayıcıya gönderilenler (gizli değil, zaten sayfa kaynağında görünür) —
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: GOOGLE_API_KEY
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+
+      # — YALNIZCA sunucu tarafı; tarayıcıya HİÇ gönderilmez —
+      # Google token'ının sessizce yenilenmesi için gerekli (/api/google/refresh).
+      # Tanımlı değilse uygulama çalışır, sadece otomatik yenileme devre dışı kalır.
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # n8n'in gerçek webhook adresleri. Tanımlı değilse serve.py sessizce
+      # localhost:5678 varsayılanına düşer ve Parçalayıcı canlıda çalışmaz.
+      - key: N8N_WEBHOOK
+        sync: false
+      - key: N8N_ANALYZE_WEBHOOK
+        sync: false
+      # n8n'deki Header Auth credential'ının değeriyle BİREBİR aynı olmalı;
+      # uyuşmazsa webhook 403 döner ve Parçalayıcı kırılır.
+      - key: N8N_SECRET
+        sync: false
+
+      - key: TIMEZONE
+        value: Europe/Istanbul
