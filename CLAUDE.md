@@ -39,17 +39,26 @@ oraya vekillik ediyor. (Eski not "localhost:5678 açık olmalı" diyordu; 2026-0
 
 ## Deploy
 
-🚨 **`git push` canlıya bir şey çıkarmıyor — deploy şu an ELLE yapılıyor.**
+**`main`'e push → Render otomatik deploy eder.** 2026-08-27'de doğrulandı: push'tan ~38 saniye
+sonra yeni içerik canlıdaydı.
 
-Dikkat: Render'daki Auto-Deploy ayarı **"On Commit"** görünüyor, yani ayar kapalı değil. Buna rağmen
-hiç otomatik deploy olmuyor; servisin görünen tüm geçmişinde her deploy "Manually triggered by you
-via Dashboard". Build Filters boş, branch `main`, Root Directory boş — yani ayarlar doğru.
-Sorun GitHub↔Render bağlantısında: repoda webhook yok (`gh api repos/<repo>/hooks` → `[]`) ve
-Render GitHub App'inin bu repoya erişimi kesilmiş olabilir. Onarımı `github.com/settings/installations`
-→ Render → repository access üzerinden **kullanıcı yapmalı** (OAuth izni).
+Tarihçe (aynı yanlış teşhisi tekrarlamamak için): bir dönem hiç otomatik deploy olmuyordu, çünkü
+Render GitHub App'inin bu repoya erişimi kesilmişti. Panelde Auto-Deploy "On Commit" göründüğü için
+"ayar kapalı" sanmak kolaydı — **ayar açıktı, bağlantı kopuktu.** İkisi farklı şeyler.
+Onarımı `github.com/settings/installations` → Render → repository access üzerinden **kullanıcı
+yapmalı** (OAuth izni; `gh` token'ı yetmiyor, `gh api user/installations` → 403).
 
-Bağlantı onarılana kadar, ön yüzde (`index.html`, `*.js`, `serve.py`) değişiklik yaptıysan:
-Render Dashboard → `dehb-asistan` → **Manual Deploy → Deploy latest commit**. ~30 saniye sürer.
+⚠️ **`gh api repos/<repo>/hooks` → `[]` bunun göstergesi DEĞİL.** GitHub App entegrasyonları repo
+seviyesinde webhook oluşturmaz, olaylar App'in kendi webhook'una gider. Bu uç bağlantı sağlamken de
+boş döner; bir dönem buna dayanıp yanlış teşhis kondu.
+
+**Doğru teşhis yolu:** Render → `dehb-asistan` → **Events** sayfasında push'tan sonra yeni deploy
+satırı çıkıyor mu, çıkıyorsa tetikleyicisi ne diyor. Ya da ucuz kanarya: `README.md` canlıda servis
+ediliyor ama çalışma davranışının parçası değil — içine izlenebilir bir dize koyup push et, sonra
+`curl -s .../README.md | grep -c <dize>` ile yokla. Risksiz ölçüm.
+
+Otomatik deploy bozulursa geçici çözüm: Render Dashboard → `dehb-asistan` →
+**Manual Deploy → Deploy latest commit**. ~30 saniye sürer.
 
 Doğrulaması — yerel dosyaya değil, canlının servis ettiği içeriğe bak:
 

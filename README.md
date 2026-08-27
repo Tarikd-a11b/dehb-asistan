@@ -138,14 +138,15 @@ Birkaç not:
 güncelliyorsan `add-google-refresh-token.sql` ve `fix-tasks-*.sql` dosyalarını da çalıştır
 (hepsi idempotent).
 
-**⚠️ Deploy şu an elle yapılıyor.** Render'daki Auto-Deploy ayarı "On Commit" olmasına rağmen
-`git push` deploy tetiklemiyor: servisin tüm deploy geçmişi "Manually triggered via Dashboard" ve
-GitHub↔Render bağlantısı push olaylarını iletmiyor (repoda webhook yok, Render GitHub App'inin bu
-repoya erişimi kesilmiş olabilir — `github.com/settings/installations` → Render → repository access).
-2026-08-27'de Render GitHub App'ine repo erişimi yeniden verildi; otomatik deploy'un gerçekten
-tetiklenip tetiklenmediği bu commit ile ölçülüyor (KANARYA-2026-08-27).
-Bağlantı onarılana kadar her değişiklik için: Render Dashboard → `dehb-asistan` → **Manual Deploy →
-Deploy latest commit** (~30 sn). Doğrulaması:
+**Deploy otomatik: `main`'e push → Render deploy eder.** 2026-08-27'de Render GitHub App'ine
+repo erişimi yeniden verilerek onarıldı ve uçtan uca ölçüldü — push'tan ~38 saniye sonra yeni
+içerik canlıdaydı. (Öncesinde bağlantı kopuktu ve her deploy elle atılıyordu; o dönemin notları
+artık geçersiz.) Bir daha bozulursa belirtisi şudur: Render → `dehb-asistan` → **Events**
+sayfasında yeni deploy satırı çıkmaz ya da "Manually triggered by you via Dashboard" der.
+Geçici çözüm: **Manual Deploy → Deploy latest commit** (~30 sn); kalıcı çözüm
+`github.com/settings/installations` → Render → repository access.
+
+Deploy'u yerel dosyaya değil, **canlının servis ettiği içeriğe** bakarak doğrula:
 `curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>`.
 `render.yaml` servisin nasıl ayakta durduğunu ve hangi ortam değişkenlerine ihtiyaç duyduğunu
 belgeler, ama canlı servis panelden elle kurulduğu için o dosya deploy'u **sürmez**.

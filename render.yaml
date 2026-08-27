@@ -5,12 +5,11 @@
 # Dolayısıyla buradaki `autoDeploy` dahil hiçbir ayar canlıya kendiliğinden geçmez —
 # gerçek ayarlar Render Dashboard → dehb-asistan → Settings altında.
 #
-# 🚨 `git push` canlıya bir şey çıkarmıyor. Panelde Auto-Deploy "On Commit" görünmesine rağmen
-# hiç otomatik deploy olmuyor — servisin tüm geçmişi "Manually triggered via Dashboard".
-# Sebep GitHub↔Render bağlantısı (repoda webhook yok). Onarımı: github.com/settings/installations
-# → Render → repository access. Onarılana kadar deploy elle yapılmalı:
-# Ön yüzde değişiklik yaptıysan: Dashboard → dehb-asistan → Manual Deploy →
-# "Deploy latest commit". Deploy ~30 saniye sürer. Doğrulama:
+# Deploy: `main`'e push → Render otomatik deploy eder (2026-08-27'de ölçüldü, ~38 sn).
+# Bir dönem bu çalışmıyordu; sebep ayar değil, Render GitHub App'inin repo erişiminin
+# kesilmiş olmasıydı. Tekrarlarsa: github.com/settings/installations → Render →
+# repository access. Geçici çözüm: Dashboard → dehb-asistan → Manual Deploy →
+# "Deploy latest commit" (~30 sn). Doğrulama yerel dosyaya değil canlıya bakarak:
 #   curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>
 #
 # Bu dosya iki işe yarıyor: (1) servisin nasıl ayakta durduğunu ve hangi ortam
