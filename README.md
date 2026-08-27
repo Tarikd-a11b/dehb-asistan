@@ -180,6 +180,7 @@ bloke eder.
 ├── n8n-workflow-focusaid.json # görev parçalama akışı  (webhook: focusaid-processor)
 ├── n8n-workflow-analyzer.json # yönerge dosyası analizi (webhook: focusaid-analyze)
 ├── n8n-workflow-report.json   # haftalık rapor akışı    (Pazartesi 07:00, Gmail)
+├── n8n-workflow-keepwarm.json # Render'ı uyanık tutan ping (10 dk'da bir, 08:00-01:00)
 ├── infra/n8n/         # n8n sunucusunun kurulum kiti (Oracle + Docker + Caddy + KURULUM.md)
 ├── render.yaml        # Render servis tanımı
 ├── Procfile           # Render başlatma komutu
@@ -196,5 +197,10 @@ bloke eder.
   isteniyor. Kullanıcı artık yanlış bilgilendirilmiyor: n8n cevabındaki `takvimeYazilan` / `toplam`
   sayaçlarına göre mesaj hepsi / hiçbiri / kısmi durumlarını ayırıyor (`parcalamaSonucMesaji`). Ama
   sessiz atlama davranışının kendisi duruyor; görev `calendar_event_id` boş kalarak kaydedilebiliyor.
-- Render'ın ücretsiz planı hareketsizlikte servisi uyutuyor; ilk istek 50 saniyeye kadar
-  gecikebiliyor.
+- **Render'ın ücretsiz planı 15 dakika trafik almazsa servisi uyutuyor**; uyandırma ~1 dakika
+  sürüyor ve o sırada ziyaretçi Render'ın yükleniyor ekranını görüyor. Hafifletmesi
+  `n8n-workflow-keepwarm.json`: n8n 10 dakikada bir anasayfayı GET'liyor, böylece gündüz
+  saatlerinde servis uyumuyor. Pencere bilinçli olarak **08:00-01:00** (Europe/Istanbul) —
+  Render workspace başına ayda **750 instance saati** veriyor, 7/24 uyanık tutmak ~730 saatle
+  bütçenin tamamını yer ve ay sonunda servisi askıya aldırabilir; bu pencere ~520 saat tutuyor.
+  Pencereyi genişletmeden önce o hesabı yeniden yap.

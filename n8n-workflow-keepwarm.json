@@ -1,0 +1,74 @@
+{
+  "name": "FocusAid — Render Uyanik Tut",
+  "nodes": [
+    {
+      "id": "sticky-keepwarm-1",
+      "name": "Kurulum Notu",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        380,
+        -120
+      ],
+      "parameters": {
+        "width": 560,
+        "height": 340,
+        "content": "## Render'i uyanik tutar\n\nRender ucretsiz plani **15 dakika** trafik almazsa servisi uyutuyor; sonraki ziyaretci\n~1 dakika bekliyor. Bu akis 10 dakikada bir anasayfayi GET'leyerek servisi ayakta tutar.\n\n**Saat penceresi bilincli, kaldirmayin:** Render her workspace'e ayda **750 instance saati**\nveriyor. 7/24 uyanik tutmak ~730 saat eder, yani butun butceyi yer ve ayin sonunda servis\nASKIYA ALINABILIR. Cron `*/10 8-23,0 * * *` + workflow timezone `Europe/Istanbul` =\nher gun **08:00-00:59**, ~17 saat/gun ≈ 520 saat/ay. Geri kalan ~230 saat gercek trafige\nve emniyet payina kalir.\n\nPencereyi genisletirsen once 750 saat hesabini yeniden yap.\n\nKimlik dogrulama gerekmiyor. Basarili calistirmalar kaydedilmiyor; Executions'ta bir sey\ngorurseniz o bir HATADIR — ping duşmüş demektir."
+      }
+    },
+    {
+      "id": "keepwarm-schedule-trigger",
+      "name": "Her 10 Dakika",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        420,
+        300
+      ],
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/10 8-23,0 * * *"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "keepwarm-http-ping",
+      "name": "Ping FocusAid",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        680,
+        300
+      ],
+      "parameters": {
+        "url": "https://dehb-asistan.onrender.com/",
+        "options": {
+          "timeout": 90000
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Her 10 Dakika": {
+      "main": [
+        [
+          {
+            "node": "Ping FocusAid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Istanbul",
+    "saveDataSuccessExecution": "none"
+  }
+}
