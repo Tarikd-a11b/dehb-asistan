@@ -5,7 +5,7 @@
       "parameters": {
         "width": 460,
         "height": 300,
-        "content": "## FocusAid Weekly Report — Çok Kullanıcılı (v2)\n\nArtık Google Calendar'a HİÇ gitmiyor (zamanlanmış/unattended çalıştığı için canlı kullanıcı token'ı yok). Bunun yerine haftanın tüm görevlerini tek seferde Supabase `tasks` tablosundan (service_role) çekip kullanıcı bazında grupluyor — `tasks` zaten Workflow #1'in yazdığı tek gerçek kaynak.\n\nO hafta hiç görevi olmayan kullanıcıya mail GÖNDERİLMEZ (kullanıcı kararı).\n\n**İçe aktardıktan sonra:** her iki HTTP node'daki `SERVICE_ROLE_KEY_BURAYA`'yı gerçek service_role anahtarıyla değiştir, Gmail/Gemini credential'larını bağla, Active yap."
+        "content": "## FocusAid Weekly Report — Çok Kullanıcılı (v2)\n\nArtık Google Calendar'a HİÇ gitmiyor (zamanlanmış/unattended çalıştığı için canlı kullanıcı token'ı yok). Bunun yerine haftanın tüm görevlerini tek seferde Supabase `tasks` tablosundan (service_role) çekip kullanıcı bazında grupluyor — `tasks` zaten Workflow #1'in yazdığı tek gerçek kaynak.\n\nO hafta hiç görevi olmayan kullanıcıya mail GÖNDERİLMEZ (kullanıcı kararı).\n\n**İçe aktardıktan sonra:** Supabase service_role anahtarı artık node parametrelerinde DEĞİL, `Custom Auth account` adlı credential'da tutuluyor (JSON: `{\"headers\":{\"apikey\":\"<KEY>\",\"Authorization\":\"Bearer <KEY>\"}}`). Bu credential'ı oluştur, Gmail/Gemini credential'larını bağla, Publish et.\n\n**Dikkat — 2026-08-27'de düzeltilen dört tuzak:** (1) tarih ifadeleri Expression modunda olmalı, Fixed'de düz metin olarak gider; (2) haftalık filtre TEK bir `and` parametresi olmalı, iki ayrı `day` parametresi birbirini ezip filtreyi tamamen etkisiz bırakıyor; (3) `Get week tasks`, `Build Per-User Reports`'un zincirde ATASI olmalı, yoksa `$('Get week tasks')` çalışmaz; (4) girdiye birden fazla profil geldiği için `Get week tasks`'te Execute Once açık olmalı, aksi halde görevler çiftlenir."
       },
       "id": "sticky-report-1",
       "name": "Kurulum Notu",
@@ -54,20 +54,9 @@
             }
           ]
         },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "SERVICE_ROLE_KEY_BURAYA"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer SERVICE_ROLE_KEY_BURAYA"
-            }
-          ]
-        },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth"
       },
       "id": "3a1f6f2b-9c4d-4e5a-8b7c-1d2e3f4a5b6c",
       "name": "Get all profiles",
@@ -77,7 +66,12 @@
         620,
         200
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpCustomAuth": {
+          "name": "Custom Auth account"
+        }
+      }
     },
     {
       "parameters": {
@@ -91,12 +85,8 @@
               "value": "user_id,name,summary,day,start_time,end_time"
             },
             {
-              "name": "day",
-              "value": "gte.{{ $now.startOf('week').toFormat('yyyy-MM-dd') }}"
-            },
-            {
-              "name": "day",
-              "value": "lte.{{ $now.endOf('week').toFormat('yyyy-MM-dd') }}"
+              "name": "and",
+              "value": "=(day.gte.{{ $now.startOf('week').toFormat('yyyy-MM-dd') }},day.lte.{{ $now.endOf('week').toFormat('yyyy-MM-dd') }})"
             },
             {
               "name": "order",
@@ -104,20 +94,9 @@
             }
           ]
         },
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "apikey",
-              "value": "SERVICE_ROLE_KEY_BURAYA"
-            },
-            {
-              "name": "Authorization",
-              "value": "Bearer SERVICE_ROLE_KEY_BURAYA"
-            }
-          ]
-        },
-        "options": {}
+        "options": {},
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpCustomAuth"
       },
       "id": "4b2e7f3c-0d5e-4f6b-9c8d-2e3f4a5b6c7d",
       "name": "Get week tasks",
@@ -127,7 +106,13 @@
         620,
         420
       ],
-      "onError": "continueRegularOutput"
+      "onError": "continueRegularOutput",
+      "credentials": {
+        "httpCustomAuth": {
+          "name": "Custom Auth account"
+        }
+      },
+      "executeOnce": true
     },
     {
       "parameters": {
@@ -215,11 +200,6 @@
             "node": "Get all profiles",
             "type": "main",
             "index": 0
-          },
-          {
-            "node": "Get week tasks",
-            "type": "main",
-            "index": 0
           }
         ]
       ]
@@ -228,7 +208,7 @@
       "main": [
         [
           {
-            "node": "Build Per-User Reports",
+            "node": "Get week tasks",
             "type": "main",
             "index": 0
           }
@@ -263,6 +243,17 @@
           {
             "node": "AI Agent",
             "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get week tasks": {
+      "main": [
+        [
+          {
+            "node": "Build Per-User Reports",
+            "type": "main",
             "index": 0
           }
         ]
