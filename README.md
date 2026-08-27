@@ -160,7 +160,6 @@ bloke eder.
 ├── doc-intake-logic.js # Yönerge dosyası ayrıştırma mantığı — DOM'suz
 ├── doc-intake.js      # Yönerge dosyası yükleme arayüzü
 ├── dehb-info.js       # DEHB Bilgilendirme Platformu içeriği
-├── rapor.html         # Rapor sayfası taslağı (şu an uygulamadan linklenmiyor)
 ├── schema.sql         # Supabase veritabanı şeması
 ├── fix-tasks-*.sql    # tasks tablosu şema/RLS düzeltmeleri
 ├── fix-profiles-schema-align.sql # profiles tablosunu şemaya hizalar
@@ -184,7 +183,5 @@ bloke eder.
   bile görevin Supabase'e kaydedilmesi isteniyor. Ama akış durmadığı için başarı mesajı da
   değişmiyor; görev `calendar_event_id` boş kalarak kaydediliyor ve kullanıcı takvimine hiçbir şeyin
   düşmediğini fark etmiyor. Mesajın gerçek sonuca göre ayrışması gerekiyor.
-- `rapor.html` hiçbir yerden linklenmiyor — haftalık rapor maili n8n tarafında ayrı bir HTML
-  şablonuyla üretiliyor. Dosya ya arayüze bağlanmalı ya da kaldırılmalı.
 - Render'ın ücretsiz planı hareketsizlikte servisi uyutuyor; ilk istek 50 saniyeye kadar
   gecikebiliyor.
