@@ -83,6 +83,18 @@ n8n tarafında her iki webhook (`focusaid-processor`, `focusaid-analyze`) **Head
 korunuyor: `X-Focusaid-Secret` başlığı olmayan istek `403` alıyor. Anahtar Render'da `N8N_SECRET`
 ortam değişkeninde.
 
+**Google Takvim bağlantısı kendiliğinden kuruluyor** — kullanıcı ayrıca bir düğmeye basmak zorunda
+değil. Giriş sırasında `calendar.events` izni `access_type=offline` ile isteniyor; Supabase
+oturumundaki `provider_token` doğrudan Google API token'ı oluyor, `provider_refresh_token` ise
+kullanıcının kendi `profiles` satırına yazılıyor (RLS ile yalnızca sahibine açık). Access token'ın
+ömrü dolunca `serve.py` → `/api/google/refresh` ucu onu **sessizce yeniliyor**; yenileme client
+secret gerektirdiği için tarayıcıda yapılamaz, secret yalnızca sunucuda (`GOOGLE_CLIENT_SECRET`).
+Kullanıcı izni Google hesabından geri alırsa yenileme `invalid_grant` ile düşer, anahtar temizlenir
+ve "Google Takvimi Bağla" düğmesi yedek yol olarak devreye girer. Görev **kaydetmek** için takvim
+bağlantısı hiç gerekmiyor; bağlantı yalnızca görevlerin Google Calendar'a da işlenmesi,
+tamamlandı/erteleme değişikliklerinin oraya yansıması ve FocusAid dışı etkinliklerin takvimde
+görünmesi için gerekli.
+
 Supabase `service_role` anahtarı n8n'de workflow parametrelerinde değil, **credential** olarak
 tutuluyor — böylece şifreli saklanıyor ve workflow dışa aktarıldığında JSON'a sızmıyor.
 
@@ -167,15 +179,11 @@ bloke eder.
 
 ## Bilinen Eksikler
 
-- **Google Takvim bağlı değilse görevler sessizce takvime yazılmıyor.** Görev Supabase'e her zaman
-  kaydediliyor, ama n8n'deki takvim node'ları `onError: continue` ile geçtiği için akış durmuyor ve
-  kullanıcı takvimin senkron olmadığını fark etmeyebiliyor (`calendar_event_id` boş kalır).
-- Google takvim bağlantısı girişte kuruluyor ve süresi dolunca sunucu üzerinden **sessizce
-  yenileniyor** (`serve.py` → `/api/google/refresh`; yenileme `GOOGLE_CLIENT_SECRET` gerektirdiği
-  için tarayıcıda yapılamıyor). Yenileme anahtarı kullanıcının kendi `profiles` satırında duruyor,
-  RLS ile yalnızca sahibine açık. Kullanıcı Google hesabından izni geri alırsa yenileme
-  `invalid_grant` ile başarısız olur; anahtar temizlenir ve "Google Takvimi Bağla" butonu yedek yol
-  olarak devreye girer. Görev **kaydetmek** için bağlantı hiç gerekmiyor.
+- **Takvim senkronu başarısız olduğunda kullanıcıya yine "Takvimin düzenlendi" deniyor.** n8n'deki
+  takvim node'ları `onError: continue` ile geçiyor — bu bilinçli bir tercih, çünkü takvim yazılamasa
+  bile görevin Supabase'e kaydedilmesi isteniyor. Ama akış durmadığı için başarı mesajı da
+  değişmiyor; görev `calendar_event_id` boş kalarak kaydediliyor ve kullanıcı takvimine hiçbir şeyin
+  düşmediğini fark etmiyor. Mesajın gerçek sonuca göre ayrışması gerekiyor.
 - `rapor.html` hiçbir yerden linklenmiyor — haftalık rapor maili n8n tarafında ayrı bir HTML
   şablonuyla üretiliyor. Dosya ya arayüze bağlanmalı ya da kaldırılmalı.
 - Render'ın ücretsiz planı hareketsizlikte servisi uyutuyor; ilk istek 50 saniyeye kadar
