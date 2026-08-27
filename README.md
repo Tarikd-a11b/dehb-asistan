@@ -138,9 +138,12 @@ Birkaç not:
 güncelliyorsan `add-google-refresh-token.sql` ve `fix-tasks-*.sql` dosyalarını da çalıştır
 (hepsi idempotent).
 
-**⚠️ Deploy:** Render'da **otomatik deploy kapalı** — `git push` tek başına canlıya bir şey
-çıkarmaz. Değişikliği yayına almak için Render Dashboard → `dehb-asistan` → **Manual Deploy →
-Deploy latest commit**. Deploy ~30 saniye sürer; doğrulaması:
+**⚠️ Deploy şu an elle yapılıyor.** Render'daki Auto-Deploy ayarı "On Commit" olmasına rağmen
+`git push` deploy tetiklemiyor: servisin tüm deploy geçmişi "Manually triggered via Dashboard" ve
+GitHub↔Render bağlantısı push olaylarını iletmiyor (repoda webhook yok, Render GitHub App'inin bu
+repoya erişimi kesilmiş olabilir — `github.com/settings/installations` → Render → repository access).
+Bağlantı onarılana kadar her değişiklik için: Render Dashboard → `dehb-asistan` → **Manual Deploy →
+Deploy latest commit** (~30 sn). Doğrulaması:
 `curl -s https://dehb-asistan.onrender.com/index.html | grep -c <yeni_fonksiyon_adı>`.
 `render.yaml` servisin nasıl ayakta durduğunu ve hangi ortam değişkenlerine ihtiyaç duyduğunu
 belgeler, ama canlı servis panelden elle kurulduğu için o dosya deploy'u **sürmez**.

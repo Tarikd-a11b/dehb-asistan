@@ -39,9 +39,16 @@ oraya vekillik ediyor. (Eski not "localhost:5678 açık olmalı" diyordu; 2026-0
 
 ## Deploy
 
-🚨 **Render'da otomatik deploy KAPALI. `git push` tek başına canlıya bir şey çıkarmaz.**
+🚨 **`git push` canlıya bir şey çıkarmıyor — deploy şu an ELLE yapılıyor.**
 
-Ön yüzde (`index.html`, `*.js`, `serve.py`) değişiklik yaptıysan:
+Dikkat: Render'daki Auto-Deploy ayarı **"On Commit"** görünüyor, yani ayar kapalı değil. Buna rağmen
+hiç otomatik deploy olmuyor; servisin görünen tüm geçmişinde her deploy "Manually triggered by you
+via Dashboard". Build Filters boş, branch `main`, Root Directory boş — yani ayarlar doğru.
+Sorun GitHub↔Render bağlantısında: repoda webhook yok (`gh api repos/<repo>/hooks` → `[]`) ve
+Render GitHub App'inin bu repoya erişimi kesilmiş olabilir. Onarımı `github.com/settings/installations`
+→ Render → repository access üzerinden **kullanıcı yapmalı** (OAuth izni).
+
+Bağlantı onarılana kadar, ön yüzde (`index.html`, `*.js`, `serve.py`) değişiklik yaptıysan:
 Render Dashboard → `dehb-asistan` → **Manual Deploy → Deploy latest commit**. ~30 saniye sürer.
 
 Doğrulaması — yerel dosyaya değil, canlının servis ettiği içeriğe bak:
