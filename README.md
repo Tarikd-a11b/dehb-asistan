@@ -181,6 +181,7 @@ bloke eder.
 ├── n8n-workflow-analyzer.json # yönerge dosyası analizi (webhook: focusaid-analyze)
 ├── n8n-workflow-report.json   # haftalık rapor akışı    (Pazartesi 07:00, Gmail)
 ├── n8n-workflow-keepwarm.json # Render'ı uyanık tutan ping (10 dk'da bir, 08:00-01:00)
+├── LICENSE                    # MIT
 ├── infra/n8n/         # n8n sunucusunun kurulum kiti (Oracle + Docker + Caddy + KURULUM.md)
 ├── render.yaml        # Render servis tanımı
 ├── Procfile           # Render başlatma komutu
