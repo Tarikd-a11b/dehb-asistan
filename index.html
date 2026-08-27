@@ -2480,11 +2480,32 @@ async function triggerN8N_Split() {
 // ── n8n CHATBOT ──
 async function sendTaskToN8N() {
   const taskEl = document.getElementById('task-input');
-  const descEl = document.getElementById('task-desc');
   const dlEl   = document.getElementById('task-deadline');
   const task   = taskEl?.value?.trim();
   const dl     = dlEl?.value;
   if (!task || !dl) { addMessageToChat('⚠️ Bir görev adı ve teslim tarihi girmelisin kral!', 'error'); return; }
+
+  // Takvim bağlı değilse görevler yine kaydedilir ama Google Takvim'e HİÇBİR ŞEY
+  // yazılmaz: n8n'deki "Create an event" node'u token'sız 401 alır ve
+  // onError:continue ile sessizce geçer. Kullanıcı bunu ~40 saniyelik
+  // parçalamanın SONUNDA değil, baştan bilsin.
+  if (!AppState.googleAccessToken) {
+    showConfirm(
+      'Takvim bağlı değil',
+      'Görevlerin FocusAid\'e kaydedilecek ama Google Takvim\'e yazılamayacak. Devam edilsin mi?',
+      () => parcalamayiBaslat()
+    );
+    return;
+  }
+  parcalamayiBaslat();
+}
+
+async function parcalamayiBaslat() {
+  const taskEl = document.getElementById('task-input');
+  const descEl = document.getElementById('task-desc');
+  const dlEl   = document.getElementById('task-deadline');
+  const task   = taskEl?.value?.trim();
+  const dl     = dlEl?.value;
   const fmt = new Date(dl).toLocaleString('tr-TR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
   addMessageToChat(`🚀 <b>Proje:</b> ${task}<br>📅 <b>Hedef:</b> ${fmt}`, 'user');
   setLoading(true);
@@ -2495,12 +2516,34 @@ async function sendTaskToN8N() {
     const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis', breakStyle: profile.breakStyle ?? 'long-break' } }) });
     if (!res.ok) throw new Error('n8n ' + res.status);
     const result = await res.json().catch(() => ({}));
-    addMessageToChat(`✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.<br><br>🎯 <b>İlk adım:</b><br>"<i>${result.firstStep || 'İlk mikro görevin takviminde hazır!'}</i>"`, 'ai');
+    addMessageToChat(parcalamaSonucMesaji(result), 'ai');
     if (taskEl) taskEl.value = ''; if (descEl) descEl.value = ''; if (dlEl) dlEl.value = '';
     AppState.calendar?.refetchEvents();
   } catch(e) { addMessageToChat('❌ n8n bağlantısı kurulamadı. n8n açık mı?', 'error'); }
   finally { setLoading(false); }
 }
+// Parçalama sonucunu OLDUĞU GİBİ anlat. Eskiden burada sabit "Takvimin
+// düzenlendi" yazıyordu; takvim node'u onError:continue ile geçtiği için
+// takvime hiçbir şey yazılmadığında bile aynı mesaj çıkıyor, kullanıcı
+// görevlerinin takvimde olduğunu sanıyordu.
+// n8n'in eski sürümü bu sayaçları göndermezse takvim hakkında İDDİA
+// ETMEYEN bir mesaja düşülür — yanlış bilgi vermektense az bilgi ver.
+function parcalamaSonucMesaji(result) {
+  const ilkAdim = result.firstStep || 'İlk mikro görevin hazır!';
+  const kuyruk  = `<br><br>🎯 <b>İlk adım:</b><br>"<i>${ilkAdim}</i>"`;
+  const yazilan = result.takvimeYazilan, toplam = result.toplam;
+  if (typeof yazilan !== 'number' || typeof toplam !== 'number' || toplam === 0) {
+    return `✅ <b>Sis dağıtıldı!</b> Görevlerin hazır.${kuyruk}`;
+  }
+  if (yazilan === 0) {
+    return `⚠️ <b>Görevlerin kaydedildi ama takvime yazılamadı.</b> Google Takvim bağlantını kontrol edip tekrar dene.${kuyruk}`;
+  }
+  if (yazilan < toplam) {
+    return `⚠️ <b>Sis dağıtıldı</b> ama ${toplam} görevin yalnızca ${yazilan} tanesi takvime yazılabildi.${kuyruk}`;
+  }
+  return `✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.${kuyruk}`;
+}
+
 function addMessageToChat(text, type = 'ai') {
   const box = document.getElementById('chat-box');
   if (!box) return;
