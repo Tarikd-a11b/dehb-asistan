@@ -6,7 +6,8 @@
         "httpMethod": "POST",
         "path": "focusaid-analyze",
         "responseMode": "responseNode",
-        "options": {}
+        "options": {},
+        "authentication": "headerAuth"
       },
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
@@ -16,7 +17,12 @@
       ],
       "id": "0569e658-16d8-446d-9079-949dc5186957",
       "name": "Webhook",
-      "webhookId": "focusaid-analyze-webhook"
+      "webhookId": "focusaid-analyze-webhook",
+      "credentials": {
+        "httpHeaderAuth": {
+          "name": "Header Auth account"
+        }
+      }
     },
     {
       "parameters": {
