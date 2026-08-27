@@ -16,7 +16,7 @@
 
 services:
   - type: web
-    name: dehb-asistan          # canlı servisin GERÇEK adı (eskiden yanlışlıkla "focusaid-beta" yazıyordu)
+    name: dehb-asistan          # canlı servisin adı
     runtime: python             # `env:` alanı Render tarafından kullanımdan kaldırıldı
     plan: free                  # ücretsiz plan hareketsizlikte uyur; ilk istek 50 sn'ye kadar gecikebilir
     region: virginia
