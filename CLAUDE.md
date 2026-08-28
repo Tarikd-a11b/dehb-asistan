@@ -72,13 +72,13 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 ## Testler
 
 ```bash
-node --test          # 61 test — kök dizinden, ARGÜMANSIZ
+node --test          # 93 test — kök dizinden, ARGÜMANSIZ
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
 dosyaları tek tek ver.
 
-Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js` — üçü de bilinçli olarak
+Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js` — dördü de bilinçli olarak
 DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve `fetch`
 `*-view.js` / `doc-intake.js`'e.
 

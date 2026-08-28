@@ -31,6 +31,11 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.8/locales/tr.global.min.js"></script>
 <script src="tasks-logic.js"></script>
 <script src="calendar-logic.js"></script>
+<!-- Profil verisinin saf mantigi (varsayilanlar, satir<->nesne donusumu,
+     birlestirme, n8n planlama ozeti). DEFAULT_PROFILE burada tanimli —
+     index.html icinde TEKRAR tanimlama, "already declared" ile tum
+     inline script'i dusurur. -->
+<script src="profile-logic.js"></script>
 <script src="tasks-view.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="doc-intake-logic.js"></script>
@@ -192,6 +197,34 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 .hero-blob-2{position:absolute;bottom:-40px;left:30%;width:150px;height:150px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
 .adhd-badge{background:rgba(255,255,255,.2);color:#fff;font-size:.7rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.3)}
 .adhd-card-purple{border-top:4px solid #7c3aed!important}.adhd-card-emerald{border-top:4px solid #059669!important}.adhd-card-orange{border-top:4px solid #f97316!important}
+.adhd-card-sky{border-top:4px solid #0284c7!important}.adhd-card-rose{border-top:4px solid #e11d48!important}.adhd-card-amber{border-top:4px solid #d97706!important}
+/* Profil doluluk cubugu (hero icinde, koyu zemin uzerinde). */
+.profile-progress-track{height:8px;border-radius:9999px;background:rgba(255,255,255,.2);overflow:hidden}
+.profile-progress-fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,#a5f3fc,#fff);transition:width .5s cubic-bezier(.34,1.56,.64,1)}
+/* Super guc rozetleri — mood-btn ile ayni etkilesim dili, farkli renk. */
+.power-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;border-radius:9999px;border:2px solid var(--input-border);background:var(--input-bg);color:var(--text-main);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:'Plus Jakarta Sans',sans-serif}
+.power-chip:hover{transform:translateY(-2px);border-color:#d97706;box-shadow:0 8px 20px rgba(217,119,6,.15)}
+.power-chip.active{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(217,119,6,.3)}
+/* Kaydiricilarin rengi karta gore degisir; .adhd-slider'in mor gradyani
+   Duyusal/Regulasyon kartlarinda yabanci duruyordu. */
+.adhd-slider-sky{background:linear-gradient(90deg,#0284c7,#38bdf8)!important}
+.adhd-slider-sky::-webkit-slider-thumb{border-color:#0284c7}
+.adhd-slider-rose{background:linear-gradient(90deg,#e11d48,#fb7185)!important}
+.adhd-slider-rose::-webkit-slider-thumb{border-color:#e11d48}
+/* Firefox thumb'i ayri bir pseudo-element istiyor; olmadan kaydirici orada
+   tarayicinin varsayilan gorunumunde kaliyordu. */
+.adhd-slider::-moz-range-thumb{width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3)}
+.adhd-slider-sky::-moz-range-thumb{border-color:#0284c7}
+.adhd-slider-rose::-moz-range-thumb{border-color:#e11d48}
+/* Kaydedilmemis degisiklik seridi: varsayilan gizli, .gorunur ile yukari kayar. */
+.profile-dirty-bar{position:fixed;left:50%;bottom:1.5rem;transform:translate(-50%,150%);z-index:40;display:flex;align-items:center;gap:1rem;padding:.75rem 1rem .75rem 1.5rem;border-radius:9999px;background:var(--glass-white);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-light);color:var(--text-main);box-shadow:0 20px 40px -12px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease}
+.profile-dirty-bar.gorunur{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.profile-dirty-save{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border:none;padding:.55rem 1.25rem;border-radius:9999px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;transition:transform .15s ease}
+.profile-dirty-save:hover{transform:scale(1.05)}
+/* Dar ekranda serit kenarlara yapissin, ortadaki dar kutu kirpilmasin. */
+@media (max-width:480px){.profile-dirty-bar{left:1rem;right:1rem;transform:translateY(150%);width:auto;justify-content:space-between}.profile-dirty-bar.gorunur{transform:translateY(0)}}
+/* Kaydirici ve rozet gecisleri hareket hassasiyeti olanlar icin kapatilir. */
+@media (prefers-reduced-motion:reduce){.power-chip,.mood-btn,.profile-progress-fill,.profile-dirty-bar{transition:none!important}}
 .mood-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;border-radius:9999px;border:2px solid var(--input-border);background:var(--input-bg);color:var(--text-main);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);white-space:nowrap;font-family:'Plus Jakarta Sans',sans-serif}
 .mood-btn:hover{transform:translateY(-2px) scale(1.05);border-color:#7c3aed;box-shadow:0 8px 20px rgba(124,58,237,.15)}
 .mood-btn.active{background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(124,58,237,.3)}
@@ -524,7 +557,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 </template>
 
 <template id="tpl-profile">
-<div class="animate-slide-in space-y-8 pb-10">
+<div id="tpl-profile-root" class="animate-slide-in space-y-8 pb-10">
 
   <!-- Hero Header -->
   <div class="adhd-hero-header rounded-[3rem] p-10">
@@ -535,6 +568,15 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       </div>
       <h2 class="text-4xl font-extrabold text-white tracking-tight">Nöro-Profil Merkezi</h2>
       <p class="text-purple-200 mt-2 text-base">Beynin nasıl çalışıyor? Sana özel planlar yapabilmem için ayarlarını kişiselleştir.</p>
+      <!-- Tamamlanma: eksik alanları saymak yerine ilerlemeyi görünür kılar.
+           Yüzde profileCompleteness()'ten gelir (profile-logic.js, testli). -->
+      <div class="mt-6 max-w-md">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-[10px] font-black uppercase tracking-[0.2em] text-purple-200">Profil Doluluğu</span>
+          <span id="profile-progress-text" class="text-xs font-bold text-white">%0 tamamlandı</span>
+        </div>
+        <div class="profile-progress-track"><div id="profile-progress-bar" class="profile-progress-fill" style="width:0%"></div></div>
+      </div>
     </div>
     <div class="hero-blob-1"></div>
     <div class="hero-blob-2"></div>
@@ -638,6 +680,79 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       </div>
     </div>
 
+    <!-- 4. Duyusal Profil -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-sky">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🌈</span> Duyusal Profil</h4>
+        <p class="text-[10px] text-slate-400 mt-1">Çevre uyaranlarına ne kadar duyarlısın</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Işık Hassasiyeti: <span id="light-sensitivity-display" class="text-sky-600 font-black text-xs">2/5</span></label>
+        <!-- Bu kaydırıcı temayı ANINDA değiştirir (bkz. isikHassasiyetiDegisti);
+             sidebar'daki ☀️/🌙 anahtarıyla aynı değeri yazar. -->
+        <input type="range" id="light-sensitivity" value="2" min="1" max="5" step="1" oninput="isikHassasiyetiDegisti(this)" class="adhd-slider adhd-slider-sky w-full">
+        <p class="text-[10px] text-slate-400">3 ve üstünde arayüz otomatik olarak koyu temaya geçer.</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Ses Hassasiyeti: <span id="sound-sensitivity-display" class="text-sky-600 font-black text-xs">2/5</span></label>
+        <input type="range" id="sound-sensitivity" value="2" min="1" max="5" step="1" oninput="seviyeEtiketiniGuncelle('sound-sensitivity')" class="adhd-slider adhd-slider-sky w-full">
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Tercih Ettiğin Ortam</label>
+        <select id="env-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="minimal">🧊 Sade & Boş Masa</option>
+          <option value="cozy">🛋️ Sıcak & Rahat</option>
+          <option value="nature">🌿 Doğa / Bitkili</option>
+          <option value="stimulating">🎨 Renkli & Uyarıcı</option>
+        </select>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Stim / Kıpırdanma İhtiyacı</label>
+        <select id="stim-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="fidget">🎮 Fidget / Stres Topu</option>
+          <option value="movement">🚶 Hareket / Ayakta Çalışma</option>
+          <option value="chew">🍬 Sakız / Atıştırma</option>
+          <option value="doodle">✏️ Karalama</option>
+          <option value="none">🚫 İhtiyaç Duymuyorum</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- 5. Duygu Regülasyonu -->
+    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-rose">
+      <div>
+        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>💗</span> Duygu Regülasyonu</h4>
+        <p class="text-[10px] text-slate-400 mt-1">Zorlandığında seni ne toparlıyor</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">RSD / Eleştiriye Duyarlılık: <span id="rsd-level-display" class="text-rose-600 font-black text-xs">2/5</span></label>
+        <input type="range" id="rsd-level" value="2" min="1" max="5" step="1" oninput="seviyeEtiketiniGuncelle('rsd-level')" class="adhd-slider adhd-slider-rose w-full">
+        <p class="text-[10px] text-slate-400">RSD: Reddedilme Duyarlılığı Disforisi. Yüksekse planlar daha küçük adımlara bölünür.</p>
+      </div>
+      <div class="space-y-3">
+        <label class="block text-sm font-semibold text-slate-600">Sakinleşme Yöntemin</label>
+        <select id="regulation-method" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+          <option value="breathing">🌬️ Nefes Egzersizi</option>
+          <option value="movement">🏃 Hareket / Yürüyüş</option>
+          <option value="music">🎧 Müzik</option>
+          <option value="talk">💬 Birine Anlatmak</option>
+          <option value="alone">🚪 Yalnız Kalmak</option>
+          <option value="sensory">🧊 Duyusal Mola (su, soğuk, dokunma)</option>
+        </select>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Süper Güçler (`superpowers` JSONB kolonu) -->
+  <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-amber">
+    <div>
+      <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>💫</span> Süper Güçlerin</h4>
+      <p class="text-[10px] text-slate-400 mt-1">DEHB yalnızca eksiklerden ibaret değil — güçlü yanlarını işaretle, planlaman bunlara yaslansın</p>
+    </div>
+    <!-- Rozetler koddan basılıyor (bkz. cizSuperpowerRozetleri); liste
+         profile-logic.js'teki SUPERPOWERS katalogundan gelir. -->
+    <div id="superpower-chips" class="flex flex-wrap gap-2"></div>
   </div>
 
   <!-- Bitirme Stratejisi -->
@@ -673,6 +788,13 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
     <button id="save-profile-btn" onclick="saveProfile()" class="save-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-5 rounded-[2rem] font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-3 text-lg">
       <span>💾</span> Değişiklikleri Kaydet
     </button>
+  </div>
+
+  <!-- Kaydedilmemiş değişiklik şeridi: sayfa uzun, kaydet butonu en altta.
+       Bir alan değişir değişmez aşağıdan çıkar, kaydedilene kadar durur. -->
+  <div id="profile-dirty-bar" class="profile-dirty-bar">
+    <span class="text-sm font-semibold">✏️ Kaydedilmemiş değişikliklerin var</span>
+    <button type="button" onclick="saveProfile()" class="profile-dirty-save">💾 Kaydet</button>
   </div>
 
 </div>
@@ -1497,50 +1619,34 @@ async function loadProfileFromSupabase() {
     .eq('id', currentUser.id)
     .single();
 
-  if (error || !data) return;
+  if (error || !data) {
+    // Sessizce donmek 2026-08-24'te bir seferi ciddi vakit kaybettirdi: canli
+    // tabloda `id` kolonu yokken profil hic yuklenmiyordu ama hicbir iz yoktu.
+    if (error) console.warn('[Profil] Supabase okunamadi:', error.code, error.message);
+    return;
+  }
 
-  // Supabase → userProfile nesnesine dönüştür
-  userProfile = {
-    medication:       data.medication       ?? false,
-    focusPeriod:      data.focus_period     ?? 25,
-    workHours:        { start: data.work_start ?? '09:00', end: data.work_end ?? '18:00' },
-    social:           data.social           ?? 'solo',
-    energyPeak:       data.energy_peak      ?? 'morning',
-    focusTrigger:     data.focus_trigger    ?? 'silence',
-    motivationNote:   data.motivation_note  ?? '',
-    mainObstacle:     data.main_obstacle    ?? 'paralysis',
-    breakStyle:       data.break_style      ?? 'pomodoro',
-    todayMood:        data.today_mood       ?? '',
-    hyperfocusLimit:  data.hyperfocus_limit ?? 'none',
-    lightSensitivity: data.light_sensitivity ?? 2
-  };
+  // Supabase satiri → userProfile (donusum profile-logic.js'te, testli).
+  userProfile = rowToProfile(data);
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
   // Bu tarayıcıda daha önce hiç tema seçilmemişse (yeni cihaz/tarayıcı), hesaba
   // kayıtlı ışık hassasiyetinden varsayılan temayı öner — açıkça seçilmiş bir
   // tercihin üzerine asla yazmaz.
-  if (localStorage.getItem('focusaid_theme') === null) applyTheme(userProfile.lightSensitivity >= 3);
+  if (localStorage.getItem('focusaid_theme') === null) applyTheme(themeIsDark(userProfile.lightSensitivity));
   syncThemeToggleUI();
 }
 
 async function saveProfileToSupabase(profile) {
   if (!currentUser) return;
-  await sb.from('profiles').upsert({
-    id:                currentUser.id,
-    email:             currentUser.email,
-    focus_period:      profile.focusPeriod,
-    work_start:        profile.workHours?.start,
-    work_end:          profile.workHours?.end,
-    energy_peak:       profile.energyPeak,
-    medication:        profile.medication,
-    social:            profile.social,
-    focus_trigger:     profile.focusTrigger,
-    motivation_note:   profile.motivationNote,
-    main_obstacle:     profile.mainObstacle,
-    break_style:       profile.breakStyle,
-    today_mood:        profile.todayMood,
-    hyperfocus_limit:  profile.hyperfocusLimit,
-    light_sensitivity: profile.lightSensitivity
-  }, { onConflict: 'id' });
+  // profileToRow her kolonu doldurur (undefined birakmaz): JSON.stringify
+  // undefined alani duserir, upsert o kolonu hic gondermez ve eski deger
+  // sessizce yerinde kalirdi.
+  const { error } = await sb.from('profiles')
+    .upsert(profileToRow(profile, { id: currentUser.id, email: currentUser.email }),
+            { onConflict: 'id' });
+  // Hatayi yutma — saveProfile bunu yakalayip kullaniciya "sunucuya
+  // yazilamadi" diyecek. Eskiden sessizdi, kullanici kaydettim saniyordu.
+  if (error) throw new Error(`${error.code}: ${error.message}`);
 }
 
 // ── CONFIG ──
@@ -2470,7 +2576,7 @@ async function triggerN8N_Split() {
   if (btn) { btn.textContent = '⏳ Analiz Ediyor...'; btn.disabled = true; }
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
   try {
-    const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: profile, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null }) });
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: planningProfile(profile), userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null }) });
     if (res.ok) { showToast('🧩 Görev parçalandı!', 'success'); AppState.calendar?.refetchEvents(); closeForm(); }
     else throw new Error('n8n ' + res.status);
   } catch(e) { showToast('❌ n8n ulaşılamadı. Webhook açık mı?', 'error'); }
@@ -2513,7 +2619,7 @@ async function parcalamayiBaslat() {
   try {
     const reqEl = document.getElementById('task-requirements');
     const requirements = typeof parseRequirements === 'function' ? parseRequirements(reqEl?.value) : [];
-    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null, userProfile: { focusPeriod: profile.focusPeriod ?? 25, energyPeak: profile.energyPeak ?? 'morning', medication: profile.medication ?? false, workHours: profile.workHours ?? {start:'09:00',end:'18:00'}, mainObstacle: profile.mainObstacle ?? 'paralysis', breakStyle: profile.breakStyle ?? 'long-break' } }) });
+    const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null, userProfile: planningProfile(profile) }) });
     if (!res.ok) throw new Error('n8n ' + res.status);
     const result = await res.json().catch(() => ({}));
     addMessageToChat(parcalamaSonucMesaji(result), 'ai');
@@ -2605,59 +2711,141 @@ function showToast(msg, type = 'success') {
 }
 
 // ── PROFİL ──
-const DEFAULT_PROFILE = {
-  medication:false, focusPeriod:25, workHours:{start:'09:00',end:'18:00'},
-  social:'solo', energyPeak:'morning', focusTrigger:'silence',
-  motivationNote:'', mainObstacle:'paralysis', breakStyle:'pomodoro',
-  todayMood:'', hyperfocusLimit:'none',
-  lightSensitivity:2, soundSensitivity:2, envPref:'minimal',
-  rsdLevel:2, regulationMethod:'breathing', stimPref:'fidget',
-  superpowers:[]
-};
-let userProfile = { ...DEFAULT_PROFILE, ...JSON.parse(localStorage.getItem('focusaid_profile') || '{}') };
+// DEFAULT_PROFILE, mergeProfile, planningProfile vb. profile-logic.js'ten gelir.
+// Buradaki kod yalnizca DOM okur/yazar; hesap ve donusum orada, testleriyle.
+let userProfile = mergeProfile(DEFAULT_PROFILE, JSON.parse(localStorage.getItem('focusaid_profile') || '{}'));
 
-function setMood(mood) {
+/* Kaydedilmemis degisiklik takibi. Kaydet butonu sayfanin en altinda ve
+   profil uzun; DEHB'de "degistirdim ama kaydetmeyi unuttum" en olasi kayip.
+   Herhangi bir alan degisince yapiskan bir serit cikar ve kaydete kadar durur. */
+let profilKirli = false;
+function profiliKirlet() {
+  profilKirli = true;
+  document.getElementById('profile-dirty-bar')?.classList.add('gorunur');
+}
+function profiliTemizle() {
+  profilKirli = false;
+  document.getElementById('profile-dirty-bar')?.classList.remove('gorunur');
+}
+
+function setMood(mood, kullaniciTikladi = true) {
   userProfile.todayMood = mood;
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('mood-' + mood)?.classList.add('active');
+  if (kullaniciTikladi) profiliKirlet();
 }
 
-function setMed(active) {
+function setMed(active, kullaniciTikladi = true) {
   userProfile.medication = !!active;
   const yes = document.getElementById('med-yes'), no = document.getElementById('med-no');
+  if (kullaniciTikladi) profiliKirlet();
   if (!yes || !no) return;
   if (active) { yes.className='flex-1 p-3 border-2 border-purple-600 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg'; no.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; }
   else { yes.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; no.className='flex-1 p-3 border-2 border-slate-300 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 shadow-inner'; }
 }
 
+/* ── Süper güçler (JSONB `superpowers`) ── */
+function toggleSuperpowerUI(id) {
+  userProfile.superpowers = toggleSuperpower(userProfile.superpowers, id);
+  cizSuperpowerRozetleri();
+  profiliKirlet();
+}
+
+function cizSuperpowerRozetleri() {
+  const kap = document.getElementById('superpower-chips');
+  if (!kap) return;
+  const secili = normalizeSuperpowers(userProfile.superpowers);
+  kap.innerHTML = SUPERPOWERS.map(s =>
+    `<button type="button" class="power-chip${secili.includes(s.id) ? ' active' : ''}"
+             aria-pressed="${secili.includes(s.id)}"
+             onclick="toggleSuperpowerUI('${s.id}')">${s.emoji} ${s.label}</button>`
+  ).join('');
+}
+
+/* ── Duyusal kaydiricilarin metin karsiliklari ──
+   Ciplak "3/5" DEHB'li kullaniciya bir sey anlatmiyor; her kademenin ne demek
+   oldugu yazili. Diziler 1-5 icin bes eleman, index = deger-1. */
+const SEVIYE_METINLERI = {
+  'light-sensitivity': ['Parlak ışık iyi gelir', 'Sorun değil', 'Biraz rahatsız', 'Çok rahatsız', 'Loş ışık şart'],
+  'sound-sensitivity': ['Gürültü iyi gelir', 'Sorun değil', 'Biraz rahatsız', 'Çok rahatsız', 'Sessizlik şart'],
+  'rsd-level':         ['Eleştiri etkilemez', 'Hafif etkiler', 'Belirgin etkiler', 'Günümü bozar', 'Yıkıcı gelir']
+};
+
+function seviyeEtiketiniGuncelle(id) {
+  const el = document.getElementById(id);
+  const cikti = document.getElementById(id + '-display');
+  if (!el || !cikti) return;
+  const v = clampLevel(el.value);
+  cikti.textContent = `${v}/5 · ${SEVIYE_METINLERI[id]?.[v - 1] ?? ''}`;
+}
+
+/* Isik hassasiyeti kaydiricisi temayi ANINDA uygular: kullanici 4'e cekip
+   hicbir sey olmamasini "bozuk" diye okur. Esik profile-logic'te (themeIsDark),
+   sidebar anahtari da ayni esigi kullanir — ikisi birbirini yalanlamasin. */
+function isikHassasiyetiDegisti(el) {
+  seviyeEtiketiniGuncelle('light-sensitivity');
+  userProfile.lightSensitivity = clampLevel(el.value);
+  applyTheme(themeIsDark(userProfile.lightSensitivity));
+  profiliKirlet();
+}
+
+function tamamlanmaCubuguGuncelle(profil) {
+  const yuzde = profileCompleteness(profil);
+  const cubuk = document.getElementById('profile-progress-bar');
+  const yazi  = document.getElementById('profile-progress-text');
+  if (cubuk) cubuk.style.width = yuzde + '%';
+  if (yazi)  yazi.textContent  = `%${yuzde} tamamlandı`;
+}
+
 async function saveProfile() {
+  const btn = document.getElementById('save-profile-btn');
+  const orig = btn?.innerHTML;
   try {
-    const sg = (id, fb) => { const el = document.getElementById(id); return el ? el.value : fb; };
+    const sg = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
+    const sayi = (id) => { const v = sg(id); return v === undefined ? undefined : Number(v); };
     const energyEl = document.querySelector('input[name="energy-peak"]:checked');
-    userProfile = {
-      medication: userProfile.medication,
-      focusPeriod: Number(sg('focus-period', userProfile.focusPeriod)) || 25,
-      workHours: { start: sg('work-start', userProfile.workHours.start), end: sg('work-end', userProfile.workHours.end) },
-      social: sg('social-mode', userProfile.social),
-      energyPeak: energyEl ? energyEl.value : userProfile.energyPeak,
-      focusTrigger: sg('focus-trigger', userProfile.focusTrigger),
-      motivationNote: sg('motivation-note', userProfile.motivationNote),
-      mainObstacle: sg('main-obstacle', userProfile.mainObstacle),
-      breakStyle: sg('break-style', userProfile.breakStyle),
-      todayMood: userProfile.todayMood,
-      hyperfocusLimit: sg('hyperfocus-limit', userProfile.hyperfocusLimit)
-    };
+
+    // Formdan YAMA uretilir, profil sifirdan KURULMAZ. Eskiden burada nesne
+    // bastan yaziliyordu ve formda karsiligi olmayan her alan (lightSensitivity
+    // dahil) her kaydet'te siliniyordu — birlestirmeyi mergeProfile yapar.
+    userProfile = mergeProfile(userProfile, {
+      focusPeriod:      sayi('focus-period'),
+      workHours:        { start: sg('work-start'), end: sg('work-end') },
+      social:           sg('social-mode'),
+      energyPeak:       energyEl ? energyEl.value : undefined,
+      focusTrigger:     sg('focus-trigger'),
+      motivationNote:   sg('motivation-note'),
+      mainObstacle:     sg('main-obstacle'),
+      breakStyle:       sg('break-style'),
+      hyperfocusLimit:  sg('hyperfocus-limit'),
+      lightSensitivity: sayi('light-sensitivity'),
+      soundSensitivity: sayi('sound-sensitivity'),
+      envPref:          sg('env-pref'),
+      rsdLevel:         sayi('rsd-level'),
+      regulationMethod: sg('regulation-method'),
+      stimPref:         sg('stim-pref')
+      // medication, todayMood ve superpowers form alani degil; setMed/setMood/
+      // toggleSuperpowerUI zaten userProfile'a yaziyor, merge onlari korur.
+    });
+
+    if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Kaydediliyor...'; }
     localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
-    // Supabase'e de kaydet
+    // Supabase'e de kaydet. Yerel kayit zaten yapildi; ag hatasi olsa bile
+    // kullanicinin girdisi kaybolmaz, ama BASARILI demeyiz.
     await saveProfileToSupabase(userProfile);
-    const btn = document.getElementById('save-profile-btn');
+    profiliTemizle();
+    tamamlanmaCubuguGuncelle(userProfile);
     if (btn) {
-      const orig = btn.innerHTML;
-      btn.disabled = true; btn.innerHTML = '✅ Profil Güncellendi!';
+      btn.innerHTML = '✅ Profil Güncellendi!';
       btn.style.background = 'linear-gradient(135deg,#059669,#047857)';
       setTimeout(() => { btn.innerHTML = orig; btn.style.background = ''; btn.disabled = false; }, 2500);
     }
-  } catch(e) { console.error(e); showToast('Kayıt hatası!','error'); }
+  } catch(e) {
+    console.error('[Profil] kaydedilemedi:', e);
+    // Sunucuya yazilamadi ama tarayicida duruyor — kullaniciya dogrusunu soyle.
+    showToast('⚠️ Sunucuya kaydedilemedi, bu cihazda saklandı. Bağlantını kontrol et.', 'error');
+    if (btn) { btn.innerHTML = orig; btn.disabled = false; }
+  }
 }
 
 function loadProfileToUI() {
@@ -2670,10 +2858,26 @@ function loadProfileToUI() {
   ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
+  // Duyusal profil + duygu regulasyonu
+  ss('light-sensitivity', userProfile.lightSensitivity);
+  ss('sound-sensitivity', userProfile.soundSensitivity);
+  ss('env-pref', userProfile.envPref);
+  ss('rsd-level', userProfile.rsdLevel);
+  ss('regulation-method', userProfile.regulationMethod);
+  ss('stim-pref', userProfile.stimPref);
+  ['light-sensitivity','sound-sensitivity','rsd-level'].forEach(seviyeEtiketiniGuncelle);
+  cizSuperpowerRozetleri();
   const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
   if (radio) radio.checked = true;
-  setMed(userProfile.medication);
-  if (userProfile.todayMood) setMood(userProfile.todayMood);
+  // false = "yukleme yapiyorum", kirli isaretleme (kullanici degistirmedi)
+  setMed(userProfile.medication, false);
+  if (userProfile.todayMood) setMood(userProfile.todayMood, false);
+  tamamlanmaCubuguGuncelle(userProfile);
+  profiliTemizle();
+  // Sablon her loadPage'de yeniden basiliyor; dinleyici de her seferinde
+  // yeniden baglanir, birikme olmaz.
+  document.getElementById('tpl-profile-root')?.addEventListener('change', profiliKirlet);
+  document.getElementById('tpl-profile-root')?.addEventListener('input', profiliKirlet);
 }
 
 // ── TEMA (Açık/Koyu) ──────────────────────────────────────────────────────
@@ -2693,9 +2897,13 @@ function toggleTheme() {
   applyTheme(dark);
   // Profildeki "Işık Hassasiyeti" alanına da yaz — böylece tercih hesaba bağlı
   // kalıcı olur, başka bir cihaz/tarayıcıda ilk girişte varsayılan bunu önerir.
-  userProfile.lightSensitivity = dark ? 4 : 1;
+  userProfile = mergeProfile(userProfile, { lightSensitivity: lightSensitivityForTheme(dark) });
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
-  if (currentUser) saveProfileToSupabase(userProfile).catch(() => {});
+  // Profil ekrani aciksa kaydirici de yeni degeri gostersin; iki kontrolun
+  // ayni sey icin farkli deger gostermesi "bozuk" hissi veriyordu.
+  const kaydirici = document.getElementById('light-sensitivity');
+  if (kaydirici) { kaydirici.value = userProfile.lightSensitivity; seviyeEtiketiniGuncelle('light-sensitivity'); }
+  if (currentUser) saveProfileToSupabase(userProfile).catch(e => console.warn('[Tema] profil kaydedilemedi:', e.message));
 }
 
 // ── BAŞLAT ──
