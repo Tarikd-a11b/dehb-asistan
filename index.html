@@ -673,30 +673,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       </div>
     </div>
 
-    <!-- 5. Duygu Regülasyonu -->
-    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-rose">
-      <div>
-        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>💗</span> Duygu Regülasyonu</h4>
-        <p class="text-[10px] text-slate-400 mt-1">Zorlandığında seni ne toparlıyor</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">RSD / Eleştiriye Duyarlılık: <span id="rsd-level-display" class="text-rose-600 font-black text-xs">2/5</span></label>
-        <input type="range" id="rsd-level" value="2" min="1" max="5" step="1" oninput="seviyeEtiketiniGuncelle('rsd-level')" class="adhd-slider adhd-slider-rose w-full">
-        <p class="text-[10px] text-slate-400">RSD: Reddedilme Duyarlılığı Disforisi. Yüksekse planlar daha küçük adımlara bölünür.</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Sakinleşme Yöntemin</label>
-        <select id="regulation-method" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="breathing">🌬️ Nefes Egzersizi</option>
-          <option value="movement">🏃 Hareket / Yürüyüş</option>
-          <option value="music">🎧 Müzik</option>
-          <option value="talk">💬 Birine Anlatmak</option>
-          <option value="alone">🚪 Yalnız Kalmak</option>
-          <option value="sensory">🧊 Duyusal Mola (su, soğuk, dokunma)</option>
-        </select>
-      </div>
-    </div>
-
   </div>
 
   <!-- Süper Güçler (`superpowers` JSONB kolonu) -->
@@ -2722,21 +2698,6 @@ function cizSuperpowerRozetleri() {
   ).join('');
 }
 
-/* ── Seviye kaydiricilarinin metin karsiliklari ──
-   Ciplak "3/5" DEHB'li kullaniciya bir sey anlatmiyor; her kademenin ne demek
-   oldugu yazili. Diziler 1-5 icin bes eleman, index = deger-1. */
-const SEVIYE_METINLERI = {
-  'rsd-level': ['Eleştiri etkilemez', 'Hafif etkiler', 'Belirgin etkiler', 'Günümü bozar', 'Yıkıcı gelir']
-};
-
-function seviyeEtiketiniGuncelle(id) {
-  const el = document.getElementById(id);
-  const cikti = document.getElementById(id + '-display');
-  if (!el || !cikti) return;
-  const v = clampLevel(el.value);
-  cikti.textContent = `${v}/5 · ${SEVIYE_METINLERI[id]?.[v - 1] ?? ''}`;
-}
-
 function tamamlanmaCubuguGuncelle(profil) {
   const yuzde = profileCompleteness(profil);
   const cubuk = document.getElementById('profile-progress-bar');
@@ -2765,9 +2726,7 @@ async function saveProfile() {
       motivationNote:   sg('motivation-note'),
       mainObstacle:     sg('main-obstacle'),
       breakStyle:       sg('break-style'),
-      hyperfocusLimit:  sg('hyperfocus-limit'),
-      rsdLevel:         sayi('rsd-level'),
-      regulationMethod: sg('regulation-method')
+      hyperfocusLimit:  sg('hyperfocus-limit')
       // todayMood ve superpowers form alani degil; setMood/toggleSuperpowerUI
       // zaten userProfile'a yaziyor, merge onlari korur.
     });
@@ -2802,10 +2761,6 @@ function loadProfileToUI() {
   ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
-  // Duygu regulasyonu
-  ss('rsd-level', userProfile.rsdLevel);
-  ss('regulation-method', userProfile.regulationMethod);
-  seviyeEtiketiniGuncelle('rsd-level');
   cizSuperpowerRozetleri();
   const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
   if (radio) radio.checked = true;

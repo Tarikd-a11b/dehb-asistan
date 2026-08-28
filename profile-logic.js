@@ -14,7 +14,6 @@ const DEFAULT_PROFILE = {
   motivationNote: '', mainObstacle: 'paralysis', breakStyle: 'pomodoro',
   todayMood: '', todayMoodDate: '', hyperfocusLimit: 'none',
   lightSensitivity: 2,
-  rsdLevel: 2, regulationMethod: 'breathing',
   superpowers: []
 };
 
@@ -82,8 +81,6 @@ function rowToProfile(row) {
     todayMoodDate:    r.today_mood_date  ?? DEFAULT_PROFILE.todayMoodDate,
     hyperfocusLimit:  r.hyperfocus_limit ?? DEFAULT_PROFILE.hyperfocusLimit,
     lightSensitivity: clampLevel(r.light_sensitivity, DEFAULT_PROFILE.lightSensitivity),
-    rsdLevel:         clampLevel(r.rsd_level, DEFAULT_PROFILE.rsdLevel),
-    regulationMethod: r.regulation_method ?? DEFAULT_PROFILE.regulationMethod,
     superpowers:      normalizeSuperpowers(r.superpowers)
   };
 }
@@ -113,8 +110,6 @@ function profileToRow(profile, identity) {
     today_mood_date:   p.todayMoodDate || null,
     hyperfocus_limit:  p.hyperfocusLimit,
     light_sensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
-    rsd_level:         clampLevel(p.rsdLevel, DEFAULT_PROFILE.rsdLevel),
-    regulation_method: p.regulationMethod,
     superpowers:       normalizeSuperpowers(p.superpowers)
   };
 }
@@ -189,8 +184,6 @@ function planningProfile(profile) {
     social:           p.social,
     motivationNote:   p.motivationNote,
     lightSensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
-    rsdLevel:         clampLevel(p.rsdLevel, DEFAULT_PROFILE.rsdLevel),
-    regulationMethod: p.regulationMethod,
     superpowers:      normalizeSuperpowers(p.superpowers)
   };
 }
@@ -239,8 +232,6 @@ function profileCompleteness(profile) {
     String(p.motivationNote || '').trim() !== '',
     p.mainObstacle !== DEFAULT_PROFILE.mainObstacle,
     clampLevel(p.lightSensitivity) !== DEFAULT_PROFILE.lightSensitivity,
-    clampLevel(p.rsdLevel) !== DEFAULT_PROFILE.rsdLevel,
-    p.regulationMethod !== DEFAULT_PROFILE.regulationMethod,
     normalizeSuperpowers(p.superpowers).length > 0
   ];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);

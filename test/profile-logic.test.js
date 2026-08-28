@@ -49,14 +49,11 @@ test('rowToProfile snake_case kolonlari camelCase alanlara tasir', () => {
   const p = P.rowToProfile({
     focus_period: 50, work_start: '10:00', work_end: '19:00',
     energy_peak: 'night',
-    rsd_level: 4, regulation_method: 'movement',
     superpowers: ['hyperfocus']
   });
   assert.strictEqual(p.focusPeriod, 50);
   assert.deepStrictEqual(p.workHours, { start: '10:00', end: '19:00' });
   assert.strictEqual(p.energyPeak, 'night');
-  assert.strictEqual(p.rsdLevel, 4);
-  assert.strictEqual(p.regulationMethod, 'movement');
   assert.deepStrictEqual(p.superpowers, ['hyperfocus']);
 });
 
@@ -73,7 +70,7 @@ test('profileToRow tum kolonlari doldurur, undefined birakmaz', () => {
   const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end', 'energy_peak',
     'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
     'break_style', 'today_mood', 'today_mood_date', 'hyperfocus_limit', 'light_sensitivity',
-    'rsd_level', 'regulation_method', 'superpowers'];
+    'superpowers'];
   assert.deepStrictEqual(Object.keys(row).sort(), beklenen.sort());
   for (const [k, v] of Object.entries(row)) {
     assert.notStrictEqual(v, undefined, `${k} undefined olmamali`);
@@ -88,7 +85,7 @@ test('profileToRow eksik workHours ile patlamaz', () => {
 
 test('profileToRow gidis-donus profili korur', () => {
   const orijinal = P.mergeProfile(P.DEFAULT_PROFILE, {
-    focusPeriod: 45, energyPeak: 'night', rsdLevel: 5,
+    focusPeriod: 45, energyPeak: 'night', lightSensitivity: 5,
     superpowers: ['humor', 'energy']
   });
   const geri = P.rowToProfile(P.profileToRow(orijinal, { id: 'u1', email: 'a@b.c' }));
@@ -294,4 +291,16 @@ test('koyu tema koprusu bozulmadi', () => {
   assert.strictEqual(P.themeIsDark(4), true);
   assert.strictEqual(P.themeIsDark(1), false);
   assert.strictEqual(P.lightSensitivityForTheme(true), 4);
+});
+
+// ── Duygu Regulasyonu karti kaldirildi (2026-08-28) ──
+test('DEFAULT_PROFILE rsdLevel ve regulationMethod tasimaz', () => {
+  assert.ok(!('rsdLevel' in P.DEFAULT_PROFILE));
+  assert.ok(!('regulationMethod' in P.DEFAULT_PROFILE));
+});
+
+test('planningProfile rsdLevel ve regulationMethod gondermez', () => {
+  const p = P.planningProfile({ rsdLevel: 5, regulationMethod: 'movement' });
+  assert.ok(!('rsdLevel' in p));
+  assert.ok(!('regulationMethod' in p));
 });
