@@ -224,3 +224,29 @@ test('profileCompleteness doldurdukca artar', () => {
 test('profileCompleteness bos motivasyon notunu dolu saymaz', () => {
   assert.strictEqual(P.profileCompleteness({ ...P.DEFAULT_PROFILE, motivationNote: '   ' }), 0);
 });
+
+// ── moodForToday ──
+test('moodForToday bugunun modunu aynen dondurur', () => {
+  assert.strictEqual(P.moodForToday('foggy', '2026-08-28', '2026-08-28'), 'foggy');
+});
+
+test('moodForToday dunun modunu bos dondurur', () => {
+  assert.strictEqual(P.moodForToday('foggy', '2026-08-27', '2026-08-28'), '');
+});
+
+test('moodForToday tarihsiz modu BAYAT sayar', () => {
+  // Kolon eklenmeden once kaydedilmis satirlarin hepsi tarihsiz; bunlari
+  // "bugunku" saymak tam da duzeltmeye calistigimiz hatayi surdururdu.
+  assert.strictEqual(P.moodForToday('foggy', null, '2026-08-28'), '');
+  assert.strictEqual(P.moodForToday('foggy', undefined, '2026-08-28'), '');
+  assert.strictEqual(P.moodForToday('foggy', '', '2026-08-28'), '');
+});
+
+test('moodForToday bos modda tarih bugun olsa bile bos doner', () => {
+  assert.strictEqual(P.moodForToday('', '2026-08-28', '2026-08-28'), '');
+  assert.strictEqual(P.moodForToday(null, '2026-08-28', '2026-08-28'), '');
+});
+
+test('moodForToday bugun bilinmiyorsa bayat sayar', () => {
+  assert.strictEqual(P.moodForToday('foggy', '2026-08-28', ''), '');
+});

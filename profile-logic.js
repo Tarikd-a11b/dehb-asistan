@@ -215,6 +215,23 @@ function themeIsDark(lightSensitivity) { return clampLevel(lightSensitivity) >= 
 function lightSensitivityForTheme(dark) { return dark ? 4 : 1; }
 
 /**
+ * Bugüne ait olmayan modu boş sayar.
+ *
+ * "Bugün nasıl hissediyorsun" sorusunun cevabı yalnızca o gün geçerlidir;
+ * eskiden tarih damgası yoktu ve pazartesi seçilen mod haftalarca planı
+ * küçültüyordu. Tarih karşılaştırması 'YYYY-MM-DD' dizeleri üzerinden yapılır;
+ * hangi günün "bugün" olduğuna ÇAĞIRAN karar verir — bu dosya saat dilimi bilmez.
+ *
+ * ⚠️ Tarihi olmayan mod BAYAT sayılır. `today_mood_date` kolonu eklenmeden
+ * önce kaydedilmiş satırların hepsi tarihsizdir; onları "bugünkü" saymak
+ * düzeltmeye çalıştığımız hatayı sürdürürdü.
+ */
+function moodForToday(todayMood, todayMoodDate, bugun) {
+  if (!todayMood || !todayMoodDate || !bugun) return '';
+  return todayMoodDate === bugun ? todayMood : '';
+}
+
+/**
  * Profilin ne kadarının doldurulduğu (0-100). "Şunu da doldur" diye
  * dırdır etmeden ilerlemeyi görünür kılar. Yalnızca kullanıcının bilinçli
  * seçim yapması gereken alanlar sayılır: varsayılandan farklıysa dolmuş sayılır.
@@ -248,5 +265,5 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_PROFILE, SUPERPOWERS, SUPERPOWER_IDS, KOYU_TEMA_ESIGI,
                      clampLevel, normalizeSuperpowers, rowToProfile, profileToRow,
                      mergeProfile, toggleSuperpower, planningProfile,
-                     themeIsDark, lightSensitivityForTheme, profileCompleteness };
+                     themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness };
 }
