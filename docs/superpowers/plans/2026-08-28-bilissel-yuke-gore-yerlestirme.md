@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Bir günün en zor görevi o günün en erken seansına düşsün; `hyperfocusLimit` ilk kez gerçekten seans süresini sınırlasın.
+**Goal:** Bir günün en zor görevi o günün en erken seansına düşsün.
 
 **Architecture:** Görevlerin hangi güne düştüğü değişmez; yalnızca gün içindeki *işlenme sırası* `cognitiveLoad`'a göre yeniden düzenlenir. Yerleştirici zaten "önce işlenen, o günün en erken boş saatini alır" mantığıyla çalıştığı için sıralamayı değiştirmek yerleşimi değiştirmeye yeter — `findSlot`, taşma ve çakışma koduna hiç dokunulmaz. Yeni sıralama mantığı test edilebilir olsun diye saf bir `scheduling-logic.js` dosyasına çıkar, gövdesi n8n Code node'una kopyalanır.
 
@@ -485,16 +485,16 @@ git commit -m "Profil ekranindan enerji zirvesi alanini kaldir"
 
 ---
 
-### Task 5: n8n `Normalize & Calculate` — `effectiveFocus`'u yukarı taşı, `energyPeak`'i çıkar
+### Task 5: n8n `Normalize & Calculate` — `energyPeak`'i çıkar
 
 **Files:**
 - Modify: `n8n-workflow-focusaid.json` → `Normalize & Calculate` node'unun `jsCode` alanı
 
 **Interfaces:**
 - Consumes: —
-- Produces: `Code in JavaScript` node'una giden `profile` nesnesi `effectiveFocus` içerir, `energyPeak` içermez.
+- Produces: `Code in JavaScript` node'una giden `profile` nesnesi `energyPeak` içermez.
 
-**Neden taşıma gerekiyor:** `slotsPerDay` şu an `focusPeriod` ile hesaplanıyor ve `effectiveFocus` ondan **sonra** tanımlanıyor. Hiperfokus sınırı seans süresini kısaltıyorsa güne daha çok seans sığar; sıra düzeltilmezse kapasite olduğundan az hesaplanır.
+⚠️ **`effectiveFocus`'a DOKUNMA.** Bu planın ilk halinde `effectiveFocus` kapasite hesabına bağlanacaktı; 2026-08-28'de kapsam dışına alındı, çünkü `hyperfocusLimit` seans kısaltan bir ayar değil gerçek bir alarm olacak (ayrı spec). Hesaplandığı yerde kalsın, kullanılmasın.
 
 - [ ] **Step 1: Node kodunu dosyaya çıkar**
 
@@ -510,32 +510,7 @@ python -c "import json,io,os; d=json.load(io.open('n8n-workflow-focusaid.json',e
 const energyPeak = profile.energyPeak ?? 'morning';
 ```
 
-- [ ] **Step 3: `effectiveFocus` bloğunu `slotsPerDay`'in ÜSTÜNE taşı**
-
-Şu blok:
-
-```js
-// Hiperfokus uyarisi kesintisiz seans suresini sinirlar: 60/90/120 dk secildiyse
-// tek seans bunu asamaz. 'none' ise sinir yok.
-const hyperfocusCap = hyperfocusLimit === 'none' ? null : Number(hyperfocusLimit);
-const effectiveFocus = hyperfocusCap ? Math.min(focusPeriod, hyperfocusCap) : focusPeriod;
-```
-
-bulunduğu yerden **kesilip**, şu satırın hemen üstüne taşınır:
-
-```js
-const slotsPerDay = Math.max(1, Math.floor(sessionDurationN / (focusPeriod + breakMinutes)));
-```
-
-- [ ] **Step 4: `slotsPerDay` hesabını `effectiveFocus`'a çevir**
-
-```js
-// Gunluk kapasite effectiveFocus ile hesaplanir: hiperfokus siniri seansi
-// kisaltiyorsa gune daha cok seans sigar.
-const slotsPerDay = Math.max(1, Math.floor(sessionDurationN / (effectiveFocus + breakMinutes)));
-```
-
-- [ ] **Step 5: Çıktıdan `energyPeak`'i sil**
+- [ ] **Step 3: Çıktıdan `energyPeak`'i sil**
 
 Dosyanın sonundaki `profile: { ... }` nesnesinden `energyPeak, ` kısmını çıkar. Sonuç:
 
@@ -546,7 +521,7 @@ Dosyanın sonundaki `profile: { ... }` nesnesinden `energyPeak, ` kısmını ç�
                regulationMethod, stimPref, superpowers }
 ```
 
-- [ ] **Step 6: Kodu JSON'a geri yaz**
+- [ ] **Step 4: Kodu JSON'a geri yaz**
 
 ```bash
 python -c "
@@ -559,7 +534,7 @@ io.open(p,'w',encoding='utf-8',newline='').write(json.dumps(d,ensure_ascii=False
 "
 ```
 
-- [ ] **Step 7: JSON geçerliliğini ve içeriği doğrula**
+- [ ] **Step 5: JSON geçerliliğini ve içeriği doğrula**
 
 ```bash
 python -c "
@@ -567,16 +542,14 @@ import json,io,os
 d=json.load(io.open('n8n-workflow-focusaid.json',encoding='utf-8'))
 c=[n for n in d['nodes'] if n['name']=='Normalize & Calculate'][0]['parameters']['jsCode']
 assert 'energyPeak' not in c, 'energyPeak hala var'
-assert 'effectiveFocus + breakMinutes' in c, 'slotsPerDay effectiveFocus kullanmiyor'
-i_eff=c.index('const effectiveFocus'); i_slot=c.index('const slotsPerDay')
-assert i_eff < i_slot, 'effectiveFocus hala slotsPerDay sonrasinda'
-print('JSON gecerli, uc kontrol de gecti')
+assert 'effectiveFocus + breakMinutes' not in c, 'effectiveFocus kapasite hesabina baglanmis (kapsam disi)'
+print('JSON gecerli, energyPeak temiz')
 "
 ```
 
-Expected: `JSON gecerli, uc kontrol de gecti`
+Expected: `JSON gecerli, energyPeak temiz`
 
-- [ ] **Step 8: AI Agent prompt'undan `energyPeak`'i çıkar**
+- [ ] **Step 6: AI Agent prompt'undan `energyPeak`'i çıkar**
 
 ```bash
 python -c "
@@ -593,27 +566,27 @@ print('prompt guncellendi')
 "
 ```
 
-- [ ] **Step 9: Repoda `energyPeak` kalmadığını doğrula**
+- [ ] **Step 7: Repoda `energyPeak` kalmadığını doğrula**
 
 Run: `grep -c "energyPeak" n8n-workflow-focusaid.json`
 Expected: `0`
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add n8n-workflow-focusaid.json
-git commit -m "Normalize & Calculate: effectiveFocus'u kapasite hesabina bagla, energyPeak'i cikar"
+git commit -m "Normalize & Calculate: energyPeak'i cikar"
 ```
 
 ---
 
-### Task 6: n8n `Code in JavaScript` — sıralamayı ve `effectiveFocus`'u bağla
+### Task 6: n8n `Code in JavaScript` — gün içi sıralamayı bağla
 
 **Files:**
 - Modify: `n8n-workflow-focusaid.json` → `Code in JavaScript` node'unun `jsCode` alanı
 
 **Interfaces:**
-- Consumes: `targetDayIndex`, `loadRank`, `orderTasksByLoad`, `LOAD_RANK` (Task 1-2, gövdeleri kopyalanır); `profile.effectiveFocus` (Task 5)
+- Consumes: `targetDayIndex`, `loadRank`, `orderTasksByLoad`, `LOAD_RANK` (Task 1-2, gövdeleri kopyalanır)
 - Produces: Çıktı öğeleri aynı şekle sahip (`title`, `summary`, `cognitiveLoad`, `day`, `start`, `end`, ...), yalnızca **dizi sırası** değişir.
 
 - [ ] **Step 1: Node kodunu dosyaya çıkar**
@@ -665,23 +638,7 @@ function orderTasksByLoad(tasks, dayCount) {
 // ── kopya sonu ──
 ```
 
-- [ ] **Step 3: `focusPeriod`'u `effectiveFocus`'a bağla**
-
-Şu satırı:
-
-```js
-const focusPeriod = profile.focusPeriod || 25;
-```
-
-şununla değiştir:
-
-```js
-// hyperfocusLimit secildiyse Normalize & Calculate effectiveFocus'u kisaltir;
-// seans suresi ve mola adimi (step) bundan turer.
-const focusPeriod = profile.effectiveFocus || profile.focusPeriod || 25;
-```
-
-- [ ] **Step 4: Ana döngüyü yeni sırayla çalıştır**
+- [ ] **Step 3: Ana döngüyü yeni sırayla çalıştır**
 
 Şu blok:
 
@@ -705,7 +662,7 @@ for (const { index: i, targetIdx } of orderTasksByLoad(rawTasks, A)) {
 
 ⚠️ `i` hâlâ **orijinal görev indeksi** olduğu için aşağıdaki `'Gorev ' + (i + 1)` yedek başlığı doğru kalır — değiştirme.
 
-- [ ] **Step 5: Kırılgan indeks bağını belgele**
+- [ ] **Step 4: Kırılgan indeks bağını belgele**
 
 `$SCRATCH/cj.js` dosyasının en sonundaki `return results;` satırının üstüne ekle:
 
@@ -716,7 +673,7 @@ for (const { index: i, targetIdx } of orderTasksByLoad(rawTasks, A)) {
 // yoksa gorevler yanlis takvim etkinligine baglanir.
 ```
 
-- [ ] **Step 6: Kodu JSON'a geri yaz**
+- [ ] **Step 5: Kodu JSON'a geri yaz**
 
 ```bash
 python -c "
@@ -729,7 +686,7 @@ io.open(p,'w',encoding='utf-8',newline='').write(json.dumps(d,ensure_ascii=False
 "
 ```
 
-- [ ] **Step 7: Kopyalanan gövdenin `scheduling-logic.js` ile aynı olduğunu doğrula**
+- [ ] **Step 6: Kopyalanan gövdenin `scheduling-logic.js` ile aynı olduğunu doğrula**
 
 ```bash
 python -c "
@@ -743,14 +700,13 @@ def govde(s,ad):
     return re.sub(r'\s+',' ',m.group(0))
 for ad in ['targetDayIndex','loadRank','orderTasksByLoad']:
     assert govde(node,ad)==govde(src,ad), ad+' ayristi'
-assert 'profile.effectiveFocus' in node, 'effectiveFocus baglanmamis'
-print('uc fonksiyon da birebir ayni, effectiveFocus bagli')
+print('uc fonksiyon da birebir ayni')
 "
 ```
 
-Expected: `uc fonksiyon da birebir ayni, effectiveFocus bagli`
+Expected: `uc fonksiyon da birebir ayni`
 
-- [ ] **Step 8: Node kodunu sözdizimi açısından çalıştırılabilir doğrula**
+- [ ] **Step 7: Node kodunu sözdizimi açısından çalıştırılabilir doğrula**
 
 ```bash
 python -c "import json,io,os; d=json.load(io.open('n8n-workflow-focusaid.json',encoding='utf-8')); io.open(os.environ['SCRATCH']+'/syn.js','w',encoding='utf-8',newline='').write([n for n in d['nodes'] if n['name']=='Code in JavaScript'][0]['parameters']['jsCode'])" && node --check $SCRATCH/syn.js && echo "sozdizimi gecerli"
@@ -760,16 +716,16 @@ Expected: `sozdizimi gecerli`
 
 (`node --check` yalnızca ayrıştırma yapar; `$` ve `$json` gibi n8n'e özel global'ler çalıştırılmadığı için sorun çıkarmaz.)
 
-- [ ] **Step 9: Testler hâlâ yeşil mi**
+- [ ] **Step 8: Testler hâlâ yeşil mi**
 
 Run: `node --test`
 Expected: PASS — 110 test, 0 fail
 
-- [ ] **Step 10: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
 git add n8n-workflow-focusaid.json
-git commit -m "Code in JavaScript: gun ici bilissel yuk siralamasi + effectiveFocus'u bagla"
+git commit -m "Code in JavaScript: gun ici bilissel yuk siralamasini bagla"
 ```
 
 ---
@@ -837,7 +793,6 @@ Uygulamada, bilişsel yükü karışık olacak kadar geniş bir proje parçala (
 
 - Aynı güne düşen görevlerden **en zor olanı o günün en erken saatinde** mi?
 - Görev sayısı ve günlere dağılım makul mü (bir güne yığılma yok)?
-- `hyperfocusLimit` seçili bir profille seans süresi kısalıyor mu?
 
 - [ ] **Step 8: Commit yok**
 

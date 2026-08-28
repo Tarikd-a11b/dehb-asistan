@@ -18,10 +18,12 @@ kullanılmıyor.
    sırasına göre boş saatlere diziliyor, zorluğuna kör. Zor bir görev günün son seansına,
    rutin bir görev ilk seansına düşebiliyor.
 
-2. **`hyperfocusLimit` hesaplanıp çöpe atılıyor.** 2026-08-28'de `Normalize & Calculate`
-   node'una `effectiveFocus` eklendi (`hyperfocusLimit` seçiliyse seans süresini kırpar), ama
-   `Code in JavaScript` hâlâ ham `profile.focusPeriod` okuyor. Yani "beni 90 dakikadan fazla
-   oturtma" ayarı şu an hiçbir şeyi değiştirmiyor.
+2. ~~`hyperfocusLimit` hesaplanıp çöpe atılıyor.~~ **Bu madde 2026-08-28'de kapsam dışına
+   alındı.** Başlangıçta `effectiveFocus`'u zamanlayıcıya bağlayıp seans süresini kısaltmak
+   planlanmıştı. Ancak alanın arayüzdeki etiketi "60 dk'da bir **uyar**" diyor ve kullanıcı bunun
+   gerçek bir alarm olarak yapılmasına karar verdi — "beni uyar" diyene "seansını kısalttım"
+   demek başka bir şeydir. Hiperfokus alarmı **kendi spec'ine** taşındı; bu spec seans
+   süresine dokunmaz.
 
 ## Hedef
 
@@ -30,12 +32,10 @@ Bir günün en zor görevi, o günün en erken seansına düşsün. Kullanıcı 
 zamanlayıcı gece aşan pencereyi zaten doğru işliyor — "günün ilk seansı" pratikte "odağın
 yüksek olduğu ilk saat" demektir.
 
-Ayrıca `hyperfocusLimit` ilk kez gerçekten seans süresini sınırlasın.
-
 ## Kapsam dışı
 
 - **Görevlerin hangi güne düştüğü.** `targetIdx` (orantılı gün dağıtımı) formülü aynı kalıyor;
-  tek istisna `T === 1` çökme koruması (bkz. §5), o da yalnızca bugün patlayan bir durumu
+  tek istisna `T === 1` çökme koruması (bkz. §4), o da yalnızca bugün patlayan bir durumu
   karşılıyor. Sadece gün *içindeki* sıra değişiyor.
 - **Taşma mantığı, takvim çakışması kontrolü, `maxPerDay`, mutlak-dakika ekseni.** Hiçbirine
   dokunulmuyor.
@@ -97,8 +97,6 @@ Tanınmayan/eksik `cognitiveLoad` değeri `medium` sayılır (mevcut kodun varsa
 
 - Ana döngü `i = 0..T-1` yerine `orderTasksByLoad(...)` çıktısı üzerinde yürür; `targetIdx`
   önceden hesaplanmış olandan gelir.
-- `const focusPeriod = profile.focusPeriod || 25;` →
-  `const focusPeriod = profile.effectiveFocus || profile.focusPeriod || 25;`
 - `results` dizisi **hedef sıraya göre** dolar. Çıktı sırası değiştiği için `title` üretimindeki
   `'Gorev ' + (i + 1)` yedeği artık orijinal görev indeksini kullanmalı, işlenme sırasını değil.
 
@@ -122,12 +120,7 @@ açıklama notu eklenmeli.
 node'u yerel dosya `require` edemiyor; repo JSON'u zaten canlı node'un aynası, bu ikilik
 hâlihazırda var (bkz. CLAUDE.md — workflow'u toptan import etme uyarısı).
 
-### 3. `Normalize & Calculate` node'unda değişiklik
-
-`slotsPerDay` hesabı ham `focusPeriod` kullanıyor; `effectiveFocus` kullanmalı. Aksi halde
-hiperfokus sınırı koyan kullanıcıda günlük kapasite olduğundan az hesaplanır.
-
-### 4. `energyPeak` kaldırma
+### 3. `energyPeak` kaldırma
 
 | Dosya | Ne yapılacak |
 |---|---|
@@ -144,7 +137,7 @@ her soru DEHB'li kullanıcı için bir maliyet.
 ⚠️ `energyPeak` şu an AI Agent prompt'unda geçiyor, yani tamamen ölü değil — kaldırma prompt'u
 bir miktar daha az kişiselleştirir. Bilinçli kabul edilen bedel.
 
-### 5. `T === 1` hatası
+### 4. `T === 1` hatası
 
 `Math.round(i * (A - 1) / (T - 1))` ifadesi `T === 1` ve `A > 1` iken `0/0 = NaN` üretir;
 `sessions[NaN]` → `undefined` → `findSlot` patlar. Prompt en az 3 görev istiyor ama AI'nın 1
