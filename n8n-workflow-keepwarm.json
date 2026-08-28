@@ -45,6 +45,9 @@
         680,
         300
       ],
+      "retryOnFail": true,
+      "maxTries": 4,
+      "waitBetweenTries": 20000,
       "parameters": {
         "url": "https://dehb-asistan.onrender.com/config.js",
         "options": {

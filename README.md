@@ -207,3 +207,8 @@ bloke eder.
   Render workspace başına ayda **750 instance saati** veriyor, 7/24 uyanık tutmak ~730 saatle
   bütçenin tamamını yer ve ay sonunda servisi askıya aldırabilir; bu pencere ~520 saat tutuyor.
   Pencereyi genişletmeden önce o hesabı yeniden yap.
+  Pencere gece 01:00'de kapandığı için **günün ilk ping'i (08:00) her zaman uyuyan servise
+  çarpıyor** ve Render uyanırken 503 döndürdüğünden o çalıştırma hata olarak kaydediliyordu
+  (uyandırma yine de tetikleniyor). Bu yüzden `Ping FocusAid` node'unda **Retry On Fail** açık:
+  4 deneme, aralarında 20 sn — ilk deneme uyandırır, kalanları soğuk açılışı bekler. Artık
+  Executions'ta o akışta kırmızı satır görürsen gerçek bir arıza demektir.
