@@ -212,6 +212,15 @@ test('profileToRow today_mood_date kolonunu yazar', () => {
                              { id: 'u1', email: 'a@b.c' });
   assert.strictEqual(row.today_mood_date, '2026-08-28');
 });
+
+test('profileCompleteness todayMood ile degismez', () => {
+  // Doluluk "profilini ne kadar tanittin" demek; gunluk degisen bir cevap
+  // oraya ait degil. todayMood gunluk sifirlandigi icin hesapta kalsaydi
+  // cubuk her sabah bir puan geri giderdi.
+  const a = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: '' });
+  const b = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: 'focused' });
+  assert.strictEqual(a, b);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -246,16 +255,31 @@ Expected: FAIL — `todayMoodDate` `undefined`
 ⚠️ Boş dize değil `null` yazılır: `DATE` kolonuna `''` göndermek Postgres'te
 `invalid input syntax for type date` verir.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [ ] **Step 6: `todayMood`'u doluluk hesabından çıkar**
+
+`profileCompleteness`'teki `checks` dizisinden şu satırı sil:
+
+```js
+    p.todayMood !== '',
+```
+
+Gerekçe: `todayMood` artık günlük sıfırlanıyor. Hesapta kalsaydı profil doluluk çubuğu **her
+sabah bir puan geri giderdi**; DEHB'li kullanıcı için geriye giden bir ilerleme çubuğu
+demotive edicidir. Doluluk "profilini ne kadar tanıttın" sorusunun cevabıdır, günlük değişen
+bir cevap oraya ait değil.
+
+⚠️ `todayMoodDate` için doluluk kontrolü **EKLEME** — o da aynı sebeple hesaba girmemeli.
+
+- [ ] **Step 7: Run tests to verify they pass**
 
 Run: `node --test`
-Expected: PASS — 101 test (98 + 3 yeni), 0 fail
+Expected: PASS — 102 test (98 + 4 yeni), 0 fail
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 8: Commit**
 
 ```bash
 git add profile-logic.js test/profile-logic.test.js
-git commit -m "todayMoodDate'i profil donusumune bagla"
+git commit -m "todayMoodDate'i profil donusumune bagla, todayMood'u doluluk hesabindan cikar"
 ```
 
 ---
@@ -440,7 +464,7 @@ Expected: **Hiç sonuç yok.**
 - [ ] **Step 8: Run tests**
 
 Run: `node --test`
-Expected: PASS — 103 test (101 + 2 yeni), 0 fail
+Expected: PASS — 104 test (102 + 2 yeni), 0 fail
 
 - [ ] **Step 9: Commit**
 
@@ -563,7 +587,7 @@ Expected: sıfırdan büyük — alan duruyor.
 - [ ] **Step 10: Run tests**
 
 Run: `node --test`
-Expected: PASS — 105 test (103 + 2 yeni), 0 fail
+Expected: PASS — 106 test (104 + 2 yeni), 0 fail
 
 - [ ] **Step 11: Tarayıcıda temayı doğrula**
 
@@ -673,7 +697,7 @@ Expected: **Hiç sonuç yok.**
 - [ ] **Step 8: Run tests**
 
 Run: `node --test`
-Expected: PASS — 107 test (105 + 2 yeni), 0 fail
+Expected: PASS — 108 test (106 + 2 yeni), 0 fail
 
 - [ ] **Step 9: Commit**
 
@@ -858,7 +882,7 @@ rm -f nc-panoya.js
 
 - [ ] **Step 6: `CLAUDE.md`'yi güncelle**
 
-Test sayısını **107** yap. (Kullanıcı "CLAUDE.md'yi güncelle" dediğinde yapılır — kendiliğinden değil.)
+Test sayısını **108** yap. (Kullanıcı "CLAUDE.md'yi güncelle" dediğinde yapılır — kendiliğinden değil.)
 
 ---
 
@@ -868,10 +892,10 @@ Test sayısını **107** yap. (Kullanıcı "CLAUDE.md'yi güncelle" dediğinde y
 |---|---|---|
 | Task 1 | `information_schema.columns` sorgusu | bir satır: `today_mood_date | date` |
 | Task 2 | `node --test` | 98 test, 0 fail |
-| Task 3 | `node --test` | 101 test, 0 fail |
+| Task 3 | `node --test` | 102 test, 0 fail |
 | Task 4 | tarayıcı: mod seç → yenile | mod korunuyor |
-| Task 5 | `grep -n "medication\|setMed" index.html profile-logic.js test/` | sonuç yok · 103 test |
-| Task 6 | duyusal alan grep'i + tema testi | sonuç yok · `lightSensitivity` duruyor · 105 test |
-| Task 7 | rsd/regülasyon grep'i | sonuç yok · 107 test |
+| Task 5 | `grep -n "medication\|setMed" index.html profile-logic.js test/` | sonuç yok · 104 test |
+| Task 6 | duyusal alan grep'i + tema testi | sonuç yok · `lightSensitivity` duruyor · 106 test |
+| Task 7 | rsd/regülasyon grep'i | sonuç yok · 108 test |
 | Task 8 | doğrulama betiği + `node --check` | `temiz, anxious bagli` · sözdizimi geçerli |
 | Task 9 | n8n Publish Timeline | bugünün tarihiyle yeni aktif sürüm |
