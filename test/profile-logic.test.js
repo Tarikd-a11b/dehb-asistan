@@ -304,3 +304,14 @@ test('planningProfile rsdLevel ve regulationMethod gondermez', () => {
   assert.ok(!('rsdLevel' in p));
   assert.ok(!('regulationMethod' in p));
 });
+
+// ── lightSensitivity profil sorusu degildir (2026-08-28) ──
+test('profileCompleteness tema tercihiyle degismez', () => {
+  // lightSensitivity artik bir profil sorusu degil, koyu tema tercihinin
+  // saklandigi yer; kenar cubugundaki anahtara basmak doluluk cubugunu
+  // yukseltmemeli (ve bir daha asla dusurememeli).
+  const acik = P.profileCompleteness({ ...P.DEFAULT_PROFILE, lightSensitivity: 1 });
+  const koyu = P.profileCompleteness({ ...P.DEFAULT_PROFILE, lightSensitivity: 4 });
+  assert.strictEqual(acik, 0);
+  assert.strictEqual(koyu, 0);
+});

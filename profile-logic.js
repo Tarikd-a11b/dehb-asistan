@@ -231,7 +231,6 @@ function profileCompleteness(profile) {
     p.breakStyle !== DEFAULT_PROFILE.breakStyle,
     String(p.motivationNote || '').trim() !== '',
     p.mainObstacle !== DEFAULT_PROFILE.mainObstacle,
-    clampLevel(p.lightSensitivity) !== DEFAULT_PROFILE.lightSensitivity,
     normalizeSuperpowers(p.superpowers).length > 0
   ];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);
