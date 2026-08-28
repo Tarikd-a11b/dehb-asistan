@@ -2728,11 +2728,25 @@ function profiliTemizle() {
   document.getElementById('profile-dirty-bar')?.classList.remove('gorunur');
 }
 
+/* Europe/Istanbul yerel tarihi, 'YYYY-MM-DD'. Uygulamanin geri kalani da bu
+   saat dilimini kullaniyor (n8n zamanlayicisindaki IST sabiti). `en-CA` yerel
+   ayari tam olarak YYYY-MM-DD uretir. Saat dilimi bilgisi bilincli olarak
+   burada durur; profile-logic.js saf kalsin. */
+function bugunIstanbul() {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Istanbul' }).format(new Date());
+}
+
 function setMood(mood, kullaniciTikladi = true) {
   userProfile.todayMood = mood;
+  // Mod yalnizca secildigi gun gecerlidir; tarihi olmayan mod bayat sayilir
+  // (bkz. moodForToday). Yukleme sirasinda (kullaniciTikladi=false) tarihe
+  // DOKUNMA -- yoksa bayat bir mod her acilista bugune tasinirdi.
+  if (kullaniciTikladi) {
+    userProfile.todayMoodDate = bugunIstanbul();
+    profiliKirlet();
+  }
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('mood-' + mood)?.classList.add('active');
-  if (kullaniciTikladi) profiliKirlet();
 }
 
 function setMed(active, kullaniciTikladi = true) {
@@ -2871,7 +2885,11 @@ function loadProfileToUI() {
   if (radio) radio.checked = true;
   // false = "yukleme yapiyorum", kirli isaretleme (kullanici degistirmedi)
   setMed(userProfile.medication, false);
-  if (userProfile.todayMood) setMood(userProfile.todayMood, false);
+  // Bayat modu ele: dunden kalma "Beyin Sisi" bugunku plani kucultmemeli.
+  const taze = moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugunIstanbul());
+  userProfile.todayMood = taze;
+  if (taze) setMood(taze, false);
+  else document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
   tamamlanmaCubuguGuncelle(userProfile);
   profiliTemizle();
   // Sablon her loadPage'de yeniden basiliyor; dinleyici de her seferinde
