@@ -13,8 +13,8 @@ const DEFAULT_PROFILE = {
   social: 'solo', energyPeak: 'morning', focusTrigger: 'silence',
   motivationNote: '', mainObstacle: 'paralysis', breakStyle: 'pomodoro',
   todayMood: '', todayMoodDate: '', hyperfocusLimit: 'none',
-  lightSensitivity: 2, soundSensitivity: 2, envPref: 'minimal',
-  rsdLevel: 2, regulationMethod: 'breathing', stimPref: 'fidget',
+  lightSensitivity: 2,
+  rsdLevel: 2, regulationMethod: 'breathing',
   superpowers: []
 };
 
@@ -82,11 +82,8 @@ function rowToProfile(row) {
     todayMoodDate:    r.today_mood_date  ?? DEFAULT_PROFILE.todayMoodDate,
     hyperfocusLimit:  r.hyperfocus_limit ?? DEFAULT_PROFILE.hyperfocusLimit,
     lightSensitivity: clampLevel(r.light_sensitivity, DEFAULT_PROFILE.lightSensitivity),
-    soundSensitivity: clampLevel(r.sound_sensitivity, DEFAULT_PROFILE.soundSensitivity),
-    envPref:          r.env_pref          ?? DEFAULT_PROFILE.envPref,
     rsdLevel:         clampLevel(r.rsd_level, DEFAULT_PROFILE.rsdLevel),
     regulationMethod: r.regulation_method ?? DEFAULT_PROFILE.regulationMethod,
-    stimPref:         r.stim_pref         ?? DEFAULT_PROFILE.stimPref,
     superpowers:      normalizeSuperpowers(r.superpowers)
   };
 }
@@ -116,11 +113,8 @@ function profileToRow(profile, identity) {
     today_mood_date:   p.todayMoodDate || null,
     hyperfocus_limit:  p.hyperfocusLimit,
     light_sensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
-    sound_sensitivity: clampLevel(p.soundSensitivity, DEFAULT_PROFILE.soundSensitivity),
-    env_pref:          p.envPref,
     rsd_level:         clampLevel(p.rsdLevel, DEFAULT_PROFILE.rsdLevel),
     regulation_method: p.regulationMethod,
-    stim_pref:         p.stimPref,
     superpowers:       normalizeSuperpowers(p.superpowers)
   };
 }
@@ -194,12 +188,9 @@ function planningProfile(profile) {
     focusTrigger:     p.focusTrigger,
     social:           p.social,
     motivationNote:   p.motivationNote,
-    soundSensitivity: clampLevel(p.soundSensitivity, DEFAULT_PROFILE.soundSensitivity),
     lightSensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
-    envPref:          p.envPref,
     rsdLevel:         clampLevel(p.rsdLevel, DEFAULT_PROFILE.rsdLevel),
     regulationMethod: p.regulationMethod,
-    stimPref:         p.stimPref,
     superpowers:      normalizeSuperpowers(p.superpowers)
   };
 }
@@ -248,11 +239,8 @@ function profileCompleteness(profile) {
     String(p.motivationNote || '').trim() !== '',
     p.mainObstacle !== DEFAULT_PROFILE.mainObstacle,
     clampLevel(p.lightSensitivity) !== DEFAULT_PROFILE.lightSensitivity,
-    clampLevel(p.soundSensitivity) !== DEFAULT_PROFILE.soundSensitivity,
-    p.envPref !== DEFAULT_PROFILE.envPref,
     clampLevel(p.rsdLevel) !== DEFAULT_PROFILE.rsdLevel,
     p.regulationMethod !== DEFAULT_PROFILE.regulationMethod,
-    p.stimPref !== DEFAULT_PROFILE.stimPref,
     normalizeSuperpowers(p.superpowers).length > 0
   ];
   return Math.round(checks.filter(Boolean).length / checks.length * 100);

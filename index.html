@@ -673,44 +673,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       </div>
     </div>
 
-    <!-- 4. Duyusal Profil -->
-    <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-sky">
-      <div>
-        <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>🌈</span> Duyusal Profil</h4>
-        <p class="text-[10px] text-slate-400 mt-1">Çevre uyaranlarına ne kadar duyarlısın</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Işık Hassasiyeti: <span id="light-sensitivity-display" class="text-sky-600 font-black text-xs">2/5</span></label>
-        <!-- Bu kaydırıcı temayı ANINDA değiştirir (bkz. isikHassasiyetiDegisti);
-             sidebar'daki ☀️/🌙 anahtarıyla aynı değeri yazar. -->
-        <input type="range" id="light-sensitivity" value="2" min="1" max="5" step="1" oninput="isikHassasiyetiDegisti(this)" class="adhd-slider adhd-slider-sky w-full">
-        <p class="text-[10px] text-slate-400">3 ve üstünde arayüz otomatik olarak koyu temaya geçer.</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Ses Hassasiyeti: <span id="sound-sensitivity-display" class="text-sky-600 font-black text-xs">2/5</span></label>
-        <input type="range" id="sound-sensitivity" value="2" min="1" max="5" step="1" oninput="seviyeEtiketiniGuncelle('sound-sensitivity')" class="adhd-slider adhd-slider-sky w-full">
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Tercih Ettiğin Ortam</label>
-        <select id="env-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="minimal">🧊 Sade & Boş Masa</option>
-          <option value="cozy">🛋️ Sıcak & Rahat</option>
-          <option value="nature">🌿 Doğa / Bitkili</option>
-          <option value="stimulating">🎨 Renkli & Uyarıcı</option>
-        </select>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">Stim / Kıpırdanma İhtiyacı</label>
-        <select id="stim-pref" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
-          <option value="fidget">🎮 Fidget / Stres Topu</option>
-          <option value="movement">🚶 Hareket / Ayakta Çalışma</option>
-          <option value="chew">🍬 Sakız / Atıştırma</option>
-          <option value="doodle">✏️ Karalama</option>
-          <option value="none">🚫 İhtiyaç Duymuyorum</option>
-        </select>
-      </div>
-    </div>
-
     <!-- 5. Duygu Regülasyonu -->
     <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-rose">
       <div>
@@ -2760,13 +2722,11 @@ function cizSuperpowerRozetleri() {
   ).join('');
 }
 
-/* ── Duyusal kaydiricilarin metin karsiliklari ──
+/* ── Seviye kaydiricilarinin metin karsiliklari ──
    Ciplak "3/5" DEHB'li kullaniciya bir sey anlatmiyor; her kademenin ne demek
    oldugu yazili. Diziler 1-5 icin bes eleman, index = deger-1. */
 const SEVIYE_METINLERI = {
-  'light-sensitivity': ['Parlak ışık iyi gelir', 'Sorun değil', 'Biraz rahatsız', 'Çok rahatsız', 'Loş ışık şart'],
-  'sound-sensitivity': ['Gürültü iyi gelir', 'Sorun değil', 'Biraz rahatsız', 'Çok rahatsız', 'Sessizlik şart'],
-  'rsd-level':         ['Eleştiri etkilemez', 'Hafif etkiler', 'Belirgin etkiler', 'Günümü bozar', 'Yıkıcı gelir']
+  'rsd-level': ['Eleştiri etkilemez', 'Hafif etkiler', 'Belirgin etkiler', 'Günümü bozar', 'Yıkıcı gelir']
 };
 
 function seviyeEtiketiniGuncelle(id) {
@@ -2775,16 +2735,6 @@ function seviyeEtiketiniGuncelle(id) {
   if (!el || !cikti) return;
   const v = clampLevel(el.value);
   cikti.textContent = `${v}/5 · ${SEVIYE_METINLERI[id]?.[v - 1] ?? ''}`;
-}
-
-/* Isik hassasiyeti kaydiricisi temayi ANINDA uygular: kullanici 4'e cekip
-   hicbir sey olmamasini "bozuk" diye okur. Esik profile-logic'te (themeIsDark),
-   sidebar anahtari da ayni esigi kullanir — ikisi birbirini yalanlamasin. */
-function isikHassasiyetiDegisti(el) {
-  seviyeEtiketiniGuncelle('light-sensitivity');
-  userProfile.lightSensitivity = clampLevel(el.value);
-  applyTheme(themeIsDark(userProfile.lightSensitivity));
-  profiliKirlet();
 }
 
 function tamamlanmaCubuguGuncelle(profil) {
@@ -2816,12 +2766,8 @@ async function saveProfile() {
       mainObstacle:     sg('main-obstacle'),
       breakStyle:       sg('break-style'),
       hyperfocusLimit:  sg('hyperfocus-limit'),
-      lightSensitivity: sayi('light-sensitivity'),
-      soundSensitivity: sayi('sound-sensitivity'),
-      envPref:          sg('env-pref'),
       rsdLevel:         sayi('rsd-level'),
-      regulationMethod: sg('regulation-method'),
-      stimPref:         sg('stim-pref')
+      regulationMethod: sg('regulation-method')
       // todayMood ve superpowers form alani degil; setMood/toggleSuperpowerUI
       // zaten userProfile'a yaziyor, merge onlari korur.
     });
@@ -2856,14 +2802,10 @@ function loadProfileToUI() {
   ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
-  // Duyusal profil + duygu regulasyonu
-  ss('light-sensitivity', userProfile.lightSensitivity);
-  ss('sound-sensitivity', userProfile.soundSensitivity);
-  ss('env-pref', userProfile.envPref);
+  // Duygu regulasyonu
   ss('rsd-level', userProfile.rsdLevel);
   ss('regulation-method', userProfile.regulationMethod);
-  ss('stim-pref', userProfile.stimPref);
-  ['light-sensitivity','sound-sensitivity','rsd-level'].forEach(seviyeEtiketiniGuncelle);
+  seviyeEtiketiniGuncelle('rsd-level');
   cizSuperpowerRozetleri();
   const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
   if (radio) radio.checked = true;
@@ -2899,10 +2841,6 @@ function toggleTheme() {
   // kalıcı olur, başka bir cihaz/tarayıcıda ilk girişte varsayılan bunu önerir.
   userProfile = mergeProfile(userProfile, { lightSensitivity: lightSensitivityForTheme(dark) });
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
-  // Profil ekrani aciksa kaydirici de yeni degeri gostersin; iki kontrolun
-  // ayni sey icin farkli deger gostermesi "bozuk" hissi veriyordu.
-  const kaydirici = document.getElementById('light-sensitivity');
-  if (kaydirici) { kaydirici.value = userProfile.lightSensitivity; seviyeEtiketiniGuncelle('light-sensitivity'); }
   if (currentUser) saveProfileToSupabase(userProfile).catch(e => console.warn('[Tema] profil kaydedilemedi:', e.message));
 }
 

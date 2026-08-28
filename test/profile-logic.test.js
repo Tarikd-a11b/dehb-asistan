@@ -48,18 +48,15 @@ test('rowToProfile null satiri da kaldirir', () => {
 test('rowToProfile snake_case kolonlari camelCase alanlara tasir', () => {
   const p = P.rowToProfile({
     focus_period: 50, work_start: '10:00', work_end: '19:00',
-    energy_peak: 'night', sound_sensitivity: 5, env_pref: 'nature',
-    rsd_level: 4, regulation_method: 'movement', stim_pref: 'chew',
+    energy_peak: 'night',
+    rsd_level: 4, regulation_method: 'movement',
     superpowers: ['hyperfocus']
   });
   assert.strictEqual(p.focusPeriod, 50);
   assert.deepStrictEqual(p.workHours, { start: '10:00', end: '19:00' });
   assert.strictEqual(p.energyPeak, 'night');
-  assert.strictEqual(p.soundSensitivity, 5);
-  assert.strictEqual(p.envPref, 'nature');
   assert.strictEqual(p.rsdLevel, 4);
   assert.strictEqual(p.regulationMethod, 'movement');
-  assert.strictEqual(p.stimPref, 'chew');
   assert.deepStrictEqual(p.superpowers, ['hyperfocus']);
 });
 
@@ -76,8 +73,7 @@ test('profileToRow tum kolonlari doldurur, undefined birakmaz', () => {
   const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end', 'energy_peak',
     'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
     'break_style', 'today_mood', 'today_mood_date', 'hyperfocus_limit', 'light_sensitivity',
-    'sound_sensitivity', 'env_pref', 'rsd_level', 'regulation_method',
-    'stim_pref', 'superpowers'];
+    'rsd_level', 'regulation_method', 'superpowers'];
   assert.deepStrictEqual(Object.keys(row).sort(), beklenen.sort());
   for (const [k, v] of Object.entries(row)) {
     assert.notStrictEqual(v, undefined, `${k} undefined olmamali`);
@@ -93,7 +89,7 @@ test('profileToRow eksik workHours ile patlamaz', () => {
 test('profileToRow gidis-donus profili korur', () => {
   const orijinal = P.mergeProfile(P.DEFAULT_PROFILE, {
     focusPeriod: 45, energyPeak: 'night', rsdLevel: 5,
-    superpowers: ['humor', 'energy'], envPref: 'cozy'
+    superpowers: ['humor', 'energy']
   });
   const geri = P.rowToProfile(P.profileToRow(orijinal, { id: 'u1', email: 'a@b.c' }));
   assert.deepStrictEqual(geri, orijinal);
@@ -175,13 +171,12 @@ test('planningProfile bos profilde bile hicbir alani undefined birakmaz', () => 
 
 test('planningProfile daha once tasinmayan alanlari da tasir', () => {
   const g = P.planningProfile({ ...P.DEFAULT_PROFILE, focusTrigger: 'lofi', social: 'cafe',
-    hyperfocusLimit: '90', todayMood: 'foggy', motivationNote: 'oyun', stimPref: 'movement' });
+    hyperfocusLimit: '90', todayMood: 'foggy', motivationNote: 'oyun' });
   assert.strictEqual(g.focusTrigger, 'lofi');
   assert.strictEqual(g.social, 'cafe');
   assert.strictEqual(g.hyperfocusLimit, '90');
   assert.strictEqual(g.todayMood, 'foggy');
   assert.strictEqual(g.motivationNote, 'oyun');
-  assert.strictEqual(g.stimPref, 'movement');
 });
 
 test('planningProfile metin focusPeriod degerini sayiya cevirir', () => {
@@ -216,7 +211,7 @@ test('profileCompleteness dokunulmamis profilde 0 doner', () => {
 test('profileCompleteness doldurdukca artar', () => {
   const az = P.profileCompleteness({ ...P.DEFAULT_PROFILE, focusPeriod: 45 });
   const cok = P.profileCompleteness({ ...P.DEFAULT_PROFILE, focusPeriod: 45,
-    envPref: 'nature', superpowers: ['humor'], motivationNote: 'oyun' });
+    focusTrigger: 'lofi', superpowers: ['humor'], motivationNote: 'oyun' });
   assert.ok(az > 0 && az < cok, `az=${az} cok=${cok}`);
   assert.ok(cok <= 100);
 });
@@ -285,4 +280,18 @@ test('DEFAULT_PROFILE medication tasimaz', () => {
 test('planningProfile ve profileToRow medication gondermez', () => {
   assert.ok(!('medication' in P.planningProfile({ medication: true })));
   assert.ok(!('medication' in P.profileToRow(P.DEFAULT_PROFILE, { id: 'u1', email: 'a@b.c' })));
+});
+
+// ── Duyusal Profil karti kaldirildi (2026-08-28) ──
+test('DEFAULT_PROFILE duyusal alanlari tasimaz ama lightSensitivity durur', () => {
+  for (const k of ['soundSensitivity', 'envPref', 'stimPref']) {
+    assert.ok(!(k in P.DEFAULT_PROFILE), k + ' hala var');
+  }
+  assert.strictEqual(P.DEFAULT_PROFILE.lightSensitivity, 2);
+});
+
+test('koyu tema koprusu bozulmadi', () => {
+  assert.strictEqual(P.themeIsDark(4), true);
+  assert.strictEqual(P.themeIsDark(1), false);
+  assert.strictEqual(P.lightSensitivityForTheme(true), 4);
 });
