@@ -63,10 +63,10 @@ test('rowToProfile snake_case kolonlari camelCase alanlara tasir', () => {
   assert.deepStrictEqual(p.superpowers, ['hyperfocus']);
 });
 
-test('rowToProfile false ve 0 degerlerini varsayilana kacirmaz', () => {
-  // ?? kullanildigi icin false korunmali; || olsaydi true'ya donerdi.
-  const p = P.rowToProfile({ medication: false, motivation_note: '' });
-  assert.strictEqual(p.medication, false);
+test('rowToProfile 0 ve bos string degerlerini varsayilana kacirmaz', () => {
+  // ?? kullanildigi icin 0 korunmali; || olsaydi varsayilana donerdi.
+  const p = P.rowToProfile({ focus_period: 0, motivation_note: '' });
+  assert.strictEqual(p.focusPeriod, 0);
   assert.strictEqual(p.motivationNote, '');
 });
 
@@ -74,7 +74,7 @@ test('rowToProfile false ve 0 degerlerini varsayilana kacirmaz', () => {
 test('profileToRow tum kolonlari doldurur, undefined birakmaz', () => {
   const row = P.profileToRow({}, { id: 'u1', email: 'a@b.c' });
   const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end', 'energy_peak',
-    'medication', 'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
+    'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
     'break_style', 'today_mood', 'today_mood_date', 'hyperfocus_limit', 'light_sensitivity',
     'sound_sensitivity', 'env_pref', 'rsd_level', 'regulation_method',
     'stim_pref', 'superpowers'];
@@ -113,12 +113,12 @@ test('mergeProfile undefined yamayi yok sayar', () => {
   assert.strictEqual(sonuc.envPref, 'nature');
 });
 
-test('mergeProfile bos string ve false yamayi UYGULAR', () => {
+test('mergeProfile bos string ve 0 yamayi UYGULAR', () => {
   // undefined atlanir ama kullanicinin bilerek bosalttigi alan yazilmali.
-  const sonuc = P.mergeProfile({ ...P.DEFAULT_PROFILE, motivationNote: 'oyun', medication: true },
-                               { motivationNote: '', medication: false });
+  const sonuc = P.mergeProfile({ ...P.DEFAULT_PROFILE, motivationNote: 'oyun', focusPeriod: 25 },
+                               { motivationNote: '', focusPeriod: 0 });
   assert.strictEqual(sonuc.motivationNote, '');
-  assert.strictEqual(sonuc.medication, false);
+  assert.strictEqual(sonuc.focusPeriod, 0);
 });
 
 test('mergeProfile workHours icin parcali birlestirme yapar', () => {
@@ -275,4 +275,14 @@ test('profileCompleteness todayMood ile degismez', () => {
   const a = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: '' });
   const b = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: 'focused' });
   assert.strictEqual(a, b);
+});
+
+// ── medication kaldirildi (2026-08-28) ──
+test('DEFAULT_PROFILE medication tasimaz', () => {
+  assert.ok(!('medication' in P.DEFAULT_PROFILE));
+});
+
+test('planningProfile ve profileToRow medication gondermez', () => {
+  assert.ok(!('medication' in P.planningProfile({ medication: true })));
+  assert.ok(!('medication' in P.profileToRow(P.DEFAULT_PROFILE, { id: 'u1', email: 'a@b.c' })));
 });

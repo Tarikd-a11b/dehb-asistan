@@ -9,7 +9,7 @@
    ══════════════════════════════════════════════════════════════ */
 
 const DEFAULT_PROFILE = {
-  medication: false, focusPeriod: 25, workHours: { start: '09:00', end: '18:00' },
+  focusPeriod: 25, workHours: { start: '09:00', end: '18:00' },
   social: 'solo', energyPeak: 'morning', focusTrigger: 'silence',
   motivationNote: '', mainObstacle: 'paralysis', breakStyle: 'pomodoro',
   todayMood: '', todayMoodDate: '', hyperfocusLimit: 'none',
@@ -69,7 +69,6 @@ function normalizeSuperpowers(raw) {
 function rowToProfile(row) {
   const r = row || {};
   return {
-    medication:       r.medication       ?? DEFAULT_PROFILE.medication,
     focusPeriod:      r.focus_period     ?? DEFAULT_PROFILE.focusPeriod,
     workHours:        { start: r.work_start ?? DEFAULT_PROFILE.workHours.start,
                         end:   r.work_end   ?? DEFAULT_PROFILE.workHours.end },
@@ -108,7 +107,6 @@ function profileToRow(profile, identity) {
     work_start:        p.workHours?.start ?? DEFAULT_PROFILE.workHours.start,
     work_end:          p.workHours?.end   ?? DEFAULT_PROFILE.workHours.end,
     energy_peak:       p.energyPeak,
-    medication:        !!p.medication,
     social:            p.social,
     focus_trigger:     p.focusTrigger,
     motivation_note:   p.motivationNote,
@@ -188,7 +186,6 @@ function planningProfile(profile) {
     energyPeak:       p.energyPeak,
     workHours:        { start: p.workHours?.start ?? DEFAULT_PROFILE.workHours.start,
                         end:   p.workHours?.end   ?? DEFAULT_PROFILE.workHours.end },
-    medication:       !!p.medication,
     mainObstacle:     p.mainObstacle,
     // ── Aşağıdakiler 2026-08-28'de eklendi: profilde zaten toplanıyorlardı
     //    ama planlamaya hiç ulaşmıyorlardı.

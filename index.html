@@ -600,14 +600,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
     <div class="glass-card p-8 bg-white shadow-sm space-y-5 adhd-card-purple">
       <div>
         <h4 class="font-bold flex items-center gap-2 text-slate-700 uppercase text-xs tracking-widest"><span>💊</span> Odak Yönetimi</h4>
-        <p class="text-[10px] text-slate-400 mt-1">İlaç ve odak süren planlamayı şekillendirir</p>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">İlaç Kullanım Durumu</label>
-        <div class="flex gap-2">
-          <button id="med-yes" onclick="setMed(true)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">✅ Evet</button>
-          <button id="med-no" onclick="setMed(false)" class="flex-1 p-3 border-2 rounded-2xl text-xs font-bold transition-all">❌ Hayır</button>
-        </div>
+        <p class="text-[10px] text-slate-400 mt-1">Odak süren ve hiperfokus sınırın planlamayı şekillendirir</p>
       </div>
       <div class="space-y-3">
         <label class="block text-sm font-semibold text-slate-600">Odak Süresi: <span id="focus-display" class="text-purple-600 font-black">25 dk</span></label>
@@ -2749,15 +2742,6 @@ function setMood(mood, kullaniciTikladi = true) {
   document.getElementById('mood-' + mood)?.classList.add('active');
 }
 
-function setMed(active, kullaniciTikladi = true) {
-  userProfile.medication = !!active;
-  const yes = document.getElementById('med-yes'), no = document.getElementById('med-no');
-  if (kullaniciTikladi) profiliKirlet();
-  if (!yes || !no) return;
-  if (active) { yes.className='flex-1 p-3 border-2 border-purple-600 rounded-xl text-xs font-bold bg-purple-600 text-white shadow-lg'; no.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; }
-  else { yes.className='flex-1 p-3 border rounded-xl text-xs font-bold bg-slate-50 text-slate-400 opacity-60'; no.className='flex-1 p-3 border-2 border-slate-300 rounded-xl text-xs font-bold bg-slate-200 text-slate-700 shadow-inner'; }
-}
-
 /* ── Süper güçler (JSONB `superpowers`) ── */
 function toggleSuperpowerUI(id) {
   userProfile.superpowers = toggleSuperpower(userProfile.superpowers, id);
@@ -2838,8 +2822,8 @@ async function saveProfile() {
       rsdLevel:         sayi('rsd-level'),
       regulationMethod: sg('regulation-method'),
       stimPref:         sg('stim-pref')
-      // medication, todayMood ve superpowers form alani degil; setMed/setMood/
-      // toggleSuperpowerUI zaten userProfile'a yaziyor, merge onlari korur.
+      // todayMood ve superpowers form alani degil; setMood/toggleSuperpowerUI
+      // zaten userProfile'a yaziyor, merge onlari korur.
     });
 
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Kaydediliyor...'; }
@@ -2883,8 +2867,6 @@ function loadProfileToUI() {
   cizSuperpowerRozetleri();
   const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
   if (radio) radio.checked = true;
-  // false = "yukleme yapiyorum", kirli isaretleme (kullanici degistirmedi)
-  setMed(userProfile.medication, false);
   // Bayat modu ele: dunden kalma "Beyin Sisi" bugunku plani kucultmemeli.
   const taze = moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugunIstanbul());
   userProfile.todayMood = taze;
