@@ -75,7 +75,7 @@ test('profileToRow tum kolonlari doldurur, undefined birakmaz', () => {
   const row = P.profileToRow({}, { id: 'u1', email: 'a@b.c' });
   const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end', 'energy_peak',
     'medication', 'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
-    'break_style', 'today_mood', 'hyperfocus_limit', 'light_sensitivity',
+    'break_style', 'today_mood', 'today_mood_date', 'hyperfocus_limit', 'light_sensitivity',
     'sound_sensitivity', 'env_pref', 'rsd_level', 'regulation_method',
     'stim_pref', 'superpowers'];
   assert.deepStrictEqual(Object.keys(row).sort(), beklenen.sort());
@@ -214,9 +214,9 @@ test('profileCompleteness dokunulmamis profilde 0 doner', () => {
 });
 
 test('profileCompleteness doldurdukca artar', () => {
-  const az = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: 'focused' });
-  const cok = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: 'focused',
-    focusPeriod: 45, envPref: 'nature', superpowers: ['humor'], motivationNote: 'oyun' });
+  const az = P.profileCompleteness({ ...P.DEFAULT_PROFILE, focusPeriod: 45 });
+  const cok = P.profileCompleteness({ ...P.DEFAULT_PROFILE, focusPeriod: 45,
+    envPref: 'nature', superpowers: ['humor'], motivationNote: 'oyun' });
   assert.ok(az > 0 && az < cok, `az=${az} cok=${cok}`);
   assert.ok(cok <= 100);
 });
@@ -249,4 +249,30 @@ test('moodForToday bos modda tarih bugun olsa bile bos doner', () => {
 
 test('moodForToday bugun bilinmiyorsa bayat sayar', () => {
   assert.strictEqual(P.moodForToday('foggy', '2026-08-28', ''), '');
+});
+
+// ── todayMoodDate ──
+test('DEFAULT_PROFILE todayMoodDate tasir ve bos baslar', () => {
+  assert.strictEqual(P.DEFAULT_PROFILE.todayMoodDate, '');
+});
+
+test('rowToProfile today_mood_date kolonunu okur', () => {
+  const p = P.rowToProfile({ today_mood: 'hyper', today_mood_date: '2026-08-28' });
+  assert.strictEqual(p.todayMood, 'hyper');
+  assert.strictEqual(p.todayMoodDate, '2026-08-28');
+});
+
+test('profileToRow today_mood_date kolonunu yazar', () => {
+  const row = P.profileToRow({ ...P.DEFAULT_PROFILE, todayMood: 'crash', todayMoodDate: '2026-08-28' },
+                             { id: 'u1', email: 'a@b.c' });
+  assert.strictEqual(row.today_mood_date, '2026-08-28');
+});
+
+test('profileCompleteness todayMood ile degismez', () => {
+  // Doluluk "profilini ne kadar tanittin" demek; gunluk degisen bir cevap
+  // oraya ait degil. todayMood gunluk sifirlandigi icin hesapta kalsaydi
+  // cubuk her sabah bir puan geri giderdi.
+  const a = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: '' });
+  const b = P.profileCompleteness({ ...P.DEFAULT_PROFILE, todayMood: 'focused' });
+  assert.strictEqual(a, b);
 });

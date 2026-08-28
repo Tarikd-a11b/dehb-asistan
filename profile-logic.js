@@ -12,7 +12,7 @@ const DEFAULT_PROFILE = {
   medication: false, focusPeriod: 25, workHours: { start: '09:00', end: '18:00' },
   social: 'solo', energyPeak: 'morning', focusTrigger: 'silence',
   motivationNote: '', mainObstacle: 'paralysis', breakStyle: 'pomodoro',
-  todayMood: '', hyperfocusLimit: 'none',
+  todayMood: '', todayMoodDate: '', hyperfocusLimit: 'none',
   lightSensitivity: 2, soundSensitivity: 2, envPref: 'minimal',
   rsdLevel: 2, regulationMethod: 'breathing', stimPref: 'fidget',
   superpowers: []
@@ -80,6 +80,7 @@ function rowToProfile(row) {
     mainObstacle:     r.main_obstacle    ?? DEFAULT_PROFILE.mainObstacle,
     breakStyle:       r.break_style      ?? DEFAULT_PROFILE.breakStyle,
     todayMood:        r.today_mood       ?? DEFAULT_PROFILE.todayMood,
+    todayMoodDate:    r.today_mood_date  ?? DEFAULT_PROFILE.todayMoodDate,
     hyperfocusLimit:  r.hyperfocus_limit ?? DEFAULT_PROFILE.hyperfocusLimit,
     lightSensitivity: clampLevel(r.light_sensitivity, DEFAULT_PROFILE.lightSensitivity),
     soundSensitivity: clampLevel(r.sound_sensitivity, DEFAULT_PROFILE.soundSensitivity),
@@ -114,6 +115,7 @@ function profileToRow(profile, identity) {
     main_obstacle:     p.mainObstacle,
     break_style:       p.breakStyle,
     today_mood:        p.todayMood,
+    today_mood_date:   p.todayMoodDate || null,
     hyperfocus_limit:  p.hyperfocusLimit,
     light_sensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
     sound_sensitivity: clampLevel(p.soundSensitivity, DEFAULT_PROFILE.soundSensitivity),
@@ -239,7 +241,6 @@ function moodForToday(todayMood, todayMoodDate, bugun) {
 function profileCompleteness(profile) {
   const p = { ...DEFAULT_PROFILE, ...(profile || {}) };
   const checks = [
-    p.todayMood !== '',
     Number(p.focusPeriod) !== DEFAULT_PROFILE.focusPeriod,
     p.hyperfocusLimit !== DEFAULT_PROFILE.hyperfocusLimit,
     p.workHours?.start !== DEFAULT_PROFILE.workHours.start || p.workHours?.end !== DEFAULT_PROFILE.workHours.end,
