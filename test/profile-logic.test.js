@@ -102,8 +102,8 @@ test('mergeProfile yamada olmayan alani DUSURMEZ', () => {
 });
 
 test('mergeProfile undefined yamayi yok sayar', () => {
-  const sonuc = P.mergeProfile({ ...P.DEFAULT_PROFILE, envPref: 'nature' }, { envPref: undefined });
-  assert.strictEqual(sonuc.envPref, 'nature');
+  const sonuc = P.mergeProfile({ ...P.DEFAULT_PROFILE, focusTrigger: 'music' }, { focusTrigger: undefined });
+  assert.strictEqual(sonuc.focusTrigger, 'music');
 });
 
 test('mergeProfile bos string ve 0 yamayi UYGULAR', () => {

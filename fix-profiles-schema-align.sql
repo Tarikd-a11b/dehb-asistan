@@ -51,6 +51,7 @@ ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS main_obstacle     TEXT    DEFAULT 'paralysis',
   ADD COLUMN IF NOT EXISTS break_style       TEXT    DEFAULT 'pomodoro',
   ADD COLUMN IF NOT EXISTS today_mood        TEXT    DEFAULT '',
+  ADD COLUMN IF NOT EXISTS today_mood_date   DATE    DEFAULT NULL,
   ADD COLUMN IF NOT EXISTS hyperfocus_limit  TEXT    DEFAULT 'none',
   ADD COLUMN IF NOT EXISTS light_sensitivity INTEGER DEFAULT 2,
   ADD COLUMN IF NOT EXISTS sound_sensitivity INTEGER DEFAULT 2,

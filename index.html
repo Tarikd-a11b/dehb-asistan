@@ -197,7 +197,7 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 .hero-blob-2{position:absolute;bottom:-40px;left:30%;width:150px;height:150px;background:rgba(255,255,255,.05);border-radius:50%;pointer-events:none}
 .adhd-badge{background:rgba(255,255,255,.2);color:#fff;font-size:.7rem;font-weight:800;padding:.25rem .75rem;border-radius:9999px;letter-spacing:.1em;text-transform:uppercase;border:1px solid rgba(255,255,255,.3)}
 .adhd-card-purple{border-top:4px solid #7c3aed!important}.adhd-card-emerald{border-top:4px solid #059669!important}.adhd-card-orange{border-top:4px solid #f97316!important}
-.adhd-card-sky{border-top:4px solid #0284c7!important}.adhd-card-rose{border-top:4px solid #e11d48!important}.adhd-card-amber{border-top:4px solid #d97706!important}
+.adhd-card-amber{border-top:4px solid #d97706!important}
 /* Profil doluluk cubugu (hero icinde, koyu zemin uzerinde). */
 .profile-progress-track{height:8px;border-radius:9999px;background:rgba(255,255,255,.2);overflow:hidden}
 .profile-progress-fill{height:100%;border-radius:9999px;background:linear-gradient(90deg,#a5f3fc,#fff);transition:width .5s cubic-bezier(.34,1.56,.64,1)}
@@ -205,17 +205,9 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 .power-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;border-radius:9999px;border:2px solid var(--input-border);background:var(--input-bg);color:var(--text-main);font-size:.8rem;font-weight:700;cursor:pointer;transition:all .2s cubic-bezier(.34,1.56,.64,1);font-family:'Plus Jakarta Sans',sans-serif}
 .power-chip:hover{transform:translateY(-2px);border-color:#d97706;box-shadow:0 8px 20px rgba(217,119,6,.15)}
 .power-chip.active{background:linear-gradient(135deg,#d97706,#f59e0b);color:#fff;border-color:transparent;box-shadow:0 8px 20px rgba(217,119,6,.3)}
-/* Kaydiricilarin rengi karta gore degisir; .adhd-slider'in mor gradyani
-   Duyusal/Regulasyon kartlarinda yabanci duruyordu. */
-.adhd-slider-sky{background:linear-gradient(90deg,#0284c7,#38bdf8)!important}
-.adhd-slider-sky::-webkit-slider-thumb{border-color:#0284c7}
-.adhd-slider-rose{background:linear-gradient(90deg,#e11d48,#fb7185)!important}
-.adhd-slider-rose::-webkit-slider-thumb{border-color:#e11d48}
 /* Firefox thumb'i ayri bir pseudo-element istiyor; olmadan kaydirici orada
    tarayicinin varsayilan gorunumunde kaliyordu. */
 .adhd-slider::-moz-range-thumb{width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3)}
-.adhd-slider-sky::-moz-range-thumb{border-color:#0284c7}
-.adhd-slider-rose::-moz-range-thumb{border-color:#e11d48}
 /* Kaydedilmemis degisiklik seridi: varsayilan gizli, .gorunur ile yukari kayar. */
 .profile-dirty-bar{position:fixed;left:50%;bottom:1.5rem;transform:translate(-50%,150%);z-index:40;display:flex;align-items:center;gap:1rem;padding:.75rem 1rem .75rem 1.5rem;border-radius:9999px;background:var(--glass-white);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:1px solid var(--border-light);color:var(--text-main);box-shadow:0 20px 40px -12px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:transform .35s cubic-bezier(.34,1.56,.64,1),opacity .25s ease}
 .profile-dirty-bar.gorunur{transform:translate(-50%,0);opacity:1;pointer-events:auto}
@@ -2506,6 +2498,9 @@ async function triggerN8N_Split() {
   const btn = formGonderButonu();
   if (btn) { btn.textContent = '⏳ Analiz Ediyor...'; btn.disabled = true; }
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
+  // Bayat modu burada da ele: kullanici profil ekranina hic ugramadan Parcala'ya
+  // gidebilir, o durumda loadProfileToUI'daki filtre hic calismaz.
+  profile.todayMood = moodForToday(profile.todayMood, profile.todayMoodDate, bugunIstanbul());
   try {
     const res = await fetch(CONFIG.N8N_WEBHOOK, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: title, taskDescription: desc, targetDate: date, userProfile: planningProfile(profile), userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null }) });
     if (res.ok) { showToast('🧩 Görev parçalandı!', 'success'); AppState.calendar?.refetchEvents(); closeForm(); }
@@ -2547,6 +2542,9 @@ async function parcalamayiBaslat() {
   addMessageToChat(`🚀 <b>Proje:</b> ${task}<br>📅 <b>Hedef:</b> ${fmt}`, 'user');
   setLoading(true);
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
+  // Bayat modu burada da ele: kullanici profil ekranina hic ugramadan Parcala'ya
+  // gidebilir, o durumda loadProfileToUI'daki filtre hic calismaz.
+  profile.todayMood = moodForToday(profile.todayMood, profile.todayMoodDate, bugunIstanbul());
   try {
     const reqEl = document.getElementById('task-requirements');
     const requirements = typeof parseRequirements === 'function' ? parseRequirements(reqEl?.value) : [];
@@ -2766,7 +2764,12 @@ function loadProfileToUI() {
   if (radio) radio.checked = true;
   // Bayat modu ele: dunden kalma "Beyin Sisi" bugunku plani kucultmemeli.
   const taze = moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugunIstanbul());
+  const bayatti = taze !== userProfile.todayMood;
   userProfile.todayMood = taze;
+  // Bayat deger degistiyse localStorage'a da yaz -- yoksa Parcala ekrana hic
+  // ugramadan cagrilirsa bayat mod hala orada bekliyor olurdu. Kullanici bir
+  // sey degistirmedi, bu yuzden profiliKirlet() cagrilmaz.
+  if (bayatti) localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
   if (taze) setMood(taze, false);
   else document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
   tamamlanmaCubuguGuncelle(userProfile);
@@ -2792,8 +2795,8 @@ function syncThemeToggleUI() {
 function toggleTheme() {
   const dark = !document.documentElement.classList.contains('dark');
   applyTheme(dark);
-  // Profildeki "Işık Hassasiyeti" alanına da yaz — böylece tercih hesaba bağlı
-  // kalıcı olur, başka bir cihaz/tarayıcıda ilk girişte varsayılan bunu önerir.
+  // Tema tercihini profile de yaz (kalici alan burasi) — böylece tercih hesaba
+  // bağlı kalıcı olur, başka bir cihaz/tarayıcıda ilk girişte varsayılan bunu önerir.
   userProfile = mergeProfile(userProfile, { lightSensitivity: lightSensitivityForTheme(dark) });
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
   if (currentUser) saveProfileToSupabase(userProfile).catch(e => console.warn('[Tema] profil kaydedilemedi:', e.message));

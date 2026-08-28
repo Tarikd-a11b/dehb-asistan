@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   main_obstacle     TEXT        DEFAULT 'paralysis',
   break_style       TEXT        DEFAULT 'pomodoro',
   today_mood        TEXT        DEFAULT '',
+  today_mood_date   DATE        DEFAULT NULL,
   hyperfocus_limit  TEXT        DEFAULT 'none',
   light_sensitivity INTEGER     DEFAULT 2,
   sound_sensitivity INTEGER     DEFAULT 2,
