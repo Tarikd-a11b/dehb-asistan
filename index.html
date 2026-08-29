@@ -223,8 +223,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 .adhd-slider{-webkit-appearance:none;appearance:none;height:8px;background:linear-gradient(90deg,#7c3aed,#6366f1);border-radius:9999px;outline:none;cursor:pointer;border:none!important;padding:0!important;box-shadow:none!important}
 .adhd-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);transition:all .2s ease}
 .adhd-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
-.energy-radio-option{display:flex;align-items:center;gap:.75rem;padding:.65rem 1rem;background:var(--card-hover-bg);color:var(--text-main);border-radius:.75rem;cursor:pointer;transition:all .2s ease;font-size:.875rem;font-weight:500}
-.energy-radio-option:hover{filter:brightness(1.08);transform:translateX(4px)}
 .save-btn{box-shadow:0 20px 40px -12px rgba(124,58,237,.4)}.save-btn:hover{box-shadow:0 25px 50px -12px rgba(124,58,237,.5)}
 /* ── DEHB Bilgilendirme Platform Stilleri ── */
 
@@ -619,14 +617,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       <div class="grid grid-cols-2 gap-4">
         <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase">Mesai Başlangıç</label><input type="time" id="work-start" value="09:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none"></div>
         <div class="space-y-2"><label class="text-[10px] font-black text-slate-400 uppercase">Mesai Bitiş</label><input type="time" id="work-end" value="18:00" class="w-full bg-slate-50 p-3 rounded-xl border-none font-bold outline-none"></div>
-      </div>
-      <div class="space-y-3">
-        <label class="block text-sm font-semibold text-slate-600">En Yüksek Enerji Zamanın</label>
-        <div class="space-y-2">
-          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="morning" checked class="accent-emerald-600"><span>🌅 Sabah (Early Bird)</span></label>
-          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="afternoon" class="accent-emerald-600"><span>☀️ Öğleden Sonra</span></label>
-          <label class="energy-radio-option"><input type="radio" name="energy-peak" value="night" class="accent-emerald-600"><span>🌙 Gece (Night Owl)</span></label>
-        </div>
       </div>
     </div>
 
@@ -2710,7 +2700,6 @@ async function saveProfile() {
   try {
     const sg = (id) => { const el = document.getElementById(id); return el ? el.value : undefined; };
     const sayi = (id) => { const v = sg(id); return v === undefined ? undefined : Number(v); };
-    const energyEl = document.querySelector('input[name="energy-peak"]:checked');
 
     // Formdan YAMA uretilir, profil sifirdan KURULMAZ. Eskiden burada nesne
     // bastan yaziliyordu ve formda karsiligi olmayan her alan (lightSensitivity
@@ -2719,7 +2708,6 @@ async function saveProfile() {
       focusPeriod:      sayi('focus-period'),
       workHours:        { start: sg('work-start'), end: sg('work-end') },
       social:           sg('social-mode'),
-      energyPeak:       energyEl ? energyEl.value : undefined,
       focusTrigger:     sg('focus-trigger'),
       motivationNote:   sg('motivation-note'),
       mainObstacle:     sg('main-obstacle'),
@@ -2760,8 +2748,6 @@ function loadProfileToUI() {
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
   cizSuperpowerRozetleri();
-  const radio = document.querySelector(`input[name="energy-peak"][value="${userProfile.energyPeak}"]`);
-  if (radio) radio.checked = true;
   // Bayat modu ele: dunden kalma "Beyin Sisi" bugunku plani kucultmemeli.
   const taze = moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugunIstanbul());
   const bayatti = taze !== userProfile.todayMood;
