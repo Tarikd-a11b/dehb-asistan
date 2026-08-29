@@ -13,7 +13,7 @@ servis eder, `config.js`'i ortam değişkenlerinden üretir, Google token'ını 
 giden istekleri vekiller.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-08-27.
+Son güncelleme: 2026-08-29.
 
 ---
 
@@ -72,7 +72,7 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 ## Testler
 
 ```bash
-node --test          # 93 test — kök dizinden, ARGÜMANSIZ
+node --test          # 109 test — kök dizinden, ARGÜMANSIZ
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -81,6 +81,44 @@ dosyaları tek tek ver.
 Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js` — dördü de bilinçli olarak
 DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve `fetch`
 `*-view.js` / `doc-intake.js`'e.
+
+## Profil
+
+2026-08-29'da 18 alandan 11'e indirildi. Planlamaya **gerçekten etki eden** alanlar:
+
+| alan | etkisi |
+|---|---|
+| `focusPeriod`, `workHours`, `breakStyle` | günde kaç odak seansı sığdığı (n8n `Normalize & Calculate`) |
+| `todayMood` | `foggy`/`crash`/`anxious` → kapasite −1; `hyper`/`focused` → +1 |
+| `mainObstacle` | AI prompt'una girer |
+| `lightSensitivity` | **koyu tema hafızası** — arayüzde kartı yok ama alan duruyor; silersen tema tercihi cihazlar arası kaybolur |
+
+`social`, `focusTrigger`, `hyperfocusLimit`, `motivationNote`, `superpowers` toplanıp n8n'e gidiyor
+ama henüz bir karşılığı yok. `medication`, `rsdLevel`, `soundSensitivity`, `envPref`,
+`regulationMethod`, `stimPref`, Duyusal Profil ve Duygu Regülasyonu kartları kaldırıldı.
+
+`todayMood` günlüktür: `today_mood_date` bugünün İstanbul tarihi değilse mod bayat sayılır ve
+planlamaya gitmez (`moodForToday()`). Bu filtre **iki ayrı yolda** olmalı — profil ekranı
+yüklenirken ve `index.html`'de n8n payload'ı kurulurken. İkincisi test kapsamı dışında, elle koru.
+
+## n8n ile senkron
+
+`n8n-workflow-focusaid.json` canlı n8n ile **elle** eşitlenir. Node koduna workflow JSON'ını değil,
+`parameters.jsCode` alanının içeriğini yapıştır — 2026-08-29'da bir kez JSON yapıştırıldı ve akış
+12 dakika kırık yayında kaldı. Doğrulaması gözle değil hash'le:
+
+```js
+// n8n sekmesinde konsol; kod repodakiyle bayt bayt aynı mı
+const bid = localStorage.getItem('n8n-browserId');
+const wf = (await (await fetch('/rest/workflows/<id>', {headers:{'browser-id':bid}})).json()).data;
+const code = wf.nodes.find(n => n.name === '<node adı>').parameters.jsCode;
+[...new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(code)))]
+  .map(b => b.toString(16).padStart(2,'0')).join('');
+```
+
+`Prepare Supabase Payload` takvim olaylarıyla görevleri **indeks eşleşmesiyle** birleştirir
+(`events.map((item,i) => tasks[i])`). `Code in JavaScript` çıktısını filtreleyen ya da yeniden
+sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 
 ## Dosya düzeni
 
@@ -91,6 +129,7 @@ DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.j
 | `index_2.html` | `index.html`'e yönlendirme köprüsü — aşağıya bak, silme |
 | `tasks-logic.js` / `tasks-view.js` | "Bugün" ekranı: saf mantık / DOM+ağ |
 | `calendar-logic.js` | Takvim tarih hesapları (ay ızgarası, hafta aralığı) — DOM'suz |
+| `profile-logic.js` | Profil alanları, doluluk hesabı, n8n'e giden `planningProfile()` — DOM'suz |
 | `doc-intake-logic.js` / `doc-intake.js` | Yönerge dosyası yükleme: saf mantık / arayüz |
 | `dehb-info.js` | DEHB Bilgilendirme Platformu içeriği |
 | `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh` |
