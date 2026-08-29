@@ -72,13 +72,14 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 ## Testler
 
 ```bash
-node --test          # 109 test — kök dizinden, ARGÜMANSIZ
+node --test          # 126 test — kök dizinden, ARGÜMANSIZ
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
 dosyaları tek tek ver.
 
-Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js` — dördü de bilinçli olarak
+Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js`,
+`scheduling-logic.js` — beşi de bilinçli olarak
 DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve `fetch`
 `*-view.js` / `doc-intake.js`'e.
 
@@ -130,6 +131,7 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `tasks-logic.js` / `tasks-view.js` | "Bugün" ekranı: saf mantık / DOM+ağ |
 | `calendar-logic.js` | Takvim tarih hesapları (ay ızgarası, hafta aralığı) — DOM'suz |
 | `profile-logic.js` | Profil alanları, doluluk hesabı, n8n'e giden `planningProfile()` — DOM'suz |
+| `scheduling-logic.js` | Gün ataması ve gün içi bilişsel yük sıralaması — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
 | `doc-intake-logic.js` / `doc-intake.js` | Yönerge dosyası yükleme: saf mantık / arayüz |
 | `dehb-info.js` | DEHB Bilgilendirme Platformu içeriği |
 | `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh` |
