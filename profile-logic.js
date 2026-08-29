@@ -10,7 +10,7 @@
 
 const DEFAULT_PROFILE = {
   focusPeriod: 25, workHours: { start: '09:00', end: '18:00' },
-  social: 'solo', energyPeak: 'morning', focusTrigger: 'silence',
+  social: 'solo', focusTrigger: 'silence',
   motivationNote: '', mainObstacle: 'paralysis', breakStyle: 'pomodoro',
   todayMood: '', todayMoodDate: '', hyperfocusLimit: 'none',
   lightSensitivity: 2,
@@ -72,7 +72,6 @@ function rowToProfile(row) {
     workHours:        { start: r.work_start ?? DEFAULT_PROFILE.workHours.start,
                         end:   r.work_end   ?? DEFAULT_PROFILE.workHours.end },
     social:           r.social           ?? DEFAULT_PROFILE.social,
-    energyPeak:       r.energy_peak      ?? DEFAULT_PROFILE.energyPeak,
     focusTrigger:     r.focus_trigger    ?? DEFAULT_PROFILE.focusTrigger,
     motivationNote:   r.motivation_note  ?? DEFAULT_PROFILE.motivationNote,
     mainObstacle:     r.main_obstacle    ?? DEFAULT_PROFILE.mainObstacle,
@@ -100,7 +99,6 @@ function profileToRow(profile, identity) {
     focus_period:      p.focusPeriod,
     work_start:        p.workHours?.start ?? DEFAULT_PROFILE.workHours.start,
     work_end:          p.workHours?.end   ?? DEFAULT_PROFILE.workHours.end,
-    energy_peak:       p.energyPeak,
     social:            p.social,
     focus_trigger:     p.focusTrigger,
     motivation_note:   p.motivationNote,
@@ -172,7 +170,6 @@ function planningProfile(profile) {
   return {
     focusPeriod:      Number(p.focusPeriod) || DEFAULT_PROFILE.focusPeriod,
     breakStyle:       p.breakStyle,
-    energyPeak:       p.energyPeak,
     workHours:        { start: p.workHours?.start ?? DEFAULT_PROFILE.workHours.start,
                         end:   p.workHours?.end   ?? DEFAULT_PROFILE.workHours.end },
     mainObstacle:     p.mainObstacle,
@@ -225,7 +222,6 @@ function profileCompleteness(profile) {
     Number(p.focusPeriod) !== DEFAULT_PROFILE.focusPeriod,
     p.hyperfocusLimit !== DEFAULT_PROFILE.hyperfocusLimit,
     p.workHours?.start !== DEFAULT_PROFILE.workHours.start || p.workHours?.end !== DEFAULT_PROFILE.workHours.end,
-    p.energyPeak !== DEFAULT_PROFILE.energyPeak,
     p.social !== DEFAULT_PROFILE.social,
     p.focusTrigger !== DEFAULT_PROFILE.focusTrigger,
     p.breakStyle !== DEFAULT_PROFILE.breakStyle,

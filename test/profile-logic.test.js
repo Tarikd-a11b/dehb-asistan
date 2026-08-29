@@ -48,12 +48,10 @@ test('rowToProfile null satiri da kaldirir', () => {
 test('rowToProfile snake_case kolonlari camelCase alanlara tasir', () => {
   const p = P.rowToProfile({
     focus_period: 50, work_start: '10:00', work_end: '19:00',
-    energy_peak: 'night',
     superpowers: ['hyperfocus']
   });
   assert.strictEqual(p.focusPeriod, 50);
   assert.deepStrictEqual(p.workHours, { start: '10:00', end: '19:00' });
-  assert.strictEqual(p.energyPeak, 'night');
   assert.deepStrictEqual(p.superpowers, ['hyperfocus']);
 });
 
@@ -67,7 +65,7 @@ test('rowToProfile 0 ve bos string degerlerini varsayilana kacirmaz', () => {
 // ── profileToRow ──
 test('profileToRow tum kolonlari doldurur, undefined birakmaz', () => {
   const row = P.profileToRow({}, { id: 'u1', email: 'a@b.c' });
-  const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end', 'energy_peak',
+  const beklenen = ['id', 'email', 'focus_period', 'work_start', 'work_end',
     'social', 'focus_trigger', 'motivation_note', 'main_obstacle',
     'break_style', 'today_mood', 'today_mood_date', 'hyperfocus_limit', 'light_sensitivity',
     'superpowers'];
@@ -85,7 +83,7 @@ test('profileToRow eksik workHours ile patlamaz', () => {
 
 test('profileToRow gidis-donus profili korur', () => {
   const orijinal = P.mergeProfile(P.DEFAULT_PROFILE, {
-    focusPeriod: 45, energyPeak: 'night', lightSensitivity: 5,
+    focusPeriod: 45, lightSensitivity: 5,
     superpowers: ['humor', 'energy']
   });
   const geri = P.rowToProfile(P.profileToRow(orijinal, { id: 'u1', email: 'a@b.c' }));
@@ -314,4 +312,19 @@ test('profileCompleteness tema tercihiyle degismez', () => {
   const koyu = P.profileCompleteness({ ...P.DEFAULT_PROFILE, lightSensitivity: 4 });
   assert.strictEqual(acik, 0);
   assert.strictEqual(koyu, 0);
+});
+
+// ── energyPeak kaldirildi (2026-08-28) ──
+test('DEFAULT_PROFILE energyPeak tasimaz', () => {
+  assert.ok(!('energyPeak' in P.DEFAULT_PROFILE));
+});
+
+test('planningProfile energyPeak gondermez', () => {
+  const p = P.planningProfile({ energyPeak: 'night' });
+  assert.ok(!('energyPeak' in p));
+});
+
+test('profileToRow energy_peak kolonunu yazmaz', () => {
+  const row = P.profileToRow(P.DEFAULT_PROFILE, { id: 'u1', email: 'a@b.c' });
+  assert.ok(!('energy_peak' in row));
 });
