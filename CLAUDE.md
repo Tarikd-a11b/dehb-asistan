@@ -162,6 +162,8 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 
 | dosya | rol |
 |---|---|
+| `landing.html` | **Tanıtım sayfası** — kök adres (`/`) burayı sunuyor. Tek dosya: 5 sahneli kaydırma anlatısı + arayüz slider'ı |
+| `landing-gorsel/` | Sahne fotoğrafları (referans videodan çıkarıldı) ve `arayuz/` altında 6 gerçek uygulama ekranı |
 | `auth.html` | Google OAuth giriş sayfası |
 | `index.html` | **Tek uygulama dosyası** — tüm ekranlar içinde `<template>` olarak |
 | `index_2.html` | `index.html`'e yönlendirme köprüsü — aşağıya bak, silme |
@@ -172,7 +174,7 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
 | `doc-intake-logic.js` / `doc-intake.js` | Yönerge dosyası yükleme: saf mantık / arayüz |
 | `dehb-info.js` | DEHB Bilgilendirme Platformu içeriği |
-| `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh` |
+| `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh`. **`/` → `landing.html`** (uygulama `/index.html`'de) |
 | `schema.sql`, `fix-*.sql` | Supabase şeması ve düzeltmeleri |
 | `n8n-workflow-*.json` | n8n workflow tanımları — canlı n8n ile senkron tutulmalı |
 | `infra/n8n/` | n8n sunucusunun kurulum kiti (Oracle + Docker + Caddy + `KURULUM.md`) |
@@ -262,6 +264,35 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
   `fetch('/rest/workflows/<ID>', {credentials:'include', headers:{'browser-id': localStorage.getItem('n8n-browserId')}})`
   ⚠️ Canlı workflow'u toptan kopyalayıp repoya yazma: `Save task to Supabase` node'unda gerçek
   `service_role` anahtarı duruyor.
+
+## Landing page tuzakları
+
+- **Sahne fotoğraflarında yapay zekânın uydurduğu SAHTE arayüz yazıları var.** Referans video
+  AI üretimi; 2. ve 5. karede "Fina FrusArid with legret seot", "Landrcllum Page film" gibi
+  bozuk metinler büyük puntoda duruyor. Çözüm CSS'te: o iki kareye `blur(5px)`, 5. karede blur
+  yetmediği için `scale(1.34) translateY(-15%)` ile sahte başlık kadraj dışına itiliyor.
+  **1, 3, 4 net kalmalı** — onlarda sahte yazı yok, bulanıklaştırma sadece kalite kaybı olur.
+- **Gemini filigranı** videoda `(1136, 572)` konumunda ~50×54 px. Yeni kare çıkarırsan
+  `delogo=x=1124:y=558:w=80:h=84` uygula, yoksa sayfaya Google'ın logosu gelir.
+- **`.perdeler`e sabit `min-height` VERME.** Eskiden `392px`'di; başlık puntosu her
+  değiştiğinde elle güncellenmesi gerekiyordu ve unutulduğunda içerik taşıp alttaki
+  çentiklerin üstüne biniyordu (ölçüldü: sahne 2=449, 3=465, 5=501px). Perdeler artık aynı
+  **grid hücresinde** yığılıyor (`display:grid` + `grid-area:1/1`); kutu en uzun sahneye göre
+  kendiliğinden büyüyor. Mutlak konuma geri dönme.
+- **Sahne geçişinde sönme ve belirme aynı anda olmamalı.** İkisi de `.5s` sürerken giden ve
+  gelen sahne yarı yolda buluşup başlıklar fiziksel olarak üst üste biniyordu. Sönme `.26s`'de
+  bitiyor, belirme `.26s` gecikmeyle başlıyor (gecikmeyi sürücü `transitionDelay` ile veriyor).
+- **Açılış animasyonunu `requestAnimationFrame` ile tetikleme.** Sekme arka plandayken Chrome
+  rAF'i donduruyor; sınıf hiç eklenmiyor ve bloklar `opacity:0`'da kilitli kalıyor.
+  `setTimeout(..., 0)` kullan. Aynı sebeple **sahne sürücüsü de gizli sekmede ilerlemiyor** —
+  otomasyonla uzaktan sahne gezmek güvenilmez, ölçüm yapacaksan
+  `el.getAnimations({subtree:true}).forEach(a => { a.currentTime = 4000; a.pause(); })`.
+- **Ekran görüntüsü aracı bu sayfada bayat kare veriyor** (opaklık GPU'da birleşiyor). DOM
+  ölçümü doğruyu söylerken görüntü eski sahneyi gösterebiliyor. Çekmeden önce
+  `window.scrollBy(0, 1)` ile boyamayı zorla.
+- **Tasarım kimliği tek renk üzerine kurulu.** Zemin `#0E1219`, işaret rengi `#E2542C`, hepsi
+  beş sahnede aynı. Sahnelere ayrı ayrı renk verme — duygu yolculuğunu fotoğraflar taşıyor.
+  Fontlar Fraunces (başlık) + Archivo (gövde); mono font yok, rakamlar `tabular-nums`.
 
 ## Çalışma düzeni
 

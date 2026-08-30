@@ -134,7 +134,7 @@ cp config.example.js config.js   # kendi Supabase/Google değerlerini gir
 python serve.py                   # http://localhost:3000
 ```
 
-Tarayıcıda `http://localhost:3000/auth.html`.
+Tarayıcıda `http://localhost:3000` tanıtım sayfasını, `http://localhost:3000/auth.html` giriş ekranını açar.
 
 Birkaç not:
 
@@ -182,10 +182,14 @@ JSON alanında durup canlıya elle kopyalandığı için başka türlü hiçbir 
 ## Dosya Yapısı
 
 ```
+├── landing.html       # Tanıtım sayfası — kök adres (/) burayı sunar.
+│                      #   5 sahneli kaydırma anlatısı + arayüz slider'ı
+├── landing-gorsel/    # Sahne fotoğrafları + arayuz/ altında 6 uygulama ekranı
 ├── auth.html          # Google OAuth giriş sayfası
 ├── index.html         # Ana uygulama (Bugün + Takvim + Parçalayıcı + Projelerim + Profil + DEHB Bilgisi)
 ├── index_2.html       # index.html'e yönlendirme köprüsü (Supabase redirect URL'i buraya kayıtlı)
 ├── serve.py           # Uygulama sunucusu: statik dosyalar + config enjeksiyonu + n8n vekili
+│                      #   / adresini landing.html'e yönlendirir
 │                      #   + /api/google/refresh
 ├── tasks-logic.js     # Görev mantığı — DOM'suz, test edilebilir
 ├── tasks-view.js      # Görev ekranı render + Supabase/GAPI çağrıları
