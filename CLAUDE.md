@@ -13,7 +13,7 @@ servis eder, `config.js`'i ortam değişkenlerinden üretir, Google token'ını 
 giden istekleri vekiller.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-08-29.
+Son güncelleme: 2026-08-30.
 
 ---
 
@@ -72,16 +72,23 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 ## Testler
 
 ```bash
-node --test          # 126 test — kök dizinden, ARGÜMANSIZ
+node --test          # 166 test — kök dizinden, ARGÜMANSIZ
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
 dosyaları tek tek ver.
 
 Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js`,
-`scheduling-logic.js` — beşi de bilinçli olarak
+`scheduling-logic.js`, `hyperfocus-logic.js` — altısı da bilinçli olarak
 DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve `fetch`
 `*-view.js` / `doc-intake.js`'e.
+
+**`test/n8n-placement.test.js` ayrı bir şey yapıyor: n8n node kodunu doğrudan koşturuyor.** Node
+kodu repoda bir JSON alanında duruyor ve canlıya elle kopyalanıyor; 2026-08-30'a kadar hiçbir şey
+onu test etmiyordu. Dosya `new Function('$','$json', jsCode)` ile node'u çalıştırıp yerleştiricinin
+değişmezlerini kilitliyor (çakışma yok, görev kaybı yok, mevcut takvim etkinliğinin üstüne
+yazılmıyor) ve `dailyCaps` kopyasının `scheduling-logic.js` ile birebir aynılığını doğruluyor.
+**n8n node kodunu değiştirdiğinde bu dosyayı çalıştır.**
 
 ## Profil
 
@@ -90,12 +97,24 @@ DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.j
 | alan | etkisi |
 |---|---|
 | `focusPeriod`, `workHours`, `breakStyle` | günde kaç odak seansı sığdığı (n8n `Normalize & Calculate`) |
-| `todayMood` | `foggy`/`crash`/`anxious` → kapasite −1; `hyper`/`focused` → +1 |
+| `todayMood` | `foggy`/`crash`/`anxious` → **bugünün** görev tavanı −1; `hyper`/`focused` → +1 (bkz. aşağıda) |
+| `hyperfocusLimit` | tarayıcıdaki hiperfokus alarmının periyodu (`hyperfocus-view.js`) |
 | `mainObstacle` | AI prompt'una girer |
 | `lightSensitivity` | **koyu tema hafızası** — arayüzde kartı yok ama alan duruyor; silersen tema tercihi cihazlar arası kaybolur |
 
-`social`, `focusTrigger`, `hyperfocusLimit`, `motivationNote`, `superpowers` toplanıp n8n'e gidiyor
-ama henüz bir karşılığı yok. `medication`, `rsdLevel`, `soundSensitivity`, `envPref`,
+`social`, `focusTrigger`, `motivationNote`, `superpowers` toplanıp n8n'e gidiyor
+ama henüz bir karşılığı yok.
+
+`todayMood`'un görev **sayısına** etkisi 2026-08-30'da yerleştirmeye taşındı: AI'ya verilen
+`minTasks`–`maxTasks` aralığı bir tavsiyeydi ve AI onu umursamıyordu (ölçüldü: `anxious` ve `hyper`
+aynı 9 görevi üretti). Artık `dailyCaps()` **bugünün** tavanını günün *doğal* görev sayısına göre
+kaydırıyor; taşan görev silinmiyor, sonraki günlere yayılıyor. `moodDelta > 0` bugüne görev
+**çekmez** — asimetri bilinçli, gerekçesi `scheduling-logic.js`'teki yorumda.
+
+`hyperfocusLimit` artık ölü değil: `hyperfocus-view.js` uygulama açıkken kesintisiz süreyi sayıp
+seçilen periyotta bir şerit çıkarıyor. Sayaç **n8n'e hiç uğramaz**, tamamen tarayıcıda. Mola
+yalnızca "Mola verdim" düğmesi ya da tikler arası ≥10 dk boşlukla sıfırlanır; sekmenin gizlenmesi
+mola sayılmaz (gerekçe: `docs/superpowers/specs/2026-08-30-hiperfokus-alarmi-design.md`). `medication`, `rsdLevel`, `soundSensitivity`, `envPref`,
 `regulationMethod`, `stimPref`, Duyusal Profil ve Duygu Regülasyonu kartları kaldırıldı.
 
 `todayMood` günlüktür: `today_mood_date` bugünün İstanbul tarihi değilse mod bayat sayılır ve
@@ -117,6 +136,12 @@ const code = wf.nodes.find(n => n.name === '<node adı>').parameters.jsCode;
   .map(b => b.toString(16).padStart(2,'0')).join('');
 ```
 
+⚠️ **2026-08-30 itibarıyla canlı n8n repodan GERİ.** `Normalize & Calculate`, `Code in JavaScript`
+ve `Respond to Webhook` node'ları repoda güncellendi (moodDelta, `dailyCaps`, taşma düzeltmesi,
+`tesliminOtesinde` sayacı) ama henüz Publish edilmedi. Publish edilene kadar modun görev sayısına
+etkisi ve taşma düzeltmesi **canlıda yok**; ön yüzdeki "plan sığmadı" uyarısı da hiç görünmez
+(sayaç gelmiyor, mesaj bilerek susuyor). Bu satırı Publish'ten sonra sil.
+
 `Prepare Supabase Payload` takvim olaylarıyla görevleri **indeks eşleşmesiyle** birleştirir
 (`events.map((item,i) => tasks[i])`). `Code in JavaScript` çıktısını filtreleyen ya da yeniden
 sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
@@ -131,7 +156,8 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `tasks-logic.js` / `tasks-view.js` | "Bugün" ekranı: saf mantık / DOM+ağ |
 | `calendar-logic.js` | Takvim tarih hesapları (ay ızgarası, hafta aralığı) — DOM'suz |
 | `profile-logic.js` | Profil alanları, doluluk hesabı, n8n'e giden `planningProfile()` — DOM'suz |
-| `scheduling-logic.js` | Gün ataması ve gün içi bilişsel yük sıralaması — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
+| `scheduling-logic.js` | Gün ataması, gün içi bilişsel yük sıralaması, `dailyCaps` — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
+| `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
 | `doc-intake-logic.js` / `doc-intake.js` | Yönerge dosyası yükleme: saf mantık / arayüz |
 | `dehb-info.js` | DEHB Bilgilendirme Platformu içeriği |
 | `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh` |
@@ -174,12 +200,29 @@ gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup
   takvimin otomatik bağlanması normalde ~7 sn sürerken soğuk açılışta ~14 sn'yi bulabiliyor.
   Ölçüm yaparken sabırsız olma, "takvim bozuk" diye yanlış teşhis koymak kolay.
 
+- **Sığmayan plan artık teslim tarihini aşıyor.** Yerleştirici çalışma penceresine sığmayan
+  görevleri son seansın sonundan itibaren diziyor; bu bilinçli bir takas (bkz. Tuzaklar). Kullanıcı
+  `tesliminOtesinde` sayacıyla uyarılıyor.
+
 **Çözülmüş (eski notlar kaldırıldı):** ay/hafta görünümünde başlıkların görünmemesi `eventContent`
 render fonksiyonuyla çözüldü; `tasks` tablosuna başlığın nasıl yazıldığı da netleşti —
-`Prepare Supabase Payload` node'u `name` alanına yazıyor.
+`Prepare Supabase Payload` node'u `name` alanına yazıyor. **Taşma çakışması** (aşırı dolu planda
+görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 → 0.
 
 ## Tuzaklar
 
+- **Yerel `*.js` dosyaları `index.html`'e KLASİK script olarak yükleniyor: hepsi aynı global
+  sözlüğü paylaşıyor.** İki dosya aynı üst düzey `const`'u tanımlarsa ikincisi komple
+  `SyntaxError` ile düşer ve **sessizce hiçbir fonksiyonu tanımlanmaz** — konsolda tek satır,
+  uygulamada özellik yok. 2026-08-30'da `hyperfocus-logic.js`'teki `DEFAULT_BREAK_MINUTES`
+  `tasks-logic.js`'tekiyle çakıştı; 166 birim test geçerken alarm tarayıcıda hiç çalışmadı. Yeni
+  bir `*-logic.js` eklerken ad çakışmasını tara:
+  `for f in *.js; do grep -oE "^(const|let|var|function) +[A-Za-z_$][A-Za-z0-9_$]*" $f; done | sort | uniq -d`
+- **Yerleştiricide "üst üste binmek" yerine "teslimi aşmak" seçildi.** Plan çalışma penceresine
+  sığmadığında bir şey feda edilecek: üst üste binen etkinlik *sessiz bir veri hatası*, teslimi
+  aşan görev ise *görünür bir gerçek*. Görev düşürmek hiçbir durumda seçenek değil.
+- **Tailwind `-translate-x-1/2` ile ortalama yapma.** `.animate-slide-in`'in `reveal` kareleri
+  `transform`'u komple eziyor. `inset-x-0 mx-auto` kullan.
 - **Canlı `tasks` tablosu `schema.sql`'den ayrışabiliyor.** Bir insert beklenmedik şekilde patlarsa
   repo'daki şemaya güvenme, `information_schema.columns` ile canlı yapıya bak. Geçmişte eski nesilden
   kalan `title NOT NULL` kolonu tüm insert'leri `23502` ile düşürmüştü.

@@ -22,6 +22,17 @@ okunamaz hale gelmiyor. Bir güne tıklayınca o günün görevleri açılıyor;
 eklenemiyor ve gün zaten doluysa (5+ görev) uyarı veriliyor. Google Calendar'ın tüm gün süren
 etkinlikleri (tatil, izin vb.) hafta görünümünde üstteki "Tüm gün" şeridinde gösteriliyor.
 
+**Hiperfokus alarmı** profildeki "Hiperfokus Uyarısı" alanına bağlı (60/90/120 dk ya da kapalı).
+Uygulama açıkken kesintisiz geçen süre sayılıyor ve seçilen periyotta bir üstte nazik bir şerit
+çıkıyor: "Mola verdim" sayacı sıfırlıyor, "5 dk sonra" erteliyor. Sekmeyi gizlemek mola sayılmıyor —
+hiperfokusun tipik hâli zaten sekmeyi gizleyip başka pencerede saatlerce kalmak; mola yalnızca
+düğmeye basınca ya da uygulama gerçekten kapalı kaldığında (≥10 dk) kaydediliyor. Sayaç tamamen
+tarayıcıda, sunucuya hiç uğramıyor.
+
+**Bugünkü mod** (Profil → bugün nasılsın) planlamayı iki yerden etkiliyor: AI'nın adımları ne kadar
+küçük tutacağını ve **bugüne** kaç görev düşeceğini. Zor bir günde bugünün yükü azalıyor, ama
+hiçbir görev silinmiyor — taşan iş sonraki günlere yayılıyor, teslim tarihi sessizce kaçmıyor.
+
 Görev formunda tek bir **Ekle** butonu var; üstündeki **"🧩 AI ile parçalara böl"** kutusu varsayılan
 olarak açık ve hangi yolun izleneceğini belirliyor. İşaretliyse görev n8n'e gidip mikro adımlara
 bölünüyor; işaretli değilse tek görev olarak kaydediliyor.
@@ -53,8 +64,12 @@ Tarayıcı n8n'in gerçek adresini **hiç görmüyor** — istek `serve.py` üze
 geçiyor ve gizli anahtar yalnızca sunucu tarafında ekleniyor. Ayrıntı için [Mimari ve
 Güvenlik](#mimari-ve-güvenlik).
 
-AI Agent, deadline'dan geriye doğru `target_tasks = round(available_days × 0.6)` adet görev üretir;
-tarih/saat yerleştirmesini Code node'daki algoritma yapar (LLM'e bırakılmaz).
+AI Agent yalnızca görev listesini ve her görevin bilişsel yükünü (`low`/`medium`/`high`) üretir;
+**tarih/saat yerleştirmesi tamamen Code node'daki algoritmadadır, LLM'e bırakılmaz.** Yerleştirici
+görevleri günlere orantılı dağıtır, gün içinde zor görevi erken saate alır, bugünün tavanını
+kullanıcının moduna göre ayarlar ve mevcut Google Calendar etkinliklerinin üstüne yazmaz. Plan
+çalışma saatlerine sığmıyorsa görev **silinmez**; taşan kısım teslim tarihinden sonraya düşer ve
+kullanıcıya kaç görevin taştığı söylenir.
 
 Ayrıca haftalık bir **rapor akışı** var: her Pazartesi 07:00'de o haftanın görevlerini Supabase'ten
 çekip kullanıcı bazında gruplayarak Gemini'ye özetletiyor ve Gmail üzerinden mail atıyor. O hafta
@@ -157,7 +172,12 @@ Workflow tanımları (`n8n-workflow-*.json`) **ayrı ayrı** import edilmeli; he
 yapıştırılırsa tek bir Publish anahtarına bağlanır ve bir credential eksikliği diğer akışları da
 bloke eder.
 
-**Testler:** `node --test test/`
+**Testler:** `node --test` — kök dizinden, **argümansız** (166 test). `node --test test/`
+Windows'ta `MODULE_NOT_FOUND` verir.
+
+Saf mantık dosyaları (`*-logic.js`) DOM'suz ve ağsız tutuluyor, testleri de öyle.
+`test/n8n-placement.test.js` ayrıca **n8n node kodunu doğrudan koşturuyor**: node kodu repoda bir
+JSON alanında durup canlıya elle kopyalandığı için başka türlü hiçbir şey onu test etmiyordu.
 
 ## Dosya Yapısı
 
@@ -170,6 +190,11 @@ bloke eder.
 ├── tasks-logic.js     # Görev mantığı — DOM'suz, test edilebilir
 ├── tasks-view.js      # Görev ekranı render + Supabase/GAPI çağrıları
 ├── calendar-logic.js  # Takvim tarih hesapları (ay ızgarası, hafta aralığı) — DOM'suz
+├── profile-logic.js   # Profil alanları, doluluk hesabı, n8n'e giden planlama profili — DOM'suz
+├── scheduling-logic.js # Gün ataması, bilişsel yük sıralaması, günlük tavanlar — DOM'suz.
+│                      #   Tarayıcıda YÜKLENMEZ; gövdesi n8n Code node'una kopyalanır
+├── hyperfocus-logic.js # Hiperfokus sayacı — DOM'suz, saf
+├── hyperfocus-view.js  # Hiperfokus şeridi + tarayıcı bildirimi
 ├── doc-intake-logic.js # Yönerge dosyası ayrıştırma mantığı — DOM'suz
 ├── doc-intake.js      # Yönerge dosyası yükleme arayüzü
 ├── dehb-info.js       # DEHB Bilgilendirme Platformu içeriği
@@ -186,7 +211,8 @@ bloke eder.
 ├── render.yaml        # Render servis tanımı
 ├── Procfile           # Render başlatma komutu
 ├── requirements.txt   # Python bağımlılıkları
-├── test/              # tasks-logic + doc-intake-logic + calendar-logic testleri (node --test)
+├── docs/superpowers/  # tasarım spec'leri ve planlar (tamamlanmış işin tarihsel kaydı)
+├── test/              # saf mantık testleri + n8n node kodunun testi (node --test)
 ├── config.example.js  # Konfigürasyon şablonu (bunu kopyala → config.js)
 └── config.js          # Gerçek konfigürasyon (gitignored, paylaşma)
 ```
@@ -198,6 +224,11 @@ bloke eder.
   isteniyor. Kullanıcı artık yanlış bilgilendirilmiyor: n8n cevabındaki `takvimeYazilan` / `toplam`
   sayaçlarına göre mesaj hepsi / hiçbiri / kısmi durumlarını ayırıyor (`parcalamaSonucMesaji`). Ama
   sessiz atlama davranışının kendisi duruyor; görev `calendar_event_id` boş kalarak kaydedilebiliyor.
+- **Sığmayan plan teslim tarihini aşar.** Görev sayısı çalışma penceresine sığmıyorsa taşan
+  görevler son seansın sonundan itibaren diziliyor. Bilinçli bir takas: eskiden bu görevler aynı
+  saate üst üste yığılıyordu ve takvim sessizce yanlış oluyordu; artık sığmama görünür ve
+  kullanıcıya kaç görevin taştığı söyleniyor. Kalıcı çözüm kullanıcıda: teslimi uzatmak, çalışma
+  penceresini genişletmek ya da kapsamı küçültmek.
 - **Render'ın ücretsiz planı 15 dakika trafik almazsa servisi uyutuyor**; uyandırma ~1 dakika
   sürüyor ve o sırada ziyaretçi Render'ın yükleniyor ekranını görüyor. Hafifletmesi
   `n8n-workflow-keepwarm.json`: n8n 10 dakikada bir `/config.js`'i GET'liyor, böylece gündüz
