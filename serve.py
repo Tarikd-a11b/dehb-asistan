@@ -220,6 +220,14 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self._ham_yanit(durum, ctype, ham)
 
     def do_GET(self):
+        # Kök adres tanitim sayfasini acar. Uygulamanin kendisi /index.html'de
+        # duruyor; oraya giren oturumsuz kullanici zaten auth.html'e yonlenir,
+        # oturumlusu uygulamayi gorur. Tanitim sayfasindaki "Google ile basla"
+        # da auth.html'e gider ve auth.html oturum varsa uygulamaya atar --
+        # yani bu satir giris akisinin hicbir adimina dokunmuyor.
+        if self.path == '/':
+            self.path = '/landing.html'
+
         # Render'da SUPABASE_URL env var'ı tanımlı olduğu için config.js oradan
         # üretilir. Yerelde bu env var yok — o zaman diskteki gerçek config.js
         # (gitignored, kişisel anahtarları içeren) olduğu gibi sunulmalı,

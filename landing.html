@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FocusAid — kaostan netliğe</title>
+<meta name="description" content="Devasa görevi mikro adımlara böler, takvimine yerleştirir. DEHB beyni için tasarlandı.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Fraunces:opsz,wght,SOFT,WONK@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+<script>
+/* Sahne animasyonu YALNIZCA JS varken ve hareket azaltma kapalıyken açılır.
+   Bayrak ilk boyamadan önce konur ki açılışta statikten animasyonluya zıplama olmasın. */
+(function () {
+  document.documentElement.classList.add('js');
+  try {
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      document.documentElement.classList.add('animasyon');
+    }
+  } catch (e) {}
+})();
+</script>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   FocusAid — 5 sahneli scrollytelling tanıtım sayfası
+   Sahne temaları, renkleri ve metinleri brief'ten (v1.0.0) alındı.
+   Her sahne kendi zeminini ve vurgusunu taşır; geçişi CSS `ease-in-out` yumuşatır.
+   ═══════════════════════════════════════════════════════════════ */
+/* ═══ PALET ═══════════════════════════════════════════════════
+   ⚠️ Eskiden her sahnenin kendi rengi vardi: kirmizi → indigo → mor →
+   camgobegi → kehribar. Bes doygun renk tek sayfada; hicbir tasarimci
+   markasina bes renk secmez, bu yuzden "uretilmis" duruyordu.
+   Karar: ARAYUZ TEK KIMLIK. Duygu yolculugunu FOTOGRAFLAR tasiyor —
+   zaten kendi renkleri var. Zemin bes sahnede de ayni murekkep;
+   tek vurgu rengi yalnizca "tiklanacak / dikkat edilecek" seyde.
+   Metin rengi mavi-beyaz degil KAGIT beyazi: ekran degil sayfa hissi. */
+:root{
+  --metin:#EDE8DE;      /* sicak kagit beyazi */
+  --metin-2:#9AA1AC;    /* ikincil */
+  --cizgi:rgba(237,232,222,.15);
+  --maxw:1180px;
+  --zemin:#0E1219;      /* murekkep — surucu artik hepsine ayni degeri yaziyor */
+  --vurgu:#E2542C;      /* tek isaret rengi: kirmizi kalem izi tonu */
+  --yuzey:#161C26;      /* yukseltilmis yuzey */
+  --kose:2px;           /* ⚠️ TEK yuvarlatma degeri. Eskiden 6/8/9/12/14/999px
+                           karisikti; her yuzeyin yumusak pill olmasi
+                           "AI tasarimi" hissinin buyuk parcasiydi. */
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0; background:var(--zemin); color:var(--metin);
+  font-family:'Archivo',system-ui,-apple-system,'Segoe UI',sans-serif;
+  font-size:17px; line-height:1.62; letter-spacing:0;
+  font-variant-numeric:tabular-nums;   /* saat/sure rakamlari hizali:
+                                          ucuncu bir mono fonta gerek kalmiyor */
+  -webkit-font-smoothing:antialiased;
+  transition:background .8s ease-in-out;
+}
+/* Display serif: yazmaya calistigi BELGENIN sesi. Fraunces'in WONK ekseni
+   harfleri elle kesilmis gibi gosteriyor; 800 agirlikta jenerik grotesk
+   basligin yerine gecen sey bu. */
+h1,h2,h3{font-family:'Fraunces','Iowan Old Style',Georgia,serif;
+  font-weight:600;line-height:1.04;letter-spacing:-.018em;margin:0;
+  font-variation-settings:'opsz' 144,'WONK' 1,'SOFT' 0}
+p{margin:0}
+a{color:inherit}
+:focus-visible{outline:2px solid var(--vurgu);outline-offset:3px;border-radius:var(--kose)}
+.wrap{max-width:var(--maxw);margin:0 auto;padding:0 28px}
+
+/* ── üst çubuk ───────────────────────────────────────────── */
+.top{position:fixed;top:0;left:0;right:0;z-index:20;
+  background:color-mix(in srgb, var(--zemin) 74%, transparent);
+  border-bottom:1px solid var(--cizgi);transition:background .8s ease-in-out}
+.top-in{display:flex;align-items:center;gap:28px;height:64px}
+.mark{font-family:'Fraunces','Iowan Old Style',Georgia,serif;font-weight:800;font-size:20px;
+  letter-spacing:-.04em;text-decoration:none}
+.mark span{color:var(--vurgu);transition:color .8s ease-in-out}
+.top nav{margin-left:auto;display:flex;align-items:center;gap:24px}
+.top nav a{font-size:15px;color:var(--metin-2);text-decoration:none}
+.top nav a:hover{color:var(--metin)}
+.btn{display:inline-block;background:var(--vurgu);color:#0b0f14;
+  text-decoration:none;font-weight:700;font-size:15px;padding:11px 20px;border-radius:var(--kose);
+  transition:filter .12s ease, transform .12s ease, background .8s ease-in-out}
+.btn:hover{filter:brightness(1.1)}
+.btn:active{transform:translateY(1px)}
+.btn-lg{font-size:17px;padding:15px 28px}
+.btn-ikincil{background:transparent;color:var(--metin);border:1px solid var(--cizgi);font-weight:600}
+.btn-ikincil:hover{border-color:var(--vurgu)}
+/* ⚠️ `.top nav a` (0,2,1) `.btn`den (0,1,0) daha özgül; bu satır olmadan
+   butonun yazısı gri kalır ve renkli zeminde okunmaz. */
+.top nav a.btn{color:#0b0f14}
+@media (max-width:820px){.top nav a:not(.btn){display:none}}
+
+/* ═══ SCROLLY — 5 sahne ════════════════════════════════════
+   Scroll KAÇIRILMIYOR: preventDefault yok, zorunlu bekleme yok. Snap
+   `proximity` (mandatory DEĞİL) — sahneye yaklaşınca hizalar ama kimseyi
+   sahnede hapsetmez. Odak sorunu olan birine scroll'unu kaybettirmek bu
+   ürünün amacına aykırı olurdu. */
+.scrolly{position:relative}
+.sahne{padding:104px 0 72px}
+html.animasyon .scrolly{height:500vh;scroll-snap-type:y proximity}
+/* ⚠️ `padding-top` nav yuksekligi kadar: sahne dikeyde ortalandigi icin
+   icerik ekrana sigmadiginda yukari tasip SABIT NAV'IN ALTINDA kaliyordu
+   (360px'te rozet 132px gizli kalmisti). */
+html.animasyon .sahne{position:sticky;top:0;height:100vh;display:flex;align-items:center;
+  padding:64px 0 0;overflow:hidden;scroll-snap-align:start}
+.sahne-in{display:grid;grid-template-columns:1.02fr .98fr;gap:56px;align-items:center;width:100%}
+@media (max-width:980px){.sahne-in{grid-template-columns:1fr;gap:34px}}
+
+.anlatim{position:relative}
+/* ⚠️ Perdeler absolute oldugu icin akista tek eleman centikler kaliyor ve
+   yukari firliyordu; yuksekligi bu sarmalayici tasiyor. */
+.perdeler{position:relative}
+/* En uzun sahne (5 — iki CTA + alt not) olculdu: 1440px'te 374, 900px'te 331.
+   Yukseklik ondan buyuk olmali, yoksa sahne tasip centiklerin uzerine biniyor. */
+/* ⚠️ Burada eskiden `min-height:392px` vardi ve perdeler `position:absolute`
+   ile ust uste duruyordu. Kutu SABIT oldugu icin icerigi uzun olan sahne
+   tasip alttaki centiklerin uzerine biniyordu (olculdu: sahne 2 449px,
+   3 465px, 5 501px vs 392px kutu). Baslik puntosu her degistiginde bu
+   sayinin elle guncellenmesi gerekiyordu - ve unutuldugunda sessizce
+   bozuluyordu.
+   Cozum: perdeler ayni GRID HUCRESINDE yigiliyor. Kutu en uzun sahneye
+   gore kendiliginden buyuyor; her ekran genisliginde dogru, sihirli sayi
+   yok. Ust uste binme grid'in kendisiyle saglaniyor. */
+html.animasyon .perdeler{display:grid}
+/* ⚠️ Dar ekranda baslik ve iki CTA daha cok satira iniyor; sahne 5 ~400px.
+   NOT: bunu `scrollHeight` ile olcme — icerik `justify-content:center` ile
+   ortalandigi icin USTTEKI tasma scrollHeight'a girmiyor ve yukseklik olduğundan
+   kucuk gorunuyor. Gercek kutu konumlarina (getBoundingClientRect) bak. */
+
+/* Statik mod (JS yok / hareket azaltma): sahneler art arda okunan bir liste. */
+.perde{display:flex;flex-direction:column}
+.perde + .perde{margin-top:40px;padding-top:40px;border-top:1px solid var(--cizgi)}
+/* Animasyonlu mod: üst üste, tek seferde bir tanesi görünür. */
+/* ⚠️ Giden ve gelen sahne AYNI kutuda duruyor. Ikisi de .5s boyunca yariyolda
+   kalinca basliklar fiziksel olarak ust uste biniyordu (2 ile 3 ic ice geciyordu).
+   Cozum: sonme once biter (.26s), belirme ondan SONRA baslar (delay JS'te .26s).
+   Boylece hicbir anda iki sahne birden gorunmez. */
+html.animasyon .perde{grid-area:1/1;justify-content:center;opacity:0;
+  transition:opacity .26s ease-in-out, transform .26s ease-in-out}
+html.animasyon .perde + .perde{margin:0;padding:0;border-top:none}
+/* ⚠️ İlk sahne CSS'te görünür başlar. Görünürlük tamamen JS'e bağlı kalırsa
+   sekme arka plandayken rAF donduğu için ekranda HİÇBİR sahne kalmıyor —
+   canlı tarayıcıda bir kez bu boş hâle düşüldü. */
+html.animasyon .perde:first-child{opacity:1}
+
+/* ⚠️ Eskiden emoji + yuvarlak pill + mono yaziydi (🚨 Asiri Yuklenme Felci).
+   Emoji-ikon + pill + mono ucluşu "AI tasarimi" hissinin imzasi. Yerine
+   kenar bosluguna cekilmis bir isaret: 2px dikey cizgi + duz etiket. */
+.rozet{display:inline-block;align-self:flex-start;
+  font-size:12.5px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;
+  padding:2px 0 2px 13px;margin-bottom:22px;
+  border-left:2px solid var(--vurgu);color:var(--metin-2);
+  transition:border-color .8s ease-in-out}
+.perde h2{font-size:clamp(34px,4.7vw,62px);max-width:15ch}
+.aciklama{margin-top:20px;font-size:17.5px;color:var(--metin-2);max-width:42ch;line-height:1.6}
+.alinti{margin-top:20px;padding-left:16px;border-left:2px solid var(--vurgu);
+  font-size:17px;font-style:italic;color:var(--metin-2);max-width:40ch;
+  transition:border-color .8s ease-in-out}
+.ipucu,.istatistik{margin-top:20px;
+  font-size:13px;letter-spacing:.05em;color:var(--vurgu);transition:color .8s ease-in-out}
+.kilometre{margin-top:20px;display:inline-flex;align-self:flex-start;padding:8px 14px;
+  border-radius:var(--kose);font-size:13px;font-weight:500;
+  color:var(--vurgu);background:color-mix(in srgb, var(--vurgu) 17%, transparent);
+  transition:color .8s ease-in-out, background .8s ease-in-out}
+.cta-kut{margin-top:26px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.cta-alt{margin-top:14px;font-size:13.5px;color:var(--metin-2)}
+
+.centikler{display:none;gap:9px;margin-top:34px;align-items:center}
+html.animasyon .centikler{display:flex}
+.centik{width:34px;height:3px;background:var(--cizgi);border-radius:var(--kose);
+  transition:background .4s ease}
+.centik.aktif{background:var(--vurgu)}
+
+/* ── görsel sütun ────────────────────────────────────────── */
+.gorsel{position:relative;min-height:470px}
+@media (max-width:980px){.gorsel{min-height:360px}}
+/* Telefonda dikey butce dar: gorsel kucultulur, en alttaki dort not gizlenir.
+   14 notun tamami masaustu zenginligi; 10 not da "kaos" hissini veriyor. */
+/* Asil kisit genislik degil DIKEY butce: kisa telefon ekranlarinda (780px ve
+   alti) sahne 5 hala nav'in altina giriyordu. Bu blok yuksekligi hedefliyor. */
+@media (max-width:640px) and (max-height:820px){
+  /* ⚠️ Dikeyde ORTALAMA birakiliyor: icerik ekrana sigmadiginda ortalama onu
+     yukari itip sabit nav'in altina sokuyor. Yukaridan hizalayinca tasma
+     asagi dogru olur ve baslik her zaman gorunur kalir. */
+  html.animasyon .sahne{align-items:flex-start;padding-top:78px}
+  .gorsel{min-height:170px}
+  .sahne-in{gap:18px}
+  .centikler{margin-top:18px}
+  .perde h2{font-size:clamp(25px,7vw,30px)}
+  .aciklama{font-size:16px;margin-top:14px}
+}
+/* Cok kisa ekranda (kucuk telefon, yatay mod) arayuz maketine yer yok.
+   Anlati asil icerik; maket destekleyici oldugu icin dusuruluyor. */
+@media (max-width:640px) and (max-height:700px){
+  html.animasyon .gorsel{display:none}
+}
+@media (max-width:640px){
+  .gorsel{min-height:264px}
+  .not{width:84px;font-size:10.5px;padding:7px 8px}
+  .not:nth-child(n+11){display:none}
+  .uyari{font-size:11.5px;padding:8px 11px}
+  .ui{padding:14px}
+  .zaman .sayac{font-size:34px}
+}
+.kat{position:absolute;inset:0;opacity:0;transition:opacity .26s ease-in-out}
+html:not(.animasyon) .kat{position:relative;opacity:1;margin-bottom:26px;min-height:0}
+html.animasyon .kat:first-child{opacity:1}
+
+/* ═══ SAHNE 1 — kişinin beynindeki dağınık görevler ═══════
+   Metafor: görevler kişinin kafasının üstünde bir bulut hâlinde döner ve
+   sürekli hareket eder; durmuyorlar, tıpkı zihindeki gibi. Sahne 1 tam ekran
+   ve ORTALANMIŞ; diğer sahneler iki sütunlu düzende kalır. */
+.kaos-tam{position:absolute;inset:0;z-index:0;opacity:0;
+  transition:opacity .6s ease-in-out;pointer-events:none;overflow:hidden}
+html:not(.animasyon) .kaos-tam{position:relative;opacity:1;height:74vh;margin-top:24px}
+.sahne-in{position:relative;z-index:1}
+
+/* metnin arkasına yumuşak koyu hale — bulut metnin okunurluğunu bozmasın */
+.kaos-tam::before{content:'';position:absolute;inset:0;
+  background:radial-gradient(120% 62% at 50% 8%, color-mix(in srgb, var(--zemin) 88%, transparent) 34%, transparent 72%)}
+
+/* silüet: kafa + omuzlar, tepesinde sıcak bir kenar ışığı */
+.siluet{position:absolute;left:50%;bottom:0;transform:translateX(-50%);
+  height:min(30vh,270px);width:auto;display:block}
+/* Silüetin arkasında yumuşak hale — figür zeminden ayrışsın diye. */
+.hale{position:absolute;left:50%;bottom:min(5vh,44px);transform:translateX(-50%);
+  width:min(24vh,210px);height:min(24vh,210px);border-radius:50%;pointer-events:none;
+  background:radial-gradient(circle, color-mix(in srgb, var(--vurgu) 22%, transparent) 0%, transparent 62%);
+  transition:background .8s ease-in-out}
+.siluet .govde{fill:#131c28}
+.siluet .kenar{fill:none;stroke:var(--vurgu);stroke-width:2.5;opacity:.55;
+  transition:stroke .8s ease-in-out}
+
+/* görev bulutu — yavaş döner, içindeki her görev ayrıca süzülür */
+/* ⚠️ Etiketlerin başlığın üstüne binmesi SABİT YÜZDEYLE çözülemedi: metnin
+   bittiği yer ekran oranına göre kayıyor, üç tur denendi ve her turda başka bir
+   ekran bozuldu (1280x720, 1366x768...). Çözüm ayar değil YAPI: bulut, üst
+   kenarı metnin gerçek alt kenarına çalışma anında dayanan KIRPAN bir kabın
+   içinde. Etiket yukarı süzülse bile kabın dışına taşamaz; üstteki maske
+   sayesinde sert kesilmek yerine yumuşakça siliniyor. */
+.bulut-alan{position:absolute;left:0;right:0;bottom:0;top:62%;overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 48px);
+  mask-image:linear-gradient(to bottom, transparent 0, #000 48px)}
+.bulut{position:absolute;left:50%;bottom:0;width:min(90vw,660px);height:100%;
+  transform:translateX(-50%)}
+/* ⚠️ İki animasyon aynı `transform`u ezer — sonuncusu diğerini komple
+   iptal eder. Bu yüzden iki katman: DIŞ katman ters döner (yazı dik kalsın),
+   İÇ katman süzülür. */
+.gorev{position:absolute;transform:translate(-50%,-50%)}
+.gorev-ic{display:block;
+  background:rgba(255,255,255,.07);border:1px solid var(--cizgi);
+  border-radius:var(--kose);padding:5px 11px;font-size:11.5px;white-space:nowrap;
+  color:#e7edf5;
+  box-shadow:0 8px 22px -12px rgba(0,0,0,.9)}
+.gorev.sicak .gorev-ic{border-color:color-mix(in srgb, var(--vurgu) 60%, transparent);
+  color:var(--vurgu);transition:color .8s ease-in-out, border-color .8s ease-in-out}
+@media (max-width:640px){.gorev-ic{font-size:10.5px;padding:5px 10px}}
+
+/* kıvılcımlar: kafadan yukarı süzülen küçük noktalar */
+.kivilcimlar{position:absolute;left:50%;bottom:min(17vh,160px);
+  width:min(22vh,165px);height:130px;transform:translateX(-50%);pointer-events:none}
+.kivilcim{position:absolute;width:3px;height:3px;border-radius:50%;
+  background:var(--vurgu);opacity:0;transition:background .8s ease-in-out}
+
+@media (prefers-reduced-motion:no-preference){
+  html.animasyon .bulut{animation:bulut-don 96s linear infinite}
+  @keyframes bulut-don{to{transform:translateX(-50%) rotate(360deg)}}
+  /* Kutu döndükçe yazı ters dönmesin diye görev kendi ekseninde geri döner. */
+  html.animasyon .gorev{animation:karsi-don 96s linear infinite}
+  @keyframes karsi-don{from{transform:translate(-50%,-50%) rotate(0)}
+                       to{transform:translate(-50%,-50%) rotate(-360deg)}}
+  html.animasyon .gorev-ic{animation:suzul var(--sure,18s) ease-in-out infinite alternate}
+  @keyframes suzul{from{transform:translate(0,0)}to{transform:translate(var(--dx,10px),var(--dy,-12px))}}
+  html.animasyon .kivilcim{animation:yuksel var(--sure,7s) ease-out infinite}
+  @keyframes yuksel{0%{opacity:0;transform:translateY(0) scale(.6)}
+                    18%{opacity:.85}
+                    100%{opacity:0;transform:translateY(-190px) scale(1.15)}}
+}
+
+/* ═══ IMZA: TOPLANMA ══════════════════════════════════════════
+   Sayfanin tek gosterisli ani. Dagilmis gorev parcalari once savruluyor
+   (felc hali), sonra toparlanip bir zaman rayina SAATLI BLOK olarak
+   oturuyor. Urunun yaptigi sey tam olarak bu.
+
+   Yapisal karar: parcalarin hepsi blok olmuyor. Dordu oturuyor, gerisi
+   soluyor — cunku FocusAid de gune sigmayani sonraki gune atiyor
+   (dailyCaps). Animasyon suslemiyor, dogru bir sey soyluyor.
+
+   ⚠️ Tamami CSS keyframe. `html.animasyon` yoksa (JS kapali ya da
+   hareket azaltma acik) parcalar bastan oturmus halde duruyor — hicbir
+   icerik kaybolmuyor, sadece hareket yok. */
+.toplan{position:relative;height:clamp(330px,46vh,430px);width:100%}
+/* Animasyon 1. sahnenin isi. Sahne degisince `.merkez` kalkiyor; kutu
+   burada kapatilmazsa 2-5'te arayuz kartlarinin arkasinda asili kaliyor. */
+html.animasyon .sahne:not(.merkez) .toplan{display:none}
+
+/* zaman rayi: sac teli dikey cizgi + saat centikleri */
+.ray-cizgi{position:absolute;left:0;top:6px;bottom:6px;width:1px;
+  background:var(--cizgi);transform-origin:top;transform:scaleY(0)}
+html.animasyon .toplan.ac .ray-cizgi{animation:ray-ac .7s ease-out .35s forwards}
+html:not(.animasyon) .ray-cizgi{transform:scaleY(1)}
+@keyframes ray-ac{to{transform:scaleY(1)}}
+
+/* dagilmis parca: --x/--y baslangic savrulmasi, --r egim */
+.parca{position:absolute;left:0;top:0;
+  font-size:13px;color:var(--metin-2);white-space:nowrap;
+  padding:6px 11px;border:1px solid var(--cizgi);border-radius:var(--kose);
+  background:color-mix(in srgb, var(--zemin) 82%, transparent);
+  transform:translate(var(--x),var(--y)) rotate(var(--r));opacity:0}
+html.animasyon .toplan.ac .parca{animation:parca-savrul 3.1s cubic-bezier(.16,.84,.3,1) forwards}
+@keyframes parca-savrul{
+  0%   {opacity:0;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(.94)}
+  14%  {opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}
+  46%  {opacity:1;transform:translate(var(--x),var(--y)) rotate(var(--r)) scale(1)}
+  100% {opacity:0;transform:translate(26px,var(--hedef)) rotate(0deg) scale(.9)}
+}
+html:not(.animasyon) .parca{display:none}
+
+/* oturan blok: saat + is + sure */
+.blok{position:absolute;left:22px;right:0;
+  display:grid;grid-template-columns:auto 1fr auto;align-items:baseline;gap:12px;
+  padding:12px 14px;border:1px solid var(--cizgi);border-radius:var(--kose);
+  background:var(--yuzey);opacity:0;transform:translateY(10px)}
+html.animasyon .toplan.ac .blok{animation:blok-otur .6s cubic-bezier(.2,.8,.3,1) forwards}
+html:not(.animasyon) .blok{opacity:1;transform:none}
+@keyframes blok-otur{to{opacity:1;transform:translateY(0)}}
+.blok .saat{font-size:12.5px;font-weight:600;color:var(--vurgu);letter-spacing:.02em}
+.blok .is{font-size:14.5px;color:var(--metin);line-height:1.3}
+.blok .sure{font-size:12.5px;color:var(--metin-2)}
+/* raya degen centik */
+.blok::before{content:'';position:absolute;left:-23px;top:19px;width:9px;height:1px;
+  background:var(--vurgu)}
+.blok .saat::after{content:'';position:absolute;left:-27px;top:16px;width:5px;height:5px;
+  border-radius:50%;background:var(--vurgu)}
+
+.tasan{position:absolute;left:22px;right:0;font-size:12.5px;color:var(--metin-2);
+  opacity:0;padding-left:2px}
+html.animasyon .toplan.ac .tasan{animation:blok-otur .6s ease-out 3.05s forwards}
+html:not(.animasyon) .tasan{opacity:1}
+
+@media (max-width:980px){
+  .toplan{height:300px}
+  .blok .is{font-size:13.5px}
+}
+
+/* ═══ ARAYUZ SLIDER'I ══════════════════════════════════════════
+   Gercek uygulama ekranlari. Ziyaretci kaydolmadan once nasil bir
+   arayuzle karsilasacagini goruyor.
+   ⚠️ Bolum kendi renklerini SABIT tasiyor. Scrolly surucusu :root'taki
+   --zemin/--vurgu'yu degistiriyor; buraya miras kalsaydi bolumun rengi
+   ziyaretcinin nerede durdugu"na gore oynardi.
+   ⚠️ Ray native scroll-snap ile calisiyor: JS olmadan da kaydirilabiliyor,
+   dokunmatikte parmakla suruluyor. JS sadece ok/nokta/klavye ekliyor. */
+.arayuz{--a-zemin:#0E1219;--a-vurgu:#E2542C;--a-kart:#161C26;
+  background:var(--a-zemin);padding:96px 0 104px;position:relative;z-index:2}
+.arayuz .ust{max-width:640px;margin-bottom:38px}
+.arayuz .etiket{font-size:12.5px;font-weight:600;letter-spacing:.15em;
+  text-transform:uppercase;color:var(--metin-2);display:inline-block;margin-bottom:18px;
+  padding-left:13px;border-left:2px solid var(--a-vurgu)}
+.arayuz h2{font-size:clamp(30px,4vw,46px);margin-bottom:14px}
+.arayuz .giris{color:var(--metin-2);font-size:17px}
+
+.ray-kutu{position:relative}
+.ray{display:grid;grid-auto-flow:column;grid-auto-columns:100%;gap:22px;
+  overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
+  scrollbar-width:none;-ms-overflow-style:none}
+.ray::-webkit-scrollbar{display:none}
+.slayt{scroll-snap-align:center}
+.slayt figure{margin:0}
+/* Ekran goruntuleri farkli oranlarda (2.06 ve 2.25). Sabit oranli cerceve
+   + contain: hicbiri kirpilmiyor, hepsi ayni yukseklikte duruyor. */
+.cerceve{aspect-ratio:16/8;background:#0A0E14;border:1px solid rgba(255,255,255,.13);
+  border-radius:var(--kose);overflow:hidden;box-shadow:0 24px 56px -34px rgba(0,0,0,.85)}
+.cerceve img{width:100%;height:100%;object-fit:contain;display:block}
+.slayt figcaption{margin-top:18px;max-width:62ch}
+.slayt .ad{font-weight:700;font-size:19px;letter-spacing:-.02em}
+.slayt .ac{margin-top:6px;color:var(--metin-2);font-size:15.5px;line-height:1.55}
+
+.ray-dugme{position:absolute;top:calc(50% - 46px);transform:translateY(-50%);z-index:3;
+  width:46px;height:46px;border-radius:var(--kose);display:grid;place-items:center;cursor:pointer;
+  background:color-mix(in srgb, var(--a-zemin) 86%, transparent);color:var(--metin);
+  border:1px solid rgba(255,255,255,.22);font-size:19px;line-height:1;
+  transition:background .15s ease, border-color .15s ease, opacity .2s ease}
+.ray-dugme:hover{background:var(--a-vurgu);color:#10202b;border-color:var(--a-vurgu)}
+.ray-dugme[disabled]{opacity:.3;cursor:default}
+.ray-dugme[disabled]:hover{background:color-mix(in srgb, var(--a-zemin) 86%, transparent);
+  color:var(--metin);border-color:rgba(255,255,255,.22)}
+.ray-onceki{left:-10px}
+.ray-sonraki{right:-10px}
+@media (max-width:900px){.ray-onceki{left:4px}.ray-sonraki{right:4px}}
+
+.noktalar{display:flex;gap:9px;justify-content:center;margin-top:30px}
+.nokta{width:34px;height:4px;border-radius:var(--kose);border:0;padding:0;cursor:pointer;
+  background:rgba(255,255,255,.2);transition:background .2s ease}
+.nokta[aria-current="true"]{background:var(--a-vurgu)}
+/* JS yoksa oklar ve noktalar bir ise yaramaz; gizle, ray zaten kaydiriliyor. */
+html:not(.js) .ray-dugme, html:not(.js) .noktalar{display:none}
+
+/* ═══ SAHNE FOTOGRAFLARI ═══════════════════════════════════════
+   Referans videodan cikarilan 5 kare. Her sahne kendi karesini tam ekran
+   zemin olarak tasiyor; metin ustune biniyor.
+   ⚠️ Perde gecisiyle AYNI ritim: giden foto .26s'de soner, gelen .26s
+   gecikmeyle belirir (surucu transitionDelay'i veriyor). Ayni anda iki
+   foto gorunmez - yoksa iki yuz ust uste binip hayalet gibi duruyor. */
+.foto-katlar{position:absolute;inset:0;z-index:0;overflow:hidden}
+.foto-kat{position:absolute;inset:0;opacity:0;transition:opacity .26s ease-in-out}
+.foto-kat:first-child{opacity:1}
+.foto-kat img{width:100%;height:100%;object-fit:cover;display:block}
+/* 5. kare zumrut yesili agirlikli; sahnenin yeni teal zeminiyle catismasin
+   diye tonu teal'e cekilip doygunlugu dusuruluyor. Fotografi yeniden
+   uretmeye gerek yok - tarayicida filtre yetiyor. */
+/* ⚠️ 5. karenin UST BANDINDA videonun uydurdugu buyuk bir baslik var
+   ("Kaosunu Netlige Cevir"). Bulaniklik bu boyuttaki yaziyi silmeye
+   yetmiyordu; bizim gercek H1'imizle yarisiyordu. Kadraj buyutulup
+   YUKARI kaydiriliyor (negatif translateY): goruntu yukselince ust
+   banttaki sahte baslik kare disina cikiyor, kisi ve dashboard kaliyor.
+   ⚠️ Ilk denemede +%9 yazildi; bu goruntuyu ASAGI itip sahte basligi
+   daha da gorunur yapti. Buyutmeyle birlikte yon ters calisiyor. */
+.foto-kat:nth-child(5) img{filter:saturate(.72) hue-rotate(-14deg) brightness(.94) blur(5px);
+  transform:scale(1.34) translateY(-15%)}
+
+/* ⚠️ 2. ve 5. karelerde videonun urettigi SAHTE arayuz yazilari var
+   ("Fina FrusArid with legret seot", "Landrcllum Page film"). Yapay zeka
+   videolarinin klasik bozuk metni; buyuk basildiginda sayfayi bozuk
+   gosteriyor. Bulaniklastirma yaziyi okunmaz yapiyor, yuzdeki ifade ve
+   sahnenin atmosferi duruyor. scale(1.05): blur kenarda saydamlik
+   sizdiriyor, buyutme onu kadraj disina itiyor.
+   Sahne 1, 3 ve 4'te sahte yazi yok - onlar NET kaliyor. */
+.foto-kat:nth-child(2) img{filter:blur(5px) brightness(.92);transform:scale(1.05)}
+/* Perde: metnin okunmasi fotografin sansina birakilmaz. Soldan saga koyu
+   gradyan + alttan hafif karartma; ikisi de sahnenin kendi zemin renginden
+   turetiliyor ki renk yolculugu bozulmasin. */
+.foto-kat::after{content:'';position:absolute;inset:0;
+  background:linear-gradient(100deg, var(--zemin) 0%, color-mix(in srgb, var(--zemin) 82%, transparent) 34%,
+    color-mix(in srgb, var(--zemin) 30%, transparent) 62%, transparent 100%),
+    linear-gradient(to top, var(--zemin) 0%, transparent 42%);
+  transition:background .8s ease-in-out}
+@media (max-width:820px){
+  /* Dar ekranda metin fotografin uzerine tam biniyor: perde her yerde koyu. */
+  .foto-kat::after{background:linear-gradient(to top, var(--zemin) 12%,
+    color-mix(in srgb, var(--zemin) 72%, transparent) 62%, color-mix(in srgb, var(--zemin) 45%, transparent) 100%)}
+}
+
+/* sahne 1 ortalanmış düzen */
+/* ⚠️ Sahne 1 dikeyde ORTALANMAZ: ortalanınca metin, bulutun ve silüetin
+   üstüne biniyor ve okunmaz hâle geliyor. Üstten hizalanıp bant ayrılıyor:
+   metin üst, görev bulutu orta, silüet alt. */
+/* ⚠️ Sahne 1 artik soyut siluet + etiket bulutu DEGIL, videodan gelen
+   fotograf. Eski merkezi duzen (metin ortada, gorsel altta) fotografla
+   catisiyordu: yazi yuzun uzerine denk geliyordu. Metin sola alindi. */
+.sahne.merkez .kaos-tam{display:none}
+.sahne.merkez{align-items:center}
+.sahne.merkez .sahne-in{grid-template-columns:minmax(0,47%) minmax(0,45%);justify-items:start;text-align:left;
+  padding-top:min(6vh,56px)}
+/* ⚠️ `.sahne-in`de `justify-items:start` var (metin sutunu icerigine
+   gore dursun diye). Grid ogesi boylece sutunu DOLDURMUYOR, iceriğine
+   buzuluyor — animasyonun cocuklari mutlak konumlu oldugu icin icerik
+   genisligi 0 cikti ve kutu tamamen kayboldu. Bu sutun esnesin: */
+.sahne.merkez .gorsel{display:block;justify-self:stretch;width:100%}
+.sahne.merkez .kaos-tam{opacity:1}
+.sahne.merkez .perde{align-items:flex-start}
+.sahne.merkez .rozet{align-self:flex-start}
+/* ⚠️ Görev etiketleri KALIN nesneler; referanstaki ince yıldız tozu gibi metnin
+   arkasında duramazlar — üstünden geçince başlık okunmaz oluyor. Çözüm bantları
+   ayırmak: metin üstte, halka tamamen altta. Bunun için sahne 1'de uzun açıklama
+   düşürülüyor, kısa ve çarpıcı alıntı kalıyor. */
+.sahne.merkez .aciklama{display:block}
+.sahne.merkez .alinti{max-width:40ch;font-size:18px;
+  padding-top:14px;border-top:1px solid color-mix(in srgb, var(--vurgu) 40%, transparent)}
+.sahne.merkez .centikler{justify-content:flex-start;margin-top:22px}
+/* Merkez modda tek perde görünür; sabit yükseklik gerekmiyor, metin kadar yer kaplasın. */
+
+/* FocusAid arayüz maketi (2–5) */
+/* ⚠️ Bu panel artik FOTOGRAFIN uzerinde duruyor. Eski %5 opakliktaki beyaz
+   zemin fotografla ayni tonda kalip yazilari okunmaz yapiyordu. Panel kendi
+   zeminini tasimali: sahnenin zemin rengi %92, uzerine blur. */
+.ui{position:absolute;left:50%;top:58%;transform:translate(-50%,-50%);width:min(100%,440px);
+  background:color-mix(in srgb, var(--zemin) 92%, transparent);
+  border:1px solid color-mix(in srgb, #fff 17%, transparent);border-radius:var(--kose);
+  padding:18px;box-shadow:0 24px 48px -28px rgba(0,0,0,.8);
+  transition:background .8s ease-in-out}
+html:not(.animasyon) .ui{position:relative;left:auto;top:auto;transform:none;width:auto}
+.ui-bas{display:flex;align-items:center;justify-content:space-between;
+  padding-bottom:12px;border-bottom:1px solid color-mix(in srgb, #fff 16%, transparent);margin-bottom:14px}
+.ui-bas .ad{font-weight:700;font-size:14px;letter-spacing:-.02em}
+.ui-bas .durum{font-size:11px;color:var(--vurgu);
+  transition:color .8s ease-in-out}
+.dev-gorev{border:1px dashed color-mix(in srgb, var(--vurgu) 60%, transparent);
+  border-radius:var(--kose);padding:22px 16px;text-align:center;
+  background:color-mix(in srgb, var(--vurgu) 9%, transparent);
+  transition:border-color .8s ease-in-out, background .8s ease-in-out}
+.dev-gorev .baslik{font-weight:700;font-size:17px;letter-spacing:-.02em}
+.dev-gorev .alt{margin-top:7px;font-size:12.5px;color:var(--metin-2);
+  }
+
+.mikro{display:grid;gap:9px}
+.mikro-satir{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;
+  background:color-mix(in srgb, var(--zemin) 55%, #ffffff 11%);
+  border:1px solid color-mix(in srgb, #fff 14%, transparent);border-radius:var(--kose);
+  padding:11px 13px;transition:background .8s ease-in-out}
+.kutu{width:17px;height:17px;border-radius:var(--kose);border:1.5px solid var(--cizgi);
+  display:grid;place-items:center;font-size:11px;color:#04150d;flex-shrink:0}
+.mikro-satir.bitti .kutu{background:var(--vurgu);border-color:var(--vurgu)}
+.mikro-satir.bitti .yazi{color:var(--metin-2)}
+.yazi{font-size:14px;line-height:1.35}
+.yazi .etiket{display:block;margin-top:3px;
+  font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--vurgu);
+  transition:color .8s ease-in-out}
+.sure{font-size:12px;color:var(--metin-2);white-space:nowrap}
+
+/* sahne 3 — konfeti */
+.konfeti{position:absolute;inset:0;pointer-events:none;overflow:hidden}
+.konfeti i{position:absolute;width:7px;height:7px;border-radius:1px;opacity:0}
+@media (prefers-reduced-motion:no-preference){
+  html.animasyon .konfeti.patla i{animation:dus 1.6s cubic-bezier(.2,.7,.4,1) forwards}
+  @keyframes dus{0%{opacity:0;transform:translateY(-30px) rotate(0)}
+                 12%{opacity:1}
+                 100%{opacity:0;transform:translateY(300px) rotate(420deg)}}
+}
+
+/* sahne 4 — akış */
+.zaman{text-align:center;padding:6px 0 14px}
+.zaman .sayac{font-size:44px;font-weight:500;
+  letter-spacing:-.02em;color:var(--vurgu);transition:color .8s ease-in-out}
+.zaman .alt{margin-top:6px;font-size:13px;color:var(--metin-2)}
+.olcum{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}
+.olcum > div{background:color-mix(in srgb, var(--zemin) 55%, #ffffff 11%);
+  border:1px solid color-mix(in srgb, #fff 14%, transparent);
+  border-radius:var(--kose);padding:11px 13px;transition:background .8s ease-in-out}
+.olcum .k{font-size:10.5px;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--metin-2)}
+.olcum .d{font-size:16px;font-weight:700;margin-top:4px;letter-spacing:-.02em}
+.rozet-satir{margin-top:12px;display:flex;align-items:center;gap:8px;
+  font-size:11.5px;color:var(--vurgu);
+  border:1px solid color-mix(in srgb, var(--vurgu) 42%, transparent);
+  background:color-mix(in srgb, var(--vurgu) 13%, transparent);
+  border-radius:var(--kose);padding:9px 12px;
+  transition:color .8s ease-in-out, border-color .8s ease-in-out, background .8s ease-in-out}
+
+/* sahne 5 — tamamlandı */
+.bitti-serit{background:color-mix(in srgb, var(--vurgu) 17%, transparent);
+  border:1px solid color-mix(in srgb, var(--vurgu) 48%, transparent);border-radius:var(--kose);
+  padding:15px;text-align:center;font-weight:700;letter-spacing:-.01em;
+  transition:background .8s ease-in-out, border-color .8s ease-in-out}
+.seri{margin-top:11px;text-align:center;
+  font-size:13px;color:var(--metin-2)}
+.tam-liste{margin-top:14px;display:grid;gap:7px}
+
+/* ── alt bölüm ───────────────────────────────────────────── */
+section{border-top:1px solid var(--cizgi)}
+.sec{padding:78px 0}
+@media (max-width:760px){.sec{padding:54px 0}}
+.sec-head{max-width:56ch}
+.sec-head .ust{font-size:12px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--metin-2)}
+.sec-head h2{font-size:clamp(26px,3.2vw,38px);margin-top:14px}
+.sec-head p{margin-top:16px;color:var(--metin-2)}
+.nots{margin-top:44px;display:grid;grid-template-columns:repeat(3,1fr);gap:40px}
+@media (max-width:800px){.nots{grid-template-columns:1fr;gap:28px}}
+.not-blok h3{font-size:19px;letter-spacing:-.02em;padding-bottom:12px;
+  border-bottom:2px solid var(--vurgu);transition:border-color .8s ease-in-out}
+.not-blok p{margin-top:14px;font-size:15.5px;color:var(--metin-2)}
+footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;color:var(--metin-2)}
+.foot-in{display:flex;gap:18px;flex-wrap:wrap;align-items:center}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap top-in">
+    <a class="mark" href="/">Focus<span>Aid</span></a>
+    <nav>
+      <a class="btn" href="auth.html">Ücretsiz başlat</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="scrolly" id="scrolly">
+    <div class="sahne">
+      <div class="foto-katlar" aria-hidden="true">
+        <div class="foto-kat"><img src="landing-gorsel/sahne1-asiri-yuklenme.jpg" alt=""></div>
+        <div class="foto-kat"><img src="landing-gorsel/sahne2-supheci.jpg" alt="" loading="lazy"></div>
+        <div class="foto-kat"><img src="landing-gorsel/sahne3-kirilma.jpg" alt="" loading="lazy"></div>
+        <div class="foto-kat"><img src="landing-gorsel/sahne4-akis.jpg" alt="" loading="lazy"></div>
+        <div class="foto-kat"><img src="landing-gorsel/sahne5-netlik.jpg" alt="" loading="lazy"></div>
+      </div>
+      <div class="kaos-tam" aria-hidden="true">
+        <div class="hale"></div>
+        <div class="bulut-alan">
+        <div class="bulut">
+            <span class="gorev" style="left:94%;top:58%"><span class="gorev-ic" style="--sure:19s;--dx:12px;--dy:-7px;animation-delay:-0s">literatür taraması</span></span>
+            <span class="gorev" style="left:81%;top:78%"><span class="gorev-ic" style="--sure:23s;--dx:-11px;--dy:7px;animation-delay:-3s">veri setini temizle</span></span>
+            <span class="gorev" style="left:19%;top:78%"><span class="gorev-ic" style="--sure:17s;--dx:10px;--dy:7px;animation-delay:-6s">modeli kur</span></span>
+            <span class="gorev" style="left:6%;top:58%"><span class="gorev-ic" style="--sure:21s;--dx:13px;--dy:-7px;animation-delay:-9s">sunum hazırla</span></span>
+            <span class="gorev" style="left:19%;top:38%"><span class="gorev-ic" style="--sure:25s;--dx:-8px;--dy:7px;animation-delay:-12s">kaynakça</span></span>
+            <span class="gorev" style="left:50%;top:28%"><span class="gorev-ic" style="--sure:18s;--dx:11px;--dy:7px;animation-delay:-15s">anket sonuçları</span></span>
+            <span class="gorev" style="left:81%;top:38%"><span class="gorev-ic" style="--sure:22s;--dx:-12px;--dy:-7px;animation-delay:-18s">hocayla görüş</span></span>
+            <span class="gorev" style="left:72%;top:67%"><span class="gorev-ic" style="--sure:16s;--dx:9px;--dy:7px;animation-delay:-21s">etik kurul</span></span>
+            <span class="gorev" style="left:30%;top:68%"><span class="gorev-ic" style="--sure:24s;--dx:-10px;--dy:-7px;animation-delay:-24s">bütçe tablosu</span></span>
+            <span class="gorev" style="left:28%;top:49%"><span class="gorev-ic" style="--sure:20s;--dx:12px;--dy:7px;animation-delay:-27s">grafikleri çiz</span></span>
+            <span class="gorev sicak" style="left:64%;top:44%"><span class="gorev-ic" style="--sure:15s;--dx:-9px;--dy:-7px;animation-delay:-30s">12 Eylül teslim</span></span>
+            <span class="gorev sicak" style="left:12%;top:68%"><span class="gorev-ic" style="--sure:26s;--dx:10px;--dy:-7px;animation-delay:-33s">gecikmiş görevler (8)</span></span>
+        </div>
+        </div>
+        <div class="kivilcimlar">
+          <i class="kivilcim" style="left:8%;bottom:0%;--sure:6s;animation-delay:-0.0s"></i>
+          <i class="kivilcim" style="left:37%;bottom:13%;--sure:7s;animation-delay:-0.7s"></i>
+          <i class="kivilcim" style="left:66%;bottom:0%;--sure:8s;animation-delay:-1.4s"></i>
+          <i class="kivilcim" style="left:11%;bottom:13%;--sure:9s;animation-delay:-2.1s"></i>
+          <i class="kivilcim" style="left:40%;bottom:0%;--sure:10s;animation-delay:-2.8s"></i>
+          <i class="kivilcim" style="left:69%;bottom:13%;--sure:6s;animation-delay:-3.5s"></i>
+          <i class="kivilcim" style="left:14%;bottom:0%;--sure:7s;animation-delay:-4.2s"></i>
+          <i class="kivilcim" style="left:43%;bottom:13%;--sure:8s;animation-delay:-4.9s"></i>
+          <i class="kivilcim" style="left:72%;bottom:0%;--sure:9s;animation-delay:-5.6s"></i>
+          <i class="kivilcim" style="left:17%;bottom:13%;--sure:10s;animation-delay:-6.3s"></i>
+          <i class="kivilcim" style="left:46%;bottom:0%;--sure:6s;animation-delay:-7.0s"></i>
+          <i class="kivilcim" style="left:75%;bottom:13%;--sure:7s;animation-delay:-7.7s"></i>
+        </div>
+        <svg class="siluet" viewBox="0 0 340 320" xmlns="http://www.w3.org/2000/svg">
+          <!-- Kafa + omuzlar: yüz çizilmiyor. Kimseyi tarif etmeyen, herkesin
+               kendini koyabileceği bir siluet; görevler tepesinde dönüyor. -->
+          <path class="govde" d="M150,120 h40 v82 h-40 Z"/>
+          <path class="govde" d="M26,320 C26,234 92,193 170,193 C248,193 314,234 314,320 Z"/>
+          <ellipse class="govde" cx="170" cy="76" rx="53" ry="61"/>
+          <path class="kenar" d="M117,76 A53,61 0 0 1 223,76"/>
+        </svg>
+      </div>
+      <div class="wrap sahne-in">
+
+        <div class="anlatim">
+          <div class="perdeler">
+          <div class="perde" data-zemin="#0E1219" data-vurgu="#E2542C">
+            <span class="rozet">Aşırı Yüklenme Felci</span>
+            <h2>Yine o tanıdık felç hissi...</h2>
+            <p class="aciklama">Yapacak onlarca devasa görev, açık yüzlerce sekme ve nereden
+               başlayacağını bilemediğin için donup kalan bir zihin.</p>
+            <p class="alinti">&ldquo;Hepsini birden yapmam lazım ama elim hiçbirine gitmiyor...&rdquo;</p>
+          </div>
+
+          <div class="perde" data-zemin="#0E1219" data-vurgu="#E2542C">
+            <span class="rozet">Şüpheci Bir Karşılaşma</span>
+            <h2>Yeni bir yapılacaklar listesi daha mı? Asla.</h2>
+            <p class="aciklama">DEHB beyni yeni kurallardan nefret eder. FocusAid sana yeni bir
+               disiplin dayatmaz; karmaşık görevleri tek bir hamlede mikro parçalara böler.</p>
+            <p class="ipucu">Korkutucu görevi arayüze sürükle...</p>
+          </div>
+
+          <div class="perde" data-zemin="#0E1219" data-vurgu="#E2542C">
+            <span class="rozet">Büyük Kırılma</span>
+            <h2>Dağ gibi görünen şey, sadece birkaç taştan ibaretti.</h2>
+            <p class="aciklama">Devasa görev parçalandı. Artık önünde felç eden bir dağ yok;
+               beyninin reddedemeyeceği kadar minik adımlar var.</p>
+            <span class="kilometre">+50 XP Dopamin Boost</span>
+          </div>
+
+          <div class="perde" data-zemin="#0E1219" data-vurgu="#E2542C">
+            <span class="rozet">Otopilotta Akış</span>
+            <h2>Sen sadece üret. Gerisini arkadaki akış yönetsin.</h2>
+            <p class="aciklama">Takvim seansları, arka planda çalışan webhook'lar ve otomatik log
+               kayıtları sayesinde dikkatin hiç dağılmadan ritme girersin.</p>
+            <p class="istatistik">Odak Süresi: 45 dk &nbsp;|&nbsp; Sıfır Dikkat Dağınıklığı</p>
+          </div>
+
+          <div class="perde" data-zemin="#0E1219" data-vurgu="#E2542C">
+            <span class="rozet">Kaostan Netliğe</span>
+            <h2>Günün tüm hedefleri bitti. Kalan zaman tamamen senin.</h2>
+            <p class="aciklama">Vicdan azabı yok, ertelenmiş yığınlar yok. Kendi zihnine uygun
+               tasarlanmış üretkenliğin tadını çıkar.</p>
+            <div class="cta-kut">
+              <a class="btn btn-lg" href="auth.html">FocusAid'i Ücretsiz Başlat</a>
+              <a class="btn btn-lg btn-ikincil" href="index.html">Canlı Demoyu İncele</a>
+            </div>
+            <p class="cta-alt">Kredi kartı gerekmez • 60 saniyede hazır</p>
+          </div>
+          </div>
+
+          <div class="centikler" aria-hidden="true">
+            <i class="centik"></i><i class="centik"></i><i class="centik"></i>
+            <i class="centik"></i><i class="centik"></i>
+          </div>
+        </div>
+
+        <div class="gorsel">
+          <!-- 1: dagilmis gorevler zaman rayina oturuyor (imza an) -->
+          <div class="toplan" id="toplan" aria-hidden="true">
+            <span class="ray-cizgi"></span>
+            <span class="parca" style="--x:18px;--y:10px;--r:-5deg;--hedef:30px;animation-delay:0ms">literatür taraması</span>
+            <span class="parca" style="--x:176px;--y:46px;--r:4deg;--hedef:96px;animation-delay:70ms">anket verisi</span>
+            <span class="parca" style="--x:30px;--y:92px;--r:3deg;--hedef:162px;animation-delay:140ms">yöntem bölümü</span>
+            <span class="parca" style="--x:198px;--y:132px;--r:-6deg;--hedef:228px;animation-delay:210ms">etik kurul</span>
+            <span class="parca" style="--x:62px;--y:176px;--r:5deg;--hedef:228px;animation-delay:280ms">kaynakça</span>
+            <span class="parca" style="--x:150px;--y:214px;--r:-3deg;--hedef:294px;animation-delay:350ms">bütçe tablosu</span>
+            <span class="parca" style="--x:12px;--y:252px;--r:6deg;--hedef:294px;animation-delay:420ms">hocayla görüş</span>
+            <span class="parca" style="--x:186px;--y:292px;--r:-4deg;--hedef:294px;animation-delay:490ms">grafikleri çiz</span>
+            <div class="blok" style="top:22px;animation-delay:2300ms"><span class="saat">09:00</span><span class="is">Literatür taraması</span><span class="sure">35 dk</span></div>
+            <div class="blok" style="top:96px;animation-delay:2430ms"><span class="saat">10:20</span><span class="is">Anket verisini temizle</span><span class="sure">45 dk</span></div>
+            <div class="blok" style="top:170px;animation-delay:2560ms"><span class="saat">13:00</span><span class="is">Yöntem bölümü taslağı</span><span class="sure">50 dk</span></div>
+            <div class="blok" style="top:244px;animation-delay:2690ms"><span class="saat">15:30</span><span class="is">Kaynakçayı düzenle</span><span class="sure">25 dk</span></div>
+            <div class="tasan" style="top:322px">+4 görev sonraki güne taşındı</div>
+          </div>
+          <!-- 2: tek dev görev -->
+          <div class="kat">
+            <div class="ui">
+              <div class="ui-bas"><span class="ad">FocusAid</span>
+                <span class="durum">bölünmeyi bekliyor</span></div>
+              <div class="dev-gorev">
+                <div class="baslik">Tezi / Büyük Projeyi Teslim Et</div>
+                <div class="alt">tek parça · nereden başlanacağı belirsiz</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3: kırılma -->
+          <div class="kat">
+            <div class="konfeti" id="konfeti" aria-hidden="true"></div>
+            <div class="ui">
+              <div class="ui-bas"><span class="ad">FocusAid</span>
+                <span class="durum">3 mikro adım</span></div>
+              <div class="mikro">
+                <div class="mikro-satir bitti">
+                  <span class="kutu">✓</span>
+                  <span class="yazi">Literatür taramasında 5 makaleyi tara, not çıkar
+                    <span class="etiket">Kaynak Taraması</span></span>
+                  <span class="sure">35 dk</span>
+                </div>
+                <div class="mikro-satir">
+                  <span class="kutu"></span>
+                  <span class="yazi">Anket verisini temizle, eksik değerleri işaretle
+                    <span class="etiket">Veri Hazırlık</span></span>
+                  <span class="sure">45 dk</span>
+                </div>
+                <div class="mikro-satir">
+                  <span class="kutu"></span>
+                  <span class="yazi">Yöntem bölümünün ilk taslağını yaz
+                    <span class="etiket">Yazım</span></span>
+                  <span class="sure">50 dk</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4: akış -->
+          <div class="kat">
+            <div class="ui">
+              <div class="ui-bas"><span class="ad">FocusAid</span>
+                <span class="durum">In Flow</span></div>
+              <div class="zaman">
+                <div class="sayac">00:45:00</div>
+                <div class="alt">odak seansı sürüyor</div>
+              </div>
+              <div class="olcum">
+                <div><div class="k">Biten mikro görev</div><div class="d">4</div></div>
+                <div><div class="k">Dikkat dağınıklığı</div><div class="d">0</div></div>
+              </div>
+              <div class="rozet-satir">n8n Webhook Synced</div>
+            </div>
+          </div>
+
+          <!-- 5: tamamlandı -->
+          <div class="kat">
+            <div class="ui">
+              <div class="ui-bas"><span class="ad">FocusAid</span>
+                <span class="durum">gün kapandı</span></div>
+              <div class="bitti-serit">Günün Görevleri %100 Tamamlandı</div>
+              <div class="seri">7 Günlük Seri</div>
+              <div class="tam-liste">
+                <div class="mikro-satir bitti"><span class="kutu">✓</span>
+                  <span class="yazi">Literatür taramasında 5 makaleyi tara, not çıkar</span><span class="sure">35 dk</span></div>
+                <div class="mikro-satir bitti"><span class="kutu">✓</span>
+                  <span class="yazi">Anket verisini temizle, eksik değerleri işaretle</span><span class="sure">45 dk</span></div>
+                <div class="mikro-satir bitti"><span class="kutu">✓</span>
+                  <span class="yazi">Yöntem bölümünün ilk taslağını yaz</span><span class="sure">50 dk</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <section class="arayuz" id="arayuz" aria-labelledby="arayuz-baslik">
+    <div class="wrap">
+      <div class="ust">
+        <span class="etiket">Arayüz</span>
+        <h2 id="arayuz-baslik">Kaydolmadan önce içeriyi gör.</h2>
+        <p class="giris">Altı ekran, altı iş. Hepsi çalışan uygulamadan; maket değil.</p>
+      </div>
+
+      <div class="ray-kutu">
+        <button class="ray-dugme ray-onceki" type="button" aria-label="Önceki ekran" disabled>&#8249;</button>
+        <div class="ray" id="ray" tabindex="0" role="group" aria-label="FocusAid arayüz ekranları">
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/01-parcalayici.jpg" alt="FocusAid Parçalayıcı ekranı: ana görev yazma alanı, dosya sürükleme kutusu ve Parçala düğmesi"></div>
+            <figcaption>
+              <div class="ad">Parçalayıcı</div>
+              <p class="ac">Devasa görevi tek cümleyle yaz ya da yönerge dosyanı sürükle. FocusAid onu mikro adımlara böler; hangi adımın hangi güne ve saate düşeceğine takvimini okuyan algoritma karar verir.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/02-bugun.jpg" alt="Bugün ekranı: sıradaki görev kartı, tamamla ve sonraya al düğmeleri, günün görev listesi" loading="lazy"></div>
+            <figcaption>
+              <div class="ad">Bugün</div>
+              <p class="ac">Gün açıldığında karşına tüm liste değil, sıradaki tek adım çıkar. Tamamla ya da sonraya al — karar tek dokunuş.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/03-takvim.jpg" alt="Takvim ekranı: aylık görünümde saatleriyle yerleştirilmiş görevler" loading="lazy"></div>
+            <figcaption>
+              <div class="ad">Takvim</div>
+              <p class="ac">Adımlar Google Takvim’e gerçek saatlerle düşer. Yerleştirici dolu saatleri atlar; hiçbir görev bir diğerinin üstüne binmez.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/04-projelerim.jpg" alt="Projelerim ekranı: proje ve görev sayıları, ilerleme yüzdesi ve proje kartları" loading="lazy"></div>
+            <figcaption>
+              <div class="ad">Projelerim</div>
+              <p class="ac">Parçaladığın her iş burada bir projeye dönüşür. Kaç adım bitti, genel ilerleme ne durumda — tek ekranda.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/05-profil.jpg" alt="Nöro-Profil Merkezi: mod seçimi, odak süresi kaydırıcısı, çalışma saatleri ve mola stili ayarları" loading="lazy"></div>
+            <figcaption>
+              <div class="ad">Nöro-Profil</div>
+              <p class="ac">Odak süresi, çalışma modu, mola stili ve günün modu senin beynine göre ayarlanır. Plan bu profile göre kurulur; hazır bir şablona değil.</p>
+            </figcaption>
+          </figure>
+        </div>
+        <div class="slayt">
+          <figure>
+            <div class="cerceve"><img src="landing-gorsel/arayuz/06-dehb-bilgisi.jpg" alt="DEHB Bilgilendirme ekranı: DEHB Nedir başlıklı bilgi kartı ve yan menü" loading="lazy"></div>
+            <figcaption>
+              <div class="ad">DEHB Bilgi Merkezi</div>
+              <p class="ac">Kendini anlamak için kısa, kaynaklı ve sindirilebilir parçalar. Uygulamanın içinde, ayrı bir sekmeye gitmeden.</p>
+            </figcaption>
+          </figure>
+        </div>
+        </div>
+        <button class="ray-dugme ray-sonraki" type="button" aria-label="Sonraki ekran">&#8250;</button>
+      </div>
+
+      <div class="noktalar" id="noktalar">
+        <button class="nokta" type="button" aria-label="1. ekran: Parçalayıcı" aria-current="true"></button>
+        <button class="nokta" type="button" aria-label="2. ekran: Bugün"></button>
+        <button class="nokta" type="button" aria-label="3. ekran: Takvim"></button>
+        <button class="nokta" type="button" aria-label="4. ekran: Projelerim"></button>
+        <button class="nokta" type="button" aria-label="5. ekran: Nöro-Profil"></button>
+        <button class="nokta" type="button" aria-label="6. ekran: DEHB Bilgi Merkezi"></button>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap foot-in">
+    <span>FocusAid — DEHB odak asistanı</span>
+    <a href="https://github.com/Tarikd-a11b/dehb-asistan">Kaynak kodu</a>
+  </div>
+</footer>
+
+<script>
+/* ═══ Sahne sürücüsü ═══════════════════════════════════════════
+   Scroll konumunu 0–1 ilerlemeye çevirir; beş sahneyi, tema renklerini ve
+   çentikleri ona göre günceller. Scroll'a MÜDAHALE ETMEZ.
+
+   `html.animasyon` yoksa hiç çalışmaz; sahneler art arda okunan statik bir
+   liste olur ve hiçbir içerik kaybolmaz.
+   ══════════════════════════════════════════════════════════════ */
+(function () {
+  if (!document.documentElement.classList.contains('animasyon')) return;
+
+  const scrolly   = document.getElementById('scrolly');
+  const perdeler  = [...document.querySelectorAll('.perde')];
+  const fotolar   = [...document.querySelectorAll('.foto-kat')];
+  const katlar    = [...document.querySelectorAll('.kat')];
+  const centikler = [...document.querySelectorAll('.centik')];
+  const konfeti   = document.getElementById('konfeti');
+  const sahne     = document.querySelector('.sahne');
+  const bulutAlan = document.querySelector('.bulut-alan');
+  const bulut     = document.querySelector('.bulut');
+  const siluet    = document.querySelector('.siluet');
+  const centikler_= document.querySelector('.centikler');
+  /* Sahne 1 tam ekran ve ortalanmış olduğu için `.kat` listesi 2–5'i kapsar:
+     katlar[i-1] ↔ perdeler[i]. */
+  if (!scrolly || !perdeler.length || katlar.length !== perdeler.length - 1) return;
+
+  const kok = document.documentElement;
+  const N = perdeler.length;
+
+  /* Konfeti parçacıkları bir kez kurulur (brief: neon_confetti_glow).
+     Konumlar sabit formülle üretiliyor — her açılışta aynı, rastgele değil. */
+  /* ⚠️ Eskiden mor/mavi/yesil neon uclusuydu. Tek vurgu rengine gecince
+     konfeti tek basina gokkusagi kaliyordu; isaret rengi + kagit tonu. */
+  const renkler = ['#E2542C', '#EDE8DE', '#9AA1AC'];
+  if (konfeti) {
+    for (let i = 0; i < 26; i++) {
+      const s = document.createElement('i');
+      s.style.left = (4 + (i * 37) % 92) + '%';
+      s.style.top = (5 + (i * 17) % 28) + '%';
+      s.style.background = renkler[i % renkler.length];
+      s.style.boxShadow = 'none';   /* neon parilti kaldirildi */
+      s.style.animationDelay = ((i % 9) * 70) + 'ms';
+      konfeti.appendChild(s);
+    }
+  }
+
+  let beklemede = false, oncekiSahne = -1;
+
+  function ciz() {
+    beklemede = false;
+    const yol = scrolly.offsetHeight - window.innerHeight;
+    const p   = yol > 0 ? Math.min(1, Math.max(0, -scrolly.getBoundingClientRect().top / yol)) : 0;
+    const i   = Math.min(N - 1, Math.floor(p * N + 0.0001));
+    if (i === oncekiSahne) return;
+    oncekiSahne = i;
+
+    perdeler.forEach((el, j) => {
+      const acik = j === i;
+      /* gelen sahne, giden sahnenin sonmesi BITTIKTEN sonra belirir */
+      el.style.transitionDelay = acik ? '.26s' : '0s';
+      el.style.opacity       = acik ? '1' : '0';
+      el.style.transform     = acik ? 'none' : 'translateY(' + (j < i ? -16 : 16) + 'px)';
+      /* Görünmeyen perde tıklamaları yutmasın: son sahnedeki CTA'lar üstte. */
+      el.style.pointerEvents = acik ? 'auto' : 'none';
+    });
+    /* fotograf, perdeyle ayni gecikmeyi kullanir; ikisi birlikte doner */
+    fotolar.forEach((el, j) => {
+      const acik = j === i;
+      el.style.transitionDelay = acik ? '.26s' : '0s';
+      el.style.opacity = acik ? '1' : '0';
+    });
+    katlar.forEach((el, j) => {
+      const acik = (j + 1) === i;
+      el.style.transitionDelay = acik ? '.26s' : '0s';
+      el.style.opacity = acik ? '1' : '0';
+    });
+    /* Sahne 1: iki sütunlu düzen kapanır, silüet ve görev bulutu tam ekran olur. */
+    if (sahne) { sahne.classList.toggle('merkez', i === 0); bulutuKonumla(); }
+    centikler.forEach((c, j) => c.classList.toggle('aktif', j <= i));
+
+    /* tema: zemin ve vurgu sahnenin kendi verisinden; geçişi CSS yumuşatıyor */
+    kok.style.setProperty('--zemin', perdeler[i].dataset.zemin);
+    kok.style.setProperty('--vurgu', perdeler[i].dataset.vurgu);
+
+    /* konfeti yalnızca kırılma sahnesine girildiğinde patlar */
+    if (konfeti) konfeti.classList.toggle('patla', i === 2);
+  }
+
+  /* Görev halkasını metnin ALTINA yerleştirir. Sabit yüzde işe yaramıyordu:
+     metnin bittiği yer ekran oranına göre kayıyor. Burada gerçek kutular
+     ölçülüp halkaya kalan bant veriliyor; böylece hiçbir ekranda etiketler
+     başlığın üstüne binemiyor. Silüet de kalan banda göre küçülüyor. */
+  function bulutuKonumla() {
+    if (!bulutAlan || !sahne.classList.contains('merkez')) return;
+    const sk  = sahne.getBoundingClientRect();
+    const alt = centikler_ ? centikler_.getBoundingClientRect().bottom : sk.top + sk.height * 0.62;
+    const ust = Math.max(0, alt - sk.top + 14);
+    const yukseklik = Math.max(150, sk.height - ust);
+    bulutAlan.style.top = ust + 'px';
+    if (!siluet || !bulut) return;
+    siluet.style.height = Math.min(yukseklik * 0.62, 190) + 'px';
+
+    /* ⚠️ Halka figürle EŞ MERKEZLİ olmalı. Bandın ortasına konunca görevler
+       kafanın değil, kafanın ÜSTÜNDEKİ bir noktanın çevresinde dönüyordu.
+       Kafa merkezi silüetin viewBox'ından geliyor (cy=76 / 320 yükseklik). */
+    const sr = siluet.getBoundingClientRect();
+    const ar = bulutAlan.getBoundingClientRect();
+    const kafaY = sr.top - ar.top + sr.height * (76 / 320);
+    const yaricap = Math.max(96, Math.min(kafaY, ar.height - kafaY, 210));
+    bulut.style.top = (kafaY - yaricap) + 'px';
+    bulut.style.bottom = 'auto';
+    bulut.style.height = (yaricap * 2) + 'px';
+  }
+
+  function istek() { if (!beklemede) { beklemede = true; requestAnimationFrame(ciz); } }
+
+  ciz();
+  bulutuKonumla();
+  addEventListener('scroll', istek, { passive: true });
+  addEventListener('resize', function () { bulutuKonumla(); istek(); });
+  /* Yazı tipleri geç yüklenince metin bloğunun yüksekliği değişiyor. */
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(bulutuKonumla);
+  /* Sekme arka plana alınıp geri gelince rAF sırası takılabiliyor; bayrağı
+     temizleyip DOĞRUDAN çiz ki sahne güncel scroll konumuyla uyansın. */
+  addEventListener('visibilitychange', function () {
+    if (!document.hidden) { beklemede = false; oncekiSahne = -1; ciz(); }
+  });
+  addEventListener('pageshow', function () { beklemede = false; oncekiSahne = -1; ciz(); });
+})();
+</script>
+
+
+<script>
+/* ═══ Arayuz slider'i ══════════════════════════════════════════════
+   Ray'in kendisi native scroll-snap; buradaki kod sadece ok dugmeleri,
+   noktalar ve klavye ekliyor. Kaydirmayi JS YAPMIYOR - `scrollTo` ile
+   ray'e birakiyor, boylece dokunmatik surukleme ile ayni yolu kullaniyor.
+   ⚠️ Aktif slaydi `scrollLeft / genislik` ile hesaplama: gap yuzunden
+   kayiyor. Her slaydin gercek offset'i olculup en yakini seciliyor. */
+(function () {
+  var ray = document.getElementById('ray');
+  if (!ray) return;
+  var slaytlar = [].slice.call(ray.querySelectorAll('.slayt'));
+  var noktalar = [].slice.call(document.querySelectorAll('#noktalar .nokta'));
+  var onceki = document.querySelector('.ray-onceki');
+  var sonraki = document.querySelector('.ray-sonraki');
+  if (!slaytlar.length) return;
+
+  var aktif = 0;
+
+  function enYakin() {
+    var sol = ray.scrollLeft, en = 0, enFark = Infinity;
+    slaytlar.forEach(function (el, i) {
+      var fark = Math.abs(el.offsetLeft - ray.offsetLeft - sol);
+      if (fark < enFark) { enFark = fark; en = i; }
+    });
+    return en;
+  }
+
+  function tazele() {
+    aktif = enYakin();
+    noktalar.forEach(function (n, i) {
+      if (i === aktif) n.setAttribute('aria-current', 'true');
+      else n.removeAttribute('aria-current');
+    });
+    onceki.disabled = aktif === 0;
+    sonraki.disabled = aktif === slaytlar.length - 1;
+  }
+
+  function git(i) {
+    i = Math.max(0, Math.min(slaytlar.length - 1, i));
+    ray.scrollTo({ left: slaytlar[i].offsetLeft - ray.offsetLeft, behavior: 'smooth' });
+  }
+
+  onceki.addEventListener('click', function () { git(aktif - 1); });
+  sonraki.addEventListener('click', function () { git(aktif + 1); });
+  noktalar.forEach(function (n, i) { n.addEventListener('click', function () { git(i); }); });
+
+  ray.addEventListener('keydown', function (e) {
+    if (e.key === 'ArrowRight') { e.preventDefault(); git(aktif + 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); git(aktif - 1); }
+  });
+
+  var bekleyen;
+  ray.addEventListener('scroll', function () {
+    clearTimeout(bekleyen);
+    bekleyen = setTimeout(tazele, 90);
+  }, { passive: true });
+
+  window.addEventListener('resize', tazele);
+  tazele();
+})();
+</script>
+
+<script>
+/* Imza animasyonu ilk boyamadan sonra tetikleniyor. Sinif olmadan
+   keyframe'ler duruyor; boylece sayfa acilirken yariyoldan baslamiyor. */
+(function () {
+  var t = document.getElementById('toplan');
+  if (!t || !document.documentElement.classList.contains('animasyon')) return;
+  /* ⚠️ Burada once cift requestAnimationFrame vardi. Sekme arka plandayken
+     rAF DONUYOR: sinif hic eklenmiyor, animasyon hic baslamiyor ve blok'lar
+     opacity:0'da kilitli kaliyor. (Dosyanin baska bir yerinde ayni tuzak
+     zaten notlanmis.) Sinif dogrudan ekleniyor; ilk boyamayi beklemek icin
+     rAF yerine 0 ms'lik zamanlayici - o arka planda da tetikleniyor. */
+  setTimeout(function () { t.classList.add('ac'); }, 0);
+})();
+</script>
+</body>
+</html>
