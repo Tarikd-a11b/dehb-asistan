@@ -136,11 +136,23 @@ const code = wf.nodes.find(n => n.name === '<node adı>').parameters.jsCode;
   .map(b => b.toString(16).padStart(2,'0')).join('');
 ```
 
-⚠️ **2026-08-30 itibarıyla canlı n8n repodan GERİ.** `Normalize & Calculate`, `Code in JavaScript`
-ve `Respond to Webhook` node'ları repoda güncellendi (moodDelta, `dailyCaps`, taşma düzeltmesi,
-`tesliminOtesinde` sayacı) ama henüz Publish edilmedi. Publish edilene kadar modun görev sayısına
-etkisi ve taşma düzeltmesi **canlıda yok**; ön yüzdeki "plan sığmadı" uyarısı da hiç görünmez
-(sayaç gelmiyor, mesaj bilerek susuyor). Bu satırı Publish'ten sonra sil.
+**2026-08-30: canlı ile repo eşit.** `Normalize & Calculate`, `Code in JavaScript` ve
+`Respond to Webhook` "mod gorev sayisi + tasma duzeltmesi" adıyla yayınlandı; üçünün de
+SHA-256'sı repodaki `n8n-workflow-focusaid.json` ile birebir doğrulandı.
+
+💡 Yeni kodu tarayıcıya elle yapıştırma — GitHub raw CORS'a izin veriyor, doğrudan oradan çek:
+```js
+const j = await (await fetch('https://raw.githubusercontent.com/Tarikd-a11b/dehb-asistan/main/n8n-workflow-focusaid.json')).json();
+const kod = j.nodes.find(n => n.name === '<node adı>').parameters.jsCode;
+document.querySelector('.cm-content').cmTile.view.dispatch({changes:{from:0, to:view.state.doc.length, insert:kod}});
+```
+Böylece kaçış/yapıştırma hatası imkânsız hale geliyor. `Respond to Webhook` gibi **ifade**
+alanlarında saklanan değer `=` önekiyle başlar, editöre `=` **girmez** — `kod.slice(1)` yaz.
+
+⚠️ n8n kanvası klavye kısayollarına (`1`, zoom düğmeleri, wheel) her zaman yanıt vermiyor; ekranda
+olmayan bir node'u açmak için `.vue-flow__transformationpane`'in `transform`'unu geçici olarak
+kaydır. Vue Flow re-render'da geri sıçratıyor, bu yüzden dönüşümü 50 ms'de bir yeniden uygulayan
+bir `setInterval` kurup çift tıkla, sonra durdur.
 
 `Prepare Supabase Payload` takvim olaylarıyla görevleri **indeks eşleşmesiyle** birleştirir
 (`events.map((item,i) => tasks[i])`). `Code in JavaScript` çıktısını filtreleyen ya da yeniden
