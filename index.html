@@ -2579,16 +2579,24 @@ function parcalamaSonucMesaji(result) {
   const ilkAdim = result.firstStep || 'İlk mikro görevin hazır!';
   const kuyruk  = `<br><br>🎯 <b>İlk adım:</b><br>"<i>${ilkAdim}</i>"`;
   const yazilan = result.takvimeYazilan, toplam = result.toplam;
+  // Plan çalışma penceresine sığmadıysa bir kısmı teslim tarihinden SONRAYA
+  // düşer. Eskiden bu görevler son seansın başına üst üste yığılıyordu; artık
+  // sığmama görünür ve söyleniyor. Sessizce doğru sanılan bir plan, geç kalan
+  // bir plandan daha pahalı.
+  const asan = result.tesliminOtesinde;
+  const uyari = (typeof asan === 'number' && asan > 0)
+    ? `<br><br>⚠️ Plan çalışma saatlerine sığmadı: <b>${asan} görev teslim tarihinden sonraya</b> düştü. Teslimi uzat, çalışma pencereni genişlet ya da kapsamı küçült.`
+    : '';
   if (typeof yazilan !== 'number' || typeof toplam !== 'number' || toplam === 0) {
-    return `✅ <b>Sis dağıtıldı!</b> Görevlerin hazır.${kuyruk}`;
+    return `✅ <b>Sis dağıtıldı!</b> Görevlerin hazır.${uyari}${kuyruk}`;
   }
   if (yazilan === 0) {
-    return `⚠️ <b>Görevlerin kaydedildi ama takvime yazılamadı.</b> Google Takvim bağlantını kontrol edip tekrar dene.${kuyruk}`;
+    return `⚠️ <b>Görevlerin kaydedildi ama takvime yazılamadı.</b> Google Takvim bağlantını kontrol edip tekrar dene.${uyari}${kuyruk}`;
   }
   if (yazilan < toplam) {
-    return `⚠️ <b>Sis dağıtıldı</b> ama ${toplam} görevin yalnızca ${yazilan} tanesi takvime yazılabildi.${kuyruk}`;
+    return `⚠️ <b>Sis dağıtıldı</b> ama ${toplam} görevin yalnızca ${yazilan} tanesi takvime yazılabildi.${uyari}${kuyruk}`;
   }
-  return `✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.${kuyruk}`;
+  return `✅ <b>Sis dağıtıldı!</b> Takvimin düzenlendi.${uyari}${kuyruk}`;
 }
 
 function addMessageToChat(text, type = 'ai') {
