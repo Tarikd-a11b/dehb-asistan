@@ -321,12 +321,15 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
      template'lerin DIŞINDA, body seviyesinde her zaman DOM'da duruyor. -->
 <div id="confirm-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-[60] flex items-center justify-center p-4">
   <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-8 text-center animate-slide-in">
-    <div class="text-5xl mb-4">⚠️</div>
+    <div id="confirm-modal-icon" class="text-5xl mb-4">⚠️</div>
     <h3 id="confirm-modal-title" class="text-xl font-extrabold text-slate-900 mb-2">Emin misin?</h3>
     <p id="confirm-modal-msg" class="text-slate-500 text-sm mb-8"></p>
     <div class="flex gap-3">
       <button id="confirm-modal-hayir" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition-all">Hayır</button>
-      <button id="confirm-modal-evet" class="flex-1 bg-red-600 text-white py-3 rounded-xl font-bold hover:bg-red-700 transition-all">Evet, Sil</button>
+      <!-- Etiket, ikon ve renk showConfirm'den geliyor: bu modal yalnizca silme
+           icin degil genel onay icin de kullaniliyor. Sabit "Evet, Sil" yazisi
+           takvim onayinda kullaniciya silme yapiyormus gibi gorunuyordu. -->
+      <button id="confirm-modal-evet" class="flex-1 text-white py-3 rounded-xl font-bold transition-all"></button>
     </div>
   </div>
 </div>
@@ -1356,7 +1359,13 @@ function escapeHtml(s) {
 
 // Genel Evet/Hayır onay modalı — native confirm() tarayıcı akışını kilitlediği
 // ve göze çarpmadığı için tercih edilmedi.
-function showConfirm(title, message, onConfirm) {
+/**
+ * @param {Object} [secenekler]
+ *   onayEtiketi — onay dugmesinin yazisi (varsayilan 'Evet')
+ *   yikici      — true ise kirmizi + uyari ikonu, false ise indigo + soru ikonu.
+ *                 Geri donusu olmayan islemi normal onaydan RENKLE ayirir.
+ */
+function showConfirm(title, message, onConfirm, secenekler) {
   const modal = document.getElementById('confirm-modal');
   // Onay modalı DOM'da yoksa YIKICI işlemi sessizce çalıştırma — güvenli
   // taraf, iptal etmek. (Daha önce bu modal bir sayfa şablonunun içine hapsolup
@@ -1364,8 +1373,17 @@ function showConfirm(title, message, onConfirm) {
   if (!modal) { console.error('[Onay] confirm-modal DOM\'da yok, işlem iptal edildi:', title); showToast('❌ Onay penceresi açılamadı, işlem iptal edildi.', 'error'); return; }
   document.getElementById('confirm-modal-title').textContent = title;
   document.getElementById('confirm-modal-msg').textContent = message;
-  modal.classList.remove('hidden');
+  const o = secenekler || {};
+  const yikici = o.yikici !== false;   // varsayilan: yikici (ilk cagrilar silme idi)
   const evetBtn = document.getElementById('confirm-modal-evet');
+  evetBtn.textContent = o.onayEtiketi || 'Evet';
+  // Iki dal da HER seferinde acikca kuruluyor: modal tek ve surekli DOM'da,
+  // onceki cagrinin renk siniflari uzerinde birikmemeli.
+  evetBtn.classList.remove('bg-red-600','hover:bg-red-700','bg-indigo-600','hover:bg-indigo-700');
+  evetBtn.classList.add(...(yikici ? ['bg-red-600','hover:bg-red-700'] : ['bg-indigo-600','hover:bg-indigo-700']));
+  const ikon = document.getElementById('confirm-modal-icon');
+  if (ikon) ikon.textContent = yikici ? '⚠️' : '❓';
+  modal.classList.remove('hidden');
   const hayirBtn = document.getElementById('confirm-modal-hayir');
   const cleanup = () => { modal.classList.add('hidden'); evetBtn.onclick = null; hayirBtn.onclick = null; };
   evetBtn.onclick = () => { cleanup(); onConfirm(); };
@@ -1481,7 +1499,8 @@ function projeSilTiklandi(btn) {
   showConfirm(
     'Projeyi sil?',
     `"${proje}" projesindeki tüm görevler (geçmiş dahil, tüm günler) kalıcı olarak silinecek. Bu işlem geri alınamaz.`,
-    () => projeSilUygula(proje)
+    () => projeSilUygula(proje),
+    { onayEtiketi: 'Evet, Sil', yikici: true }
   );
 }
 
@@ -2517,7 +2536,8 @@ async function sendTaskToN8N() {
     showConfirm(
       'Takvim bağlı değil',
       'Görevlerin FocusAid\'e kaydedilecek ama Google Takvim\'e yazılamayacak. Devam edilsin mi?',
-      () => parcalamayiBaslat()
+      () => parcalamayiBaslat(),
+      { onayEtiketi: 'Evet, devam et', yikici: false }
     );
     return;
   }
