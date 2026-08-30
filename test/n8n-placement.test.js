@@ -108,7 +108,12 @@ test('zor mod bugunku gorev sayisini artirmaz, genelde azaltir', () => {
 
 // ── repo <-> node kopya esitligi (CLAUDE.md kurali) ──
 test('dailyCaps govdesi scheduling-logic.js ile birebir ayni', () => {
-  const kes = (s) => (s.match(/function dailyCaps\([\s\S]*?\n\}\n/) || [''])[0];
+  // ⚠️ Satir sonlari NORMALIZE ediliyor: repo dosyasi Windows'ta CRLF ile
+  // checkout ediliyor (git autocrlf), node'un jsCode alani ise JSON icinde
+  // her zaman LF. Karsilastirma CR'lere takilirsa test taze bir clone'da
+  // yanlislikla duser — bir kez dustu.
+  const norm = (s) => s.replace(/\r\n/g, '\n');
+  const kes = (s) => (norm(s).match(/function dailyCaps\([\s\S]*?\n\}\n/) || [''])[0];
   const repo = kes(fs.readFileSync(path.join(__dirname, '..', 'scheduling-logic.js'), 'utf8'));
   const node = kes(nodeCode('Code in JavaScript'));
   assert.ok(repo.length > 0 && node.length > 0, 'dailyCaps iki yerde de bulunmali');
