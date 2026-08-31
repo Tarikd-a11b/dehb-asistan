@@ -80,6 +80,10 @@ function saatBaslangic(task) {
   return new Date(task.start_time).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
 }
 
+function _escape(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function taskRowHTML(task, todayISO) {
   const etiket = dayLabel(task.day, todayISO);
   // DEHB dostu no-guilt etiketleme: Suçluluk hissettirmeyen nötr rozet
@@ -89,10 +93,10 @@ function taskRowHTML(task, todayISO) {
   const kenar = YUK_KENAR[task.cognitive_load] || 'border-indigo-400 shadow-indigo-500/5';
   return `
     <div class="group flex items-center gap-3 py-3 px-4 bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border-l-[6px] ${kenar} border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-md hover:translate-x-1.5 transition-all duration-200 ${task.completed ? 'opacity-40 grayscale-[40%]' : ''}">
-      <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${task.id}')"
+      <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${_escape(task.id)}')"
              class="w-5 h-5 rounded-lg accent-indigo-600 cursor-pointer shrink-0 transition-transform active:scale-125">
       <span class="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 shrink-0 w-12 tabular-nums">${saatBaslangic(task)}</span>
-      <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate flex-1 ${task.completed ? 'line-through' : ''}">${task.name || 'Görev'}</p>
+      <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate flex-1 ${task.completed ? 'line-through' : ''}">${_escape(task.name || 'Görev')}</p>
       ${rozet}
     </div>`;
 }
@@ -361,8 +365,8 @@ function currentCardHTML(task) {
               <span>🥊</span> İnat Modu (3 Dk)
             </button>
           </div>
-          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">${task.name || 'Görev'}</h3>
-          ${task.summary ? `<p class="text-slate-500 dark:text-slate-400 mt-2 text-sm leading-relaxed">${task.summary}</p>` : ''}
+          <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">${_escape(task.name || 'Görev')}</h3>
+          ${task.summary ? `<p class="text-slate-500 dark:text-slate-400 mt-2 text-sm leading-relaxed">${_escape(task.summary)}</p>` : ''}
           <div class="inline-flex items-center gap-2 mt-4 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-700/50 text-indigo-600 dark:text-indigo-300 text-xs font-bold font-mono">
             <span>🕐</span> ${saatAralik(task)}
           </div>

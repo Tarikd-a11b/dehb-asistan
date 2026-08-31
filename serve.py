@@ -220,11 +220,14 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self._ham_yanit(durum, ctype, ham)
 
     def do_GET(self):
-        # Kök adres tanitim sayfasini acar. Uygulamanin kendisi /index.html'de
-        # duruyor; oraya giren oturumsuz kullanici zaten auth.html'e yonlenir,
-        # oturumlusu uygulamayi gorur. Tanitim sayfasindaki "Google ile basla"
-        # da auth.html'e gider ve auth.html oturum varsa uygulamaya atar --
-        # yani bu satir giris akisinin hicbir adimina dokunmuyor.
+        # 1. Güvenlik: Hassas dosyalara (kod, ortam değişkenleri, veritabanı şemaları) erişimi engelle
+        clean_path = self.path.split('?')[0].split('#')[0]
+        blocked_exts = ('.py', '.sql', '.env', '.md', '.bak')
+        if clean_path.startswith('/.') or clean_path.endswith(blocked_exts) or (clean_path.endswith('.json') and clean_path != '/manifest.json'):
+            self.send_error(403, "Forbidden")
+            return
+
+        # Kök adres tanitim sayfasini acar.
         if self.path == '/':
             self.path = '/landing.html'
 
@@ -244,6 +247,10 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('Cache-Control', 'no-store, no-cache, must-revalidate, max-age=0')
         self.send_header('Pragma', 'no-cache')
         self.send_header('Expires', '0')
+        # Güvenlik Başlıkları (Security Headers)
+        self.send_header('X-Content-Type-Options', 'nosniff')
+        self.send_header('X-Frame-Options', 'SAMEORIGIN')
+        self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
         super().end_headers()
 
 
