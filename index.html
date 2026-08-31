@@ -1092,7 +1092,7 @@ sb.auth.onAuthStateChange(async (event, session) => {
   console.log('[Auth]', event, session ? 'oturum VAR' : 'oturum YOK',
               '| url:', window.location.href);
   if (event === 'SIGNED_OUT') {
-    window.location.href = 'auth.html';
+    window.location.href = 'landing.html';
     return;
   }
   if (event === 'INITIAL_SESSION') {
@@ -1136,8 +1136,12 @@ function showUserInfo(user) {
 
 async function signOut() {
   localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
-  await sb.auth.signOut();
-  window.location.href = 'auth.html';
+  try {
+    await sb.auth.signOut();
+  } catch (e) {
+    console.error('Sign out error:', e);
+  }
+  window.location.href = 'landing.html';
 }
 
 // ── PROJELERİM SAYFASI ────────────────────────────────────────────────────────
