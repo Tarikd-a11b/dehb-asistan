@@ -113,3 +113,44 @@ test('computeSnooze free mola stilinde sadece odak suresi kadar erteler', () => 
   const r = L.computeSnooze(task, { focusPeriod: 30, breakStyle: 'free', workHours: { start: '09:00', end: '18:00' } });
   assert.strictEqual(new Date(r.start_time).getMinutes(), 30);  // 10:00 + 30 dk
 });
+
+// ── computeVictories ──
+test('computeVictories tamamlanan gorevlerin toplam dakikasini ve yuk dagilimini hesaplar', () => {
+  const sample = [
+    { completed: true, start_time: '2026-07-26T09:00:00Z', end_time: '2026-07-26T09:25:00Z', cognitive_load: 'high' },
+    { completed: true, start_time: '2026-07-26T10:00:00Z', end_time: '2026-07-26T10:30:00Z', cognitive_load: 'medium' },
+    { completed: false, start_time: '2026-07-26T11:00:00Z', end_time: '2026-07-26T11:25:00Z', cognitive_load: 'low' },
+    { completed: true, start_time: '2026-07-26T14:00:00Z', end_time: '2026-07-26T14:20:00Z', cognitive_load: 'hafif' }
+  ];
+  const v = L.computeVictories(sample);
+  assert.strictEqual(v.count, 3);
+  assert.strictEqual(v.totalMinutes, 25 + 30 + 20); // 75 dk
+  assert.strictEqual(v.loads.high, 1);
+  assert.strictEqual(v.loads.medium, 1);
+  assert.strictEqual(v.loads.low, 1);
+});
+
+test('computeVictories bos veya hic tamamlanmamis listede sifir doner', () => {
+  const v = L.computeVictories([]);
+  assert.strictEqual(v.count, 0);
+  assert.strictEqual(v.totalMinutes, 0);
+});
+
+// ── rebalanceSchedule ──
+test('rebalanceSchedule kalan gorevleri araliksiz sirayla yeniden dizer', () => {
+  const pending = [
+    { id: 1, name: 'G1', start_time: '2026-07-26T09:00:00Z', end_time: '2026-07-26T09:25:00Z' },
+    { id: 2, name: 'G2', start_time: '2026-07-26T09:30:00Z', end_time: '2026-07-26T09:55:00Z' }
+  ];
+  const now = new Date('2026-07-26T14:12:00+03:00'); // 14:12 -> 14:15'e yuvarlanir
+  const rebalanced = L.rebalanceSchedule(pending, now, { focusPeriod: 25, breakStyle: 'pomodoro' }); // 25 dk odak + 5 dk mola
+
+  assert.strictEqual(rebalanced.length, 2);
+  const t1Start = new Date(rebalanced[0].start_time);
+  const t1End = new Date(rebalanced[0].end_time);
+  assert.strictEqual(t1Start.getMinutes(), 15);
+  assert.strictEqual((t1End - t1Start) / 60000, 25);
+
+  const t2Start = new Date(rebalanced[1].start_time);
+  assert.strictEqual(t2Start.getMinutes(), 45); // 14:15 + 25 odak + 5 mola = 14:45
+});

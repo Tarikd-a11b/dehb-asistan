@@ -857,7 +857,30 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
         <button class="nokta" type="button" aria-label="3. ekran: Takvim"></button>
         <button class="nokta" type="button" aria-label="4. ekran: Projelerim"></button>
         <button class="nokta" type="button" aria-label="5. ekran: Nöro-Profil"></button>
-        <button class="nokta" type="button" aria-label="6. ekran: DEHB Bilgi Merkezi"></button>
+  <!-- ═══ BİLİMSEL HARİTA / İNFOGRAFİK ═══ -->
+  <section class="sec" id="infografik" style="background:#0b0f15; border-top:1px solid var(--cizgi);">
+    <div class="wrap">
+      <div class="sec-head" style="max-width:680px; margin-bottom:36px;">
+        <span class="ust" style="color:var(--vurgu);">Bilimsel Temel & Rehber</span>
+        <h2 style="font-size:clamp(28px,3.8vw,44px); margin-top:10px;">Tek Bakışta DEHB Haritası</h2>
+        <p style="color:var(--metin-2); font-size:16.5px; margin-top:12px;">
+          Nörogelişimsel temeller, 7 temel belirti, 3 sunum tipi ve bilişsel yükü hafifleten günlük stratejiler — tamamı tek bir görsel rehberde.
+        </p>
+      </div>
+
+      <div class="cerceve" style="aspect-ratio:auto; max-height:650px; background:#070a0e; border:1px solid rgba(255,255,255,0.18); border-radius:4px; padding:12px; cursor:zoom-in; position:relative; overflow:hidden;" onclick="dehbLandingGorselAc('dehb-gorsel/infografik.jpg')">
+        <img src="dehb-gorsel/infografik.jpg" alt="DEHB Rehberi İnfografiği" style="width:100%; height:auto; max-height:620px; object-fit:contain; display:block; margin:0 auto; border-radius:2px;" loading="lazy">
+        <div style="position:absolute; bottom:20px; right:24px; background:rgba(14,18,25,0.85); backdrop-filter:blur(8px); border:1px solid rgba(255,255,255,0.2); color:#fff; font-size:12.5px; font-weight:600; padding:6px 14px; border-radius:2px; pointer-events:none;">
+          🔍 Büyütmek için tıkla
+        </div>
+      </div>
+
+      <div style="margin-top:28px; display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; padding:20px 24px; background:var(--yuzey); border:1px solid var(--cizgi); border-radius:var(--kose);">
+        <div>
+          <h4 style="font-size:16px; font-weight:700; color:var(--metin); margin:0;">Uygulama içinde interaktif slayt modunda keşfet</h4>
+          <p style="font-size:13.5px; color:var(--metin-2); margin:4px 0 0;">FocusAid içinde her bölümü sindirilebilir slaytlar ve pratik önerilerle inceleyebilirsiniz.</p>
+        </div>
+        <a class="btn" href="index.html" style="white-space:nowrap;">Rehberi Uygulamada Aç →</a>
       </div>
     </div>
   </section>
@@ -1078,6 +1101,23 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
      rAF yerine 0 ms'lik zamanlayici - o arka planda da tetikleniyor. */
   setTimeout(function () { t.classList.add('ac'); }, 0);
 })();
+
+function dehbLandingGorselAc(src) {
+  document.getElementById('landing-lightbox')?.remove();
+  var box = document.createElement('div');
+  box.id = 'landing-lightbox';
+  box.style.cssText = 'position:fixed;inset:0;background:rgba(10,14,20,0.92);backdrop-filter:blur(10px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
+  box.innerHTML = '<img src="' + src + '" alt="Tam ekran infografik" style="max-width:96vw;max-height:94vh;object-fit:contain;border-radius:4px;box-shadow:0 30px 80px rgba(0,0,0,0.9);cursor:default;">';
+  
+  var kapat = function () { box.remove(); document.removeEventListener('keydown', esc); };
+  var esc = function (e) { if (e.key === 'Escape') kapat(); };
+  
+  box.addEventListener('click', function (e) {
+    if (e.target.tagName !== 'IMG') kapat();
+  });
+  document.addEventListener('keydown', esc);
+  document.body.appendChild(box);
+}
 </script>
 </body>
 </html>

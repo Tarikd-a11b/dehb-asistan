@@ -107,11 +107,88 @@ function computeSnooze(task, profile) {
   };
 }
 
+/**
+ * Tamamlanan görevlerden başarı ve odak istatistikleri üretir.
+ * Imposter sendromuna karşı zaferleri görünür kılar.
+ */
+function computeVictories(tasks) {
+  const completed = (tasks || []).filter(t => t.completed);
+  let totalMinutes = 0;
+  const loadCounts = { high: 0, medium: 0, low: 0 };
+
+  for (const t of completed) {
+    const start = new Date(t.start_time).getTime();
+    const end = new Date(t.end_time).getTime();
+    if (!isNaN(start) && !isNaN(end) && end > start) {
+      totalMinutes += Math.round((end - start) / 60000);
+    }
+    const load = String(t.cognitive_load || 'medium').toLowerCase();
+    if (load === 'high' || load === 'ağır') loadCounts.high++;
+    else if (load === 'low' || load === 'hafif') loadCounts.low++;
+    else loadCounts.medium++;
+  }
+
+  return {
+    count: completed.length,
+    totalMinutes,
+    loads: loadCounts
+  };
+}
+
+/**
+ * Günün kalan tamamlanmamış görevlerini şu andan başlatıp sıralı olarak yeniden dengeler.
+ */
+function rebalanceSchedule(pendingTasks, now, profile) {
+  const list = [...(pendingTasks || [])].filter(t => !t.completed);
+  if (list.length === 0) return [];
+
+  const p = profile || {};
+  const focusPeriod = p.focusPeriod ?? DEFAULT_FOCUS_PERIOD;
+  const breakMinutes = BREAK_MAP[p.breakStyle] ?? DEFAULT_BREAK_MINUTES;
+
+  // Başlangıç zamanı: now'dan itibaren en yakın 5 dakikaya yukarı yuvarla
+  const startDate = new Date(now);
+  const remainder = startDate.getMinutes() % 5;
+  if (remainder !== 0) {
+    startDate.setMinutes(startDate.getMinutes() + (5 - remainder), 0, 0);
+  } else {
+    startDate.setSeconds(0, 0);
+  }
+
+  let cursor = startDate.getTime();
+  const rebalanced = [];
+
+  for (const task of list) {
+    const origStart = new Date(task.start_time).getTime();
+    const origEnd = new Date(task.end_time).getTime();
+    const durationMs = (!isNaN(origStart) && !isNaN(origEnd) && origEnd > origStart)
+      ? (origEnd - origStart)
+      : focusPeriod * 60000;
+
+    const taskStart = new Date(cursor);
+    const taskEnd = new Date(cursor + durationMs);
+
+    rebalanced.push({
+      id: task.id,
+      name: task.name,
+      start_time: taskStart.toISOString(),
+      end_time: taskEnd.toISOString(),
+      day: localDayISO(taskStart),
+      calendar_event_id: task.calendar_event_id
+    });
+
+    cursor += durationMs + (breakMinutes * 60000);
+  }
+
+  return rebalanced;
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     BREAK_MAP, CARRY_OVER_DAYS,
     localDayISO, addDaysISO, splitTasks, pickCurrentTask,
-    computeProgress, dayLabel, computeSnooze
+    computeProgress, dayLabel, computeSnooze,
+    computeVictories, rebalanceSchedule
   };
 }
