@@ -326,11 +326,20 @@ function updateTimerUI() {
 
 function currentCardHTML(task) {
   if (!task) {
-    return `<div class="glass-card p-10 bg-white dark:bg-slate-800/90 text-center shadow-xl border-t-4 border-emerald-400 animate-slide-in">
-              <div class="text-5xl mb-3 animate-bounce">🏆</div>
-              <p class="font-extrabold text-2xl text-slate-800 dark:text-slate-100">Bugünlük bu kadar, harikasın!</p>
-              <p class="text-slate-500 dark:text-slate-400 text-sm mt-2">Tüm odak seanslarını tamamladın. Kendine güzel bir mola ve ödül ısmarla! ☕✨</p>
-            </div>`;
+    return `
+      <div class="glass-card p-8 md:p-10 bg-gradient-to-br from-amber-500/10 via-indigo-500/10 to-purple-500/10 dark:from-slate-800/95 dark:to-slate-900/95 text-center shadow-2xl border-2 border-amber-400/50 rounded-3xl animate-slide-in space-y-4">
+        <div class="text-6xl mb-2 animate-bounce">🏆 🎡 🏆</div>
+        <span class="px-3 py-1 bg-amber-400/20 text-amber-600 dark:text-amber-300 text-xs font-black rounded-full uppercase tracking-widest">
+          Tüm Hedefler Bitti!
+        </span>
+        <h3 class="font-black text-2xl md:text-3xl text-slate-900 dark:text-white tracking-tight">Bugünlük bu kadar, harikasın!</h3>
+        <p class="text-slate-600 dark:text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
+          Tüm odak seanslarını başarıyla tamamladın. Vicdan azabı yok, ertelenmiş yığınlar yok! Şimdi hak ettiğin ödülü almak için çarkı çevir.
+        </p>
+        <button onclick="openDopaminCarki()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-base md:text-lg shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto animate-pulse">
+          <span>🎡</span> Dopamin Şans Çarkını Çevir!
+        </button>
+      </div>`;
   }
   const yuk = YUK_ETIKET[task.cognitive_load] || '⚡ Odak';
   const rozetStil = YUK_ROZET[task.cognitive_load] || 'background:rgba(99,102,241,0.12);color:#4f46e5;border-color:rgba(99,102,241,0.25)';
@@ -588,8 +597,14 @@ async function toggleTask(id) {
     const { done, total } = computeProgress(TodayState.today, TodayState.carried);
     const isAllDone = done === total && total > 0;
     fireDopamineConfetti(isAllDone);
-    if (isAllDone) playGrandVictoryChime();
-    else playSuccessChime();
+    if (isAllDone) {
+      playGrandVictoryChime();
+      if (typeof openDopaminCarki === 'function') {
+        setTimeout(openDopaminCarki, 700);
+      }
+    } else {
+      playSuccessChime();
+    }
   } else {
     TodayState.sessionCompleted.delete(String(task.id));
   }
