@@ -1070,26 +1070,24 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
 (function () {
   var t = document.getElementById('toplan');
   if (!t || !document.documentElement.classList.contains('animasyon')) return;
-  /* ⚠️ Burada once cift requestAnimationFrame vardi. Sekme arka plandayken
-     rAF DONUYOR: sinif hic eklenmiyor, animasyon hic baslamiyor ve blok'lar
-     opacity:0'da kilitli kaliyor. (Dosyanin baska bir yerinde ayni tuzak
-     zaten notlanmis.) Sinif dogrudan ekleniyor; ilk boyamayi beklemek icin
-     rAF yerine 0 ms'lik zamanlayici - o arka planda da tetikleniyor. */
   setTimeout(function () { t.classList.add('ac'); }, 0);
 })();
+</script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script>
 // Supabase doğrudan entegrasyonu
-const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+const SUPABASE_URL = (typeof FOCUSAID_CONFIG !== 'undefined' ? FOCUSAID_CONFIG.SUPABASE_URL : '');
+const SUPABASE_ANON_KEY = (typeof FOCUSAID_CONFIG !== 'undefined' ? FOCUSAID_CONFIG.SUPABASE_ANON_KEY : '');
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // Eğer kullanıcı zaten giriş yapmışsa doğrudan uygulamaya yönlendir
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
+sb.auth.onAuthStateChange((event, session) => {
+  if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session) {
     document.querySelectorAll('.btn-giris').forEach(btn => {
       btn.textContent = 'Uygulamaya Git →';
-      btn.onclick = () => window.location.href = 'index.html';
+      btn.onclick = () => { window.location.href = 'index.html'; };
     });
   }
 });
@@ -1098,14 +1096,13 @@ async function girisYap() {
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
     options: {
-      redirectTo: window.location.origin + '/index.html',
-      scopes: 'https://www.googleapis.com/auth/calendar.events',
+      redirectTo: window.location.origin + '/index_2.html',
       queryParams: { access_type: 'offline', prompt: 'select_account' }
     }
   });
   if (error) {
     console.error('Giriş hatası:', error);
-    alert('Giriş başlatılamadı: ' + error.message);
+    alert('Giriş hatası: ' + error.message);
   }
 }
 </script>
