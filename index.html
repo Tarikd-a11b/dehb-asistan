@@ -1052,6 +1052,11 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
      JAVASCRIPT
      ════════════════════════════════════════ -->
 <script>
+// ── GÜVENLİK (XSS Sanitizer) ──────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
 // Supabase Dashboard → Project Settings → API'den al
 const SUPABASE_URL      = FOCUSAID_CONFIG.SUPABASE_URL;
@@ -1076,26 +1081,23 @@ const AUTH_YONLENDIRME_BAYRAGI = 'focusaid_auth_yonlendirme';
 function gosterOturumTeshisi() {
   const u = new URL(window.location.href);
   const sbAnahtarlari = Object.keys(localStorage).filter(k => k.startsWith('sb-'));
-  // En sık sebep: dosyaya çift tıklayıp file:// ile açmak. localStorage origin
-  // başına tutulduğundan localhost:3000'de kurulan oturum file:// altında
-  // görünmez ve Google file:// adresine geri dönemez.
   const yanlisProtokol = window.location.protocol !== 'http:' && window.location.protocol !== 'https:';
   document.body.innerHTML =
     '<div style="padding:32px;font-family:ui-monospace,monospace;font-size:13px;line-height:1.7;color:#1e293b">' +
     '<h2 style="font-size:20px;font-weight:800;margin-bottom:16px">Oturum kurulamadı — teşhis</h2>' +
     (yanlisProtokol
       ? '<p style="background:#fef3c7;border-left:4px solid #f59e0b;padding:12px;margin-bottom:16px">' +
-        '<b>Sebep bu:</b> sayfa <code>' + window.location.protocol + '</code> ile açılmış. ' +
+        '<b>Sebep bu:</b> sayfa <code>' + escapeHtml(window.location.protocol) + '</code> ile açılmış. ' +
         'Sunucuyu başlatıp (<code>python serve.py</code>) ' +
         '<a href="http://localhost:3000/auth.html" style="color:#4f46e5;font-weight:700">http://localhost:3000/auth.html</a> ' +
         'adresinden açın.</p>'
       : '') +
-    '<b>URL:</b> ' + window.location.href + '<br>' +
+    '<b>URL:</b> ' + escapeHtml(window.location.href) + '<br>' +
     '<b>code parametresi:</b> ' + (u.searchParams.get('code') ? 'VAR' : 'YOK') + '<br>' +
-    '<b>error:</b> ' + (u.searchParams.get('error') || u.searchParams.get('error_description') || 'yok') + '<br>' +
-    '<b>hash:</b> ' + (window.location.hash || 'yok') + '<br>' +
-    '<b>localStorage sb- anahtarları:</b> ' + (sbAnahtarlari.length ? sbAnahtarlari.join(', ') : 'HİÇ YOK') + '<br><br>' +
-    '<a href="auth.html" style="color:#4f46e5;font-weight:700">← Giriş sayfasına dön</a></div>';
+    '<b>error:</b> ' + escapeHtml(u.searchParams.get('error') || u.searchParams.get('error_description') || 'yok') + '<br>' +
+    '<b>hash:</b> ' + escapeHtml(window.location.hash || 'yok') + '<br>' +
+    '<b>localStorage sb- anahtarları:</b> ' + escapeHtml(sbAnahtarlari.length ? sbAnahtarlari.join(', ') : 'HİÇ YOK') + '<br><br>' +
+    '<a href="landing.html" style="color:#4f46e5;font-weight:700">← Giriş sayfasına dön</a></div>';
 }
 
 async function _onSession(session) {
@@ -2128,14 +2130,14 @@ async function openDayView(dateStr) {
         <div class="p-5 bg-slate-50 rounded-2xl border border-slate-200 hover:border-indigo-300 hover:shadow-md transition-all">
           <div class="flex justify-between items-start gap-4 mb-3">
             <div class="flex-1">
-              <h4 class="font-bold text-slate-900 text-lg">${task.name || task.title || 'Görev'}</h4>
-              <p class="text-sm text-slate-600 mt-1">${task.summary || ''}</p>
+              <h4 class="font-bold text-slate-900 text-lg">${escapeHtml(task.name || task.title || 'Görev')}</h4>
+              <p class="text-sm text-slate-600 mt-1">${escapeHtml(task.summary || '')}</p>
             </div>
             <span class="text-xs font-bold px-3 py-1.5 rounded-full whitespace-nowrap ${statusColor}">${statusText}</span>
           </div>
           <div class="flex gap-4 items-center text-sm">
-            <span class="font-mono font-semibold text-indigo-600">🕐 ${start} - ${end}</span>
-            ${task.cognitive_load ? `<span class="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold">Yoğunluk: ${task.cognitive_load}</span>` : ''}
+            <span class="font-mono font-semibold text-indigo-600">🕐 ${escapeHtml(start)} - ${escapeHtml(end)}</span>
+            ${task.cognitive_load ? `<span class="bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full text-xs font-bold">Yoğunluk: ${escapeHtml(task.cognitive_load)}</span>` : ''}
           </div>
         </div>
       `;
@@ -2146,7 +2148,7 @@ async function openDayView(dateStr) {
     console.error('Supabase client:', window.supabaseClient ? 'OK' : 'NULL');
     const errMsg = err?.message || err?.details || err?.error_description || err?.hint || (typeof err === 'string' ? err : 'Bilinmeyen hata');
     console.error('Error message:', errMsg);
-    tasksList.innerHTML = `<div class="text-center text-red-500 py-8">❌ ${errMsg}</div>`;
+    tasksList.innerHTML = `<div class="text-center text-red-500 py-8">❌ ${escapeHtml(errMsg)}</div>`;
   }
 }
 
@@ -2433,7 +2435,7 @@ async function parcalamayiBaslat() {
   const task   = taskEl?.value?.trim();
   const dl     = dlEl?.value;
   const fmt = new Date(dl).toLocaleString('tr-TR', { day:'2-digit', month:'long', year:'numeric', hour:'2-digit', minute:'2-digit' });
-  addMessageToChat(`🚀 <b>Proje:</b> ${task}<br>📅 <b>Hedef:</b> ${fmt}`, 'user');
+  addMessageToChat(`🚀 <b>Proje:</b> ${escapeHtml(task)}<br>📅 <b>Hedef:</b> ${escapeHtml(fmt)}`, 'user');
   setLoading(true);
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
   // Bayat modu burada da ele: kullanici profil ekranina hic ugramadan Parcala'ya
@@ -2458,7 +2460,7 @@ async function parcalamayiBaslat() {
 // n8n'in eski sürümü bu sayaçları göndermezse takvim hakkında İDDİA
 // ETMEYEN bir mesaja düşülür — yanlış bilgi vermektense az bilgi ver.
 function parcalamaSonucMesaji(result) {
-  const ilkAdim = result.firstStep || 'İlk mikro görevin hazır!';
+  const ilkAdim = escapeHtml(result.firstStep || 'İlk mikro görevin hazır!');
   const kuyruk  = `<br><br>🎯 <b>İlk adım:</b><br>"<i>${ilkAdim}</i>"`;
   const yazilan = result.takvimeYazilan, toplam = result.toplam;
   // Plan çalışma penceresine sığmadıysa bir kısmı teslim tarihinden SONRAYA
