@@ -1,115 +1,66 @@
 // ════════════════════════════════════════
-// DEHB Bilgilendirme Platformu — Saf Görsel & İnteraktif Slayt Deneyimi
+// DEHB Bilgilendirme Platform — JavaScript Logic (Claude Original)
 // ════════════════════════════════════════
 
-const DEHB_SLIDES = ['harita', 'belirtiler', 'tipler', 'yasam', 'kaynaklar'];
-let _currentDehbSlideIndex = 0;
-
 /**
- * Belirtilen slayda gider (index veya isim ile).
+ * showDehbSection(sectionName)
+ *
+ * Verilen bölümü gösterir, diğerlerini gizler.
+ * Mini nav-bar butonunun aktif durumunu günceller.
+ * localStorage'a kaydeder.
+ *
+ * @param {string} sectionName - 'nedir', 'belirtiler', 'stratejiler', 'yasam', 'kaynaklar'
  */
-function showDehbSlide(target) {
-  let index = typeof target === 'number' ? target : DEHB_SLIDES.indexOf(target);
-  if (index < 0 || index >= DEHB_SLIDES.length) index = 0;
-
-  _currentDehbSlideIndex = index;
-  const bolumAdi = DEHB_SLIDES[index];
-
-  // Tüm slaytları gizle, aktif olanı göster
-  DEHB_SLIDES.forEach((id, i) => {
-    const el = document.getElementById(`dehb-slide-${id}`);
-    if (el) {
-      if (i === index) {
-        el.classList.remove('hidden');
-        el.classList.remove('animate-slide-in');
-        void el.offsetWidth;
-        el.classList.add('animate-slide-in');
-      } else {
-        el.classList.add('hidden');
-      }
-    }
+function showDehbSection(sectionName) {
+  // 1. Tüm bölüm containerlarını gizle
+  document.querySelectorAll('.dehb-content').forEach(el => {
+    el.classList.add('hidden');
   });
 
-  // Navigasyon butonlarını ve sekmeleri güncelle
-  document.querySelectorAll('.dehb-tab-btn').forEach(btn => {
-    const isActive = btn.dataset.slide === bolumAdi;
-    btn.classList.toggle('active-slide-tab', isActive);
-    btn.classList.toggle('bg-indigo-600', isActive);
-    btn.classList.toggle('text-white', isActive);
-    btn.classList.toggle('shadow-md', isActive);
-  });
-
-  // Dot göstergelerini güncelle
-  document.querySelectorAll('.dehb-dot-indicator').forEach((dot, idx) => {
-    const isActive = idx === index;
-    dot.classList.toggle('bg-indigo-600', isActive);
-    dot.classList.toggle('w-8', isActive);
-    dot.classList.toggle('bg-slate-300', !isActive);
-    dot.classList.toggle('dark:bg-slate-600', !isActive);
-    dot.classList.toggle('w-2.5', !isActive);
-  });
-
-  // İlerleme çubuğunu güncelle
-  const bar = document.getElementById('dehb-progress-bar');
-  const text = document.getElementById('dehb-slide-text');
-  const pct = Math.round(((index + 1) / DEHB_SLIDES.length) * 100);
-  if (bar) bar.style.width = `${pct}%`;
-  if (text) text.textContent = `Slayt ${index + 1} / ${DEHB_SLIDES.length}`;
-
-  // Önceki / Sonraki butonları
-  const prevBtn = document.getElementById('dehb-prev-btn');
-  const nextBtn = document.getElementById('dehb-next-btn');
-  if (prevBtn) prevBtn.disabled = (index === 0);
-  if (nextBtn) {
-    nextBtn.innerHTML = (index === DEHB_SLIDES.length - 1)
-      ? '<span>🎉</span> Başa Dön'
-      : 'Sonraki <span>▶</span>';
-  }
-
-  // Sayfanın en üstüne yumuşakça kaydır
-  const root = document.getElementById('dehb-slider-root');
-  if (root) root.scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-  try { localStorage.setItem('dehb_active_slide', bolumAdi); } catch (e) {}
-}
-
-function nextDehbSlide() {
-  if (_currentDehbSlideIndex >= DEHB_SLIDES.length - 1) {
-    showDehbSlide(0);
+  // 2. İstenilen bölümü göster
+  const activeSection = document.getElementById(`dehb-section-${sectionName}`);
+  if (activeSection) {
+    activeSection.classList.remove('hidden');
   } else {
-    showDehbSlide(_currentDehbSlideIndex + 1);
+    console.warn(`DEHB section not found: dehb-section-${sectionName}`);
+    const defaultSection = document.getElementById('dehb-section-nedir');
+    if (defaultSection) {
+      defaultSection.classList.remove('hidden');
+    }
   }
-}
 
-function prevDehbSlide() {
-  if (_currentDehbSlideIndex > 0) {
-    showDehbSlide(_currentDehbSlideIndex - 1);
+  // 3. Mini nav-bar butonlarının aktif durumunu güncelle
+  document.querySelectorAll('.dehb-nav-item').forEach(btn => {
+    btn.classList.remove('active-link', 'bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'dark:bg-indigo-950/60', 'dark:text-indigo-300');
+  });
+
+  const activeBtn = document.getElementById(`dehb-nav-${sectionName}`);
+  if (activeBtn) {
+    activeBtn.classList.add('active-link', 'bg-indigo-50', 'text-indigo-600', 'shadow-sm', 'dark:bg-indigo-950/60', 'dark:text-indigo-300');
   }
-}
 
-// Geriye dönük uyumluluk için showDehbSection
-function showDehbSection(bolum) {
-  showDehbSlide(bolum);
+  // 4. localStorage'a kaydet (sayfa kapanıp açıldığında son bölümü hatırla)
+  try {
+    localStorage.setItem('dehb_active_section', sectionName);
+  } catch (e) {
+    console.warn('localStorage kaydedilemedi:', e);
+  }
+
+  // 5. Sayfanın tepesine scroll yap
+  document.querySelector('[id^="dehb-section-"]')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 /**
- * Klavye ok tuşları ile slayt kontrolü
+ * restoreDehbSection()
+ * Sayfa yüklendiğinde localStorage'dan son açılan bölümü geri yükle.
+ * Default: 'nedir'
  */
-function _handleDehbKeydown(e) {
-  const root = document.getElementById('dehb-slider-root');
-  if (!root) return; // dehb sayfasında değiliz
-  if (e.key === 'ArrowRight' || e.key === 'PageDown') {
-    nextDehbSlide();
-  } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
-    prevDehbSlide();
-  }
+function restoreDehbSection() {
+  const saved = localStorage.getItem('dehb_active_section') || 'nedir';
+  showDehbSection(saved);
 }
-document.removeEventListener('keydown', _handleDehbKeydown);
-document.addEventListener('keydown', _handleDehbKeydown);
 
-/**
- * Görsel büyütme (lightbox)
- */
+// Görsel büyütme (lightbox)
 function dehbGorselAc(src) {
   document.getElementById('dehb-lightbox')?.remove();
   const kutu = document.createElement('div');
@@ -131,13 +82,7 @@ function dehbGorselAc(src) {
   document.body.appendChild(kutu);
 }
 
-function restoreDehbSection() {
-  let kayitli = 'harita';
-  try { kayitli = localStorage.getItem('dehb_active_slide') || 'harita'; } catch (e) {}
-  showDehbSlide(kayitli);
-}
-
-// loadPage() kancası
+// loadPage() kancası — dehb-info yüklendiğinde restoreDehbSection() çağır
 if (typeof origLoadPage === 'undefined' && typeof loadPage === 'function') {
   const origLoadPage = window.loadPage;
   window.loadPage = function (pageName) {
@@ -146,3 +91,4 @@ if (typeof origLoadPage === 'undefined' && typeof loadPage === 'function') {
     return sonuc;
   };
 }
+
