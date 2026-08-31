@@ -1086,6 +1086,49 @@ async function _onSession(session) {
   }
 }
 
+let isGuestMode = false;
+
+function checkGuestMode() {
+  try { return localStorage.getItem('focusaid_guest_mode') === '1'; } catch (e) { return false; }
+}
+
+async function startGuestSession() {
+  isGuestMode = true;
+  _authReady = true;
+  currentUser = {
+    id: 'guest_user',
+    email: 'misafir@focusaid.local',
+    user_metadata: { full_name: 'Misafir Kullanıcı (Demo)' }
+  };
+  showUserInfo(currentUser);
+  await loadProfileFromSupabase();
+  if (typeof initToday === 'function' && document.getElementById('today-list') && !TodayState.loaded) {
+    await initToday();
+  }
+  showGuestBanner();
+}
+
+function showGuestBanner() {
+  const main = document.getElementById('main-content');
+  if (!main || document.getElementById('guest-mode-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'guest-mode-banner';
+  banner.className = 'mb-6 p-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-indigo-500/10 to-purple-500/10 border border-amber-300/40 dark:border-amber-700/40 flex flex-wrap items-center justify-between gap-3 shadow-sm';
+  banner.innerHTML = `
+    <div class="flex items-center gap-3">
+      <span class="text-2xl">👤</span>
+      <div>
+        <h4 class="text-xs font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide">Misafir / Demo Modundasınız</h4>
+        <p class="text-[11px] text-slate-600 dark:text-slate-400">Tüm özellikleri serbestçe deneyebilirsiniz. Verilerinizi buluta kaydetmek için istediğiniz an giriş yapabilirsiniz.</p>
+      </div>
+    </div>
+    <a href="landing.html" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-md shadow-indigo-500/20 transition-all active:scale-95">
+      Giriş Yap / Kaydet ➔
+    </a>
+  `;
+  main.prepend(banner);
+}
+
 sb.auth.onAuthStateChange(async (event, session) => {
   // Teşhis: giriş döngüsünde hangi olayın geldiğini ve oturumun kurulup
   // kurulmadığını görmek için. URL'de code/error var mı da yazdırılır.
@@ -1098,16 +1141,17 @@ sb.auth.onAuthStateChange(async (event, session) => {
   if (event === 'INITIAL_SESSION') {
     _authReady = true;
     if (!session) {
-      // Oturum yok → giriş sayfasına. Bayrak, auth.html ↔ index.html arasında
-      // sonsuz yönlendirme döngüsü oluşursa ikinci turda durup sebebi ekrana
-      // yazmak için; döngüye giren bir sayfayı tarayıcıda incelemek zordur.
+      if (checkGuestMode()) {
+        await startGuestSession();
+        return;
+      }
       if (sessionStorage.getItem(AUTH_YONLENDIRME_BAYRAGI)) {
         sessionStorage.removeItem(AUTH_YONLENDIRME_BAYRAGI);
         gosterOturumTeshisi();
         return;
       }
       sessionStorage.setItem(AUTH_YONLENDIRME_BAYRAGI, '1');
-      window.location.href = 'auth.html';
+      window.location.href = 'landing.html';
       return;
     }
     sessionStorage.removeItem(AUTH_YONLENDIRME_BAYRAGI);
@@ -1129,13 +1173,14 @@ function showUserInfo(user) {
   const emailEl  = document.getElementById('user-email');
   if (!infoEl) return;
   infoEl.classList.remove('hidden');
-  if (avatarEl) avatarEl.src = meta.avatar_url || '';
+  if (avatarEl) avatarEl.src = meta.avatar_url || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%236366f1"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>';
   if (nameEl)   nameEl.textContent  = (meta.full_name || user.email || '').split(' ')[0];
   if (emailEl)  emailEl.textContent = user.email || '';
 }
 
 async function signOut() {
   localStorage.removeItem(GOOGLE_TOKEN_STORAGE_KEY);
+  try { localStorage.removeItem('focusaid_guest_mode'); } catch (e) {}
   try {
     await sb.auth.signOut();
   } catch (e) {

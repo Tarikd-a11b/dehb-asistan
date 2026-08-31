@@ -571,7 +571,8 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
 <header class="top">
   <div class="wrap top-in">
     <a class="mark" href="/">Focus<span>Aid</span></a>
-    <nav>
+    <nav style="display:flex;align-items:center;gap:10px;">
+      <button class="btn btn-ikincil" onclick="misafirGirisi()" style="cursor:pointer;font-size:14px;padding:8px 16px;">👤 Misafir Girişi</button>
       <button class="btn btn-giris" onclick="girisYap()" style="cursor:pointer;border:none;">Google ile Başla</button>
     </nav>
   </div>
@@ -669,10 +670,12 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
             <h2>Günün tüm hedefleri bitti. Kalan zaman tamamen senin.</h2>
             <p class="aciklama">Vicdan azabı yok, ertelenmiş yığınlar yok. Kendi zihnine uygun
                tasarlanmış üretkenliğin tadını çıkar.</p>
-            <div class="cta-kut">
-              <button class="btn btn-lg btn-giris" onclick="girisYap()" style="cursor:pointer;border:none;">FocusAid'i Ücretsiz Başlat</button>
+            <div class="cta-kut" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center;">
+              <button class="btn btn-lg btn-giris" onclick="girisYap()" style="cursor:pointer;border:none;">Google ile Başla</button>
+              <button class="btn btn-lg btn-ikincil" onclick="misafirGirisi()" style="cursor:pointer;">👤 Misafir Olarak Keşfet</button>
+              <button class="btn btn-lg btn-ikincil" onclick="girisYapApple()" style="cursor:pointer;font-size:15px;" title="Apple ID ile Giriş"> Apple</button>
             </div>
-            <p class="cta-alt">Kredi kartı gerekmez • 60 saniyede hazır</p>
+            <p class="cta-alt">Hesap açmadan deneyebilir veya tek tıkla başlayabilirsiniz</p>
           </div>
           </div>
 
@@ -1092,6 +1095,13 @@ sb.auth.onAuthStateChange((event, session) => {
   }
 });
 
+function misafirGirisi() {
+  try {
+    localStorage.setItem('focusaid_guest_mode', '1');
+  } catch (e) {}
+  window.location.href = 'index.html';
+}
+
 async function girisYap() {
   const { data, error } = await sb.auth.signInWithOAuth({
     provider: 'google',
@@ -1103,6 +1113,19 @@ async function girisYap() {
   if (error) {
     console.error('Giriş hatası:', error);
     alert('Giriş hatası: ' + error.message);
+  }
+}
+
+async function girisYapApple() {
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: 'apple',
+    options: {
+      redirectTo: window.location.origin + '/index_2.html'
+    }
+  });
+  if (error) {
+    console.error('Apple giriş hatası:', error);
+    alert('Apple Girişi henüz yapılandırılmamış: ' + error.message);
   }
 }
 </script>
