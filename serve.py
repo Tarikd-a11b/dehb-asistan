@@ -248,8 +248,9 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    socketserver.TCPServer.allow_reuse_address = True
-    with socketserver.TCPServer(('', PORT), NoCacheHandler) as httpd:
-        print(f'FocusAid gelistirme sunucusu (onbelleksiz): http://localhost:{PORT}/auth.html')
+    socketserver.ThreadingTCPServer.allow_reuse_address = True
+    with socketserver.ThreadingTCPServer(('', PORT), NoCacheHandler) as httpd:
+        httpd.daemon_threads = True
+        print(f'FocusAid gelistirme sunucusu (onbelleksiz, cok is parcali): http://localhost:{PORT}/auth.html')
         print('Durdurmak icin Ctrl+C')
         httpd.serve_forever()
