@@ -1,8 +1,8 @@
 // ════════════════════════════════════════
-// DEHB Bilgilendirme Platformu — İnteraktif Slayt / Carousel Deneyimi
+// DEHB Bilgilendirme Platformu — İnteraktif Slayt & Görsel Hikaye Deneyimi
 // ════════════════════════════════════════
 
-const DEHB_SLIDES = ['nedir', 'belirtiler', 'stratejiler', 'yasam', 'kaynaklar'];
+const DEHB_SLIDES = ['harita', 'nedir', 'belirtiler', 'tipler', 'stratejiler', 'kaynaklar'];
 let _currentDehbSlideIndex = 0;
 
 /**
@@ -132,8 +132,8 @@ function dehbGorselAc(src) {
 }
 
 function restoreDehbSection() {
-  let kayitli = 'nedir';
-  try { kayitli = localStorage.getItem('dehb_active_slide') || 'nedir'; } catch (e) {}
+  let kayitli = 'harita';
+  try { kayitli = localStorage.getItem('dehb_active_slide') || 'harita'; } catch (e) {}
   showDehbSlide(kayitli);
 }
 
