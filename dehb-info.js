@@ -1,8 +1,8 @@
 // ════════════════════════════════════════
-// DEHB Bilgilendirme Platformu — İnteraktif Slayt & Görsel Hikaye Deneyimi
+// DEHB Bilgilendirme Platformu — Saf Görsel & İnteraktif Slayt Deneyimi
 // ════════════════════════════════════════
 
-const DEHB_SLIDES = ['harita', 'nedir', 'belirtiler', 'tipler', 'stratejiler', 'kaynaklar'];
+const DEHB_SLIDES = ['harita', 'belirtiler', 'tipler', 'yasam', 'kaynaklar'];
 let _currentDehbSlideIndex = 0;
 
 /**

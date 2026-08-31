@@ -719,20 +719,20 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       <div>
         <div class="flex items-center gap-2.5 mb-2">
           <span class="text-3xl">📖</span>
-          <span class="adhd-badge text-xs">Görsel & İnteraktif DEHB Rehberi</span>
+          <span class="adhd-badge text-xs">Görsel DEHB Rehberi</span>
         </div>
-        <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">Nöro-Rehberlik Slaytları</h2>
-        <p class="text-purple-200 mt-1 text-sm md:text-base">Düz metin yok — her slaytta odaklanmış infografik ve görsel hikaye.</p>
+        <h2 class="text-3xl md:text-4xl font-extrabold text-white tracking-tight">DEHB Bilgi Merkezi</h2>
+        <p class="text-purple-200 mt-1 text-sm md:text-base">Görselleri inceleyin — büyütmek ve detayları okumak için üzerine tıklayın.</p>
       </div>
 
       <!-- Slayt İlerleme Rozeti -->
       <div class="bg-white/10 backdrop-blur-md px-5 py-3.5 rounded-2xl border border-white/20 shrink-0 min-w-[190px]">
         <div class="flex items-center justify-between text-xs font-bold text-white mb-2">
-          <span id="dehb-slide-text">Slayt 1 / 6</span>
+          <span id="dehb-slide-text">Slayt 1 / 5</span>
           <span class="text-purple-200 text-[10px] uppercase tracking-wider">İlerleme</span>
         </div>
         <div class="w-full bg-white/20 h-2.5 rounded-full overflow-hidden">
-          <div id="dehb-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-indigo-300 rounded-full transition-all duration-300" style="width:16.6%"></div>
+          <div id="dehb-progress-bar" class="h-full bg-gradient-to-r from-emerald-400 to-indigo-300 rounded-full transition-all duration-300" style="width:20%"></div>
         </div>
       </div>
     </div>
@@ -743,241 +743,110 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
   <!-- Slayt Hızlı Atlama Sekmeleri -->
   <div class="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
     <button onclick="showDehbSlide(0)" data-slide="harita" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>🗺️</span> 1. Genel Harita
+      <span>🗺️</span> 1. Büyük Harita
     </button>
-    <button onclick="showDehbSlide(1)" data-slide="nedir" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>🧠</span> 2. DEHB & Dopamin
+    <button onclick="showDehbSlide(1)" data-slide="belirtiler" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
+      <span>⚡</span> 2. 7 Belirti & Beyin
     </button>
-    <button onclick="showDehbSlide(2)" data-slide="belirtiler" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>⚡</span> 3. 7 Temel Belirti
+    <button onclick="showDehbSlide(2)" data-slide="tipler" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
+      <span>🎯</span> 3. 3 Sunum Tipi
     </button>
-    <button onclick="showDehbSlide(3)" data-slide="tipler" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>🎯</span> 4. 3 Sunum Tipi
+    <button onclick="showDehbSlide(3)" data-slide="yasam" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
+      <span>🌙</span> 4. Yaşam & Stratejiler
     </button>
-    <button onclick="showDehbSlide(4)" data-slide="stratejiler" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>🌙</span> 5. Yaşam & Stratejiler
-    </button>
-    <button onclick="showDehbSlide(5)" data-slide="kaynaklar" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
-      <span>🔗</span> 6. Kaynaklar & Uyarı
+    <button onclick="showDehbSlide(4)" data-slide="kaynaklar" class="dehb-tab-btn px-4 py-2.5 rounded-2xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700/60 hover:border-indigo-400 transition-all flex items-center gap-2 shrink-0 active:scale-95 shadow-sm">
+      <span>🔗</span> 5. Kaynaklar & Uyarı
     </button>
   </div>
 
   <!-- Slayt Görünümü (Slides Viewport) -->
   <div id="dehb-slider-viewport" class="min-h-[480px]">
 
-    <!-- SLAYT 1: Genel Harita -->
-    <div id="dehb-slide-harita" class="dehb-slide-content space-y-6">
-      <figure class="glass-card p-5 bg-white/90 dark:bg-slate-800/90 shadow-md">
-        <figcaption class="flex items-baseline justify-between gap-3 mb-3">
-          <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>🗺️</span> Tek Bakışta DEHB Büyük İnfografik Haritası</h3>
+    <!-- SLAYT 1: Büyük Harita -->
+    <div id="dehb-slide-harita" class="dehb-slide-content space-y-4">
+      <figure class="glass-card p-5 md:p-6 bg-white/95 dark:bg-slate-800/95 shadow-md">
+        <figcaption class="flex items-baseline justify-between gap-3 mb-4">
+          <h3 class="text-base md:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>🗺️</span> 1. Tek Bakışta DEHB Büyük İnfografik Haritası</h3>
           <span class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer">Büyütmek için tıkla 🔍</span>
         </figcaption>
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 group cursor-pointer" onclick="dehbGorselAc('dehb-gorsel/infografik.jpg')">
-          <img src="dehb-gorsel/infografik.jpg" alt="DEHB Büyük İnfografik Haritası" class="dehb-gorsel dehb-gorsel-tam w-full max-h-[420px] object-contain bg-slate-900 group-hover:scale-[1.02] transition-transform duration-300" loading="lazy">
-          <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
-            🔍 Tam Ekran Büyüt
-          </div>
-        </div>
-      </figure>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-l-4 border-indigo-500">
-          <h4 class="font-extrabold text-sm text-slate-900 dark:text-white mb-1">🧠 Biyolojik Mekanizma</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Dopamin ve noradrenalin regülasyon farkı, prefrontal korteks aktivitesi.</p>
-        </div>
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-l-4 border-amber-500">
-          <h4 class="font-extrabold text-sm text-slate-900 dark:text-white mb-1">⚡ 7 Temel Belirti</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Zaman miyopisi, DMN takılması, tepki frenleme ve reddedilme hassasiyeti.</p>
-        </div>
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-l-4 border-emerald-500">
-          <h4 class="font-extrabold text-sm text-slate-900 dark:text-white mb-1">💡 Dışsal Destek Sistemi</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Görsel zamanlayıcılar, ritmik çalışma ve sirkadiyen yaşam düzeni.</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- SLAYT 2: DEHB Nedir & Dopamin -->
-    <div id="dehb-slide-nedir" class="dehb-slide-content hidden space-y-6">
-      
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <!-- Görsel Kart -->
-        <figure class="glass-card p-4 bg-white/90 dark:bg-slate-800/90 shadow-md">
-          <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 cursor-pointer group" onclick="dehbGorselAc('dehb-gorsel/nedir.jpg')">
-            <img src="dehb-gorsel/nedir.jpg" alt="DEHB Biyolojisi ve Tanımı" class="w-full h-auto max-h-[320px] object-contain bg-slate-900 group-hover:scale-105 transition-transform" loading="lazy">
-            <div class="absolute bottom-2.5 right-2.5 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-white text-[11px] font-bold">
-              🔍 Büyüt
-            </div>
-          </div>
-          <figcaption class="text-center text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">Prefrontal korteks ve ödül kimyası</figcaption>
-        </figure>
-
-        <!-- Açıklama Kartı -->
-        <div class="glass-card p-6 md:p-8 bg-white/95 dark:bg-slate-800/90 shadow-md space-y-4">
-          <h3 class="text-2xl font-black text-slate-900 dark:text-white">🧠 DEHB Nedir?</h3>
-          <p class="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
-            DEHB (Dikkat Eksikliği Hiperaktivite Bozukluğu), beynin <strong>dopamin ve noradrenalin</strong> adlı kimyasallarında dengesizlik yaratan nörogelişimsel bir tablodur.
-          </p>
-          <div class="space-y-2 text-xs md:text-sm text-slate-700 dark:text-slate-300 pt-1">
-            <p class="flex items-start gap-2"><span class="text-emerald-500 font-black">✓</span> <span><strong>Genetik Kalıtım %76:</strong> Oldukça güçlü biyolojik köken.</span></p>
-            <p class="flex items-start gap-2"><span class="text-emerald-500 font-black">✓</span> <span><strong>Ödül Eksikliği Sendromu:</strong> Sıradan görevlerde dopamin açlığı yaşanır.</span></p>
-            <p class="flex items-start gap-2"><span class="text-emerald-500 font-black">✓</span> <span><strong>İrade Değil Kimya:</strong> "İsteyince yapıyorsun" yanılgısının aksine kimyasal uyarılma gerekir.</span></p>
-          </div>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="glass-card p-5 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-800/30">
-          <h4 class="font-extrabold text-indigo-900 dark:text-indigo-200 text-sm mb-2">📊 Yaygınlık Oranları</h4>
-          <div class="grid grid-cols-2 gap-3 text-center text-xs">
-            <div class="bg-white/80 dark:bg-slate-800/80 p-3 rounded-xl">Çocuklarda <span class="block text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">%3 - %7</span></div>
-            <div class="bg-white/80 dark:bg-slate-800/80 p-3 rounded-xl">Yetişkinlerde <span class="block text-base font-black text-indigo-600 dark:text-indigo-400 mt-0.5">%2 - %3</span></div>
-          </div>
-        </div>
-        <div class="glass-card p-5 bg-purple-50/60 dark:bg-purple-950/30 border border-purple-100 dark:border-purple-800/30">
-          <h4 class="font-extrabold text-purple-900 dark:text-purple-200 text-sm mb-1">💭 Sosyal Yargı Sorunu</h4>
-          <p class="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-            DEHB sıklıkla "tembellik" veya "disiplin sorunu" sanılır. Oysa beyin yapısından kaynaklanan, doğru stratejilerle yönetilebilen tıbbi bir durumdur.
-          </p>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SLAYT 3: 7 Temel Belirti -->
-    <div id="dehb-slide-belirtiler" class="dehb-slide-content hidden space-y-6">
-
-      <figure class="glass-card p-5 bg-white/90 dark:bg-slate-800/90 shadow-md">
-        <figcaption class="flex items-baseline justify-between gap-3 mb-3">
-          <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>⚡</span> 7 Temel DEHB Belirtisi Şeması</h3>
-          <span class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer">Büyütmek için tıkla 🔍</span>
-        </figcaption>
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 cursor-pointer group" onclick="dehbGorselAc('dehb-gorsel/belirtiler.jpg')">
-          <img src="dehb-gorsel/belirtiler.jpg" alt="7 temel DEHB belirtisi" class="dehb-gorsel dehb-gorsel-tam w-full max-h-[380px] object-contain bg-slate-900 group-hover:scale-105 transition-transform" loading="lazy">
-          <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-xl text-white text-xs font-bold pointer-events-none">
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 group cursor-pointer bg-white p-2" onclick="dehbGorselAc('dehb-gorsel/infografik.jpg')">
+          <img src="dehb-gorsel/infografik.jpg" alt="DEHB Büyük İnfografik Haritası" class="w-full max-h-[520px] object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300" loading="eager">
+          <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Tam Ekran İncele
           </div>
         </div>
       </figure>
-
-      <!-- 7 Belirti Özet Kartları -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div class="glass-card p-4 bg-white dark:bg-slate-800 border-l-4 border-purple-500 shadow-sm space-y-1">
-          <h4 class="font-bold text-slate-900 dark:text-white text-xs md:text-sm">1️⃣ Zamansal Miyopi (Zaman Körlüğü)</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Sadece "şimdi" algısı. Aciliyet baskısı olmadan harekete geçmek çok zordur.</p>
-        </div>
-
-        <div class="glass-card p-4 bg-white dark:bg-slate-800 border-l-4 border-blue-500 shadow-sm space-y-1">
-          <h4 class="font-bold text-slate-900 dark:text-white text-xs md:text-sm">2️⃣ Zihin Gezintisi (DMN Takılması)</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Görev anında beynin "hayal modu" kapanamaz; okunan cümle anında uçar.</p>
-        </div>
-
-        <div class="glass-card p-4 bg-white dark:bg-slate-800 border-l-4 border-rose-500 shadow-sm space-y-1">
-          <h4 class="font-bold text-slate-900 dark:text-white text-xs md:text-sm">3️⃣ Tepki İnhibisyonu (Frenleme Güçlüğü)</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Dürtüler filtrelenmeden eyleme dökülür; söz kesme veya ani dikkat dağılması.</p>
-        </div>
-
-        <div class="glass-card p-4 bg-white dark:bg-slate-800 border-l-4 border-pink-500 shadow-sm space-y-1">
-          <h4 class="font-bold text-slate-900 dark:text-white text-xs md:text-sm">4️⃣ Emosyonel Duyarlılık (RSD)</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Reddedilme veya eleştiriye karşı aşırı yoğun duygusal sarsılma hissi.</p>
-        </div>
-      </div>
-
     </div>
 
-    <!-- SLAYT 4: 3 Sunum Tipi -->
-    <div id="dehb-slide-tipler" class="dehb-slide-content hidden space-y-6">
-
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
-        <!-- Görsel Kart -->
-        <figure class="glass-card p-4 bg-white/90 dark:bg-slate-800/90 shadow-md">
-          <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 cursor-pointer group" onclick="dehbGorselAc('dehb-gorsel/tipler.jpg')">
-            <img src="dehb-gorsel/tipler.jpg" alt="DEHB 3 sunum tipi" class="w-full h-auto max-h-[340px] object-contain bg-slate-900 group-hover:scale-105 transition-transform" loading="lazy">
-            <div class="absolute bottom-2.5 right-2.5 bg-slate-900/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-white text-[11px] font-bold">
-              🔍 Büyüt
-            </div>
-          </div>
-          <figcaption class="text-center text-xs text-slate-500 dark:text-slate-400 mt-2 font-medium">3 Klinik DEHB Tipi ve Oranları</figcaption>
-        </figure>
-
-        <!-- Açıklama Kartı -->
-        <div class="glass-card p-6 md:p-8 bg-white/95 dark:bg-slate-800/90 shadow-md space-y-4">
-          <h3 class="text-2xl font-black text-slate-900 dark:text-white">🎯 3 Farklı DEHB Tipi</h3>
-          <div class="space-y-3 text-xs md:text-sm text-slate-700 dark:text-slate-300">
-            <div class="p-3 rounded-xl bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/40">
-              <strong class="text-orange-600 dark:text-orange-400 block">1. Hiperaktif / Dürtüsel (%20-30):</strong>
-              Sürekli hareket, acelecilik ve yüksek enerji. Dışarıdan en kolay fark edilen tür.
-            </div>
-            <div class="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/40">
-              <strong class="text-rose-600 dark:text-rose-400 block">2. Dikkat Eksikliği Baskın (%30-40):</strong>
-              "Sessiz DEHB" — zihin sisi, hayallere dalma. Özellikle kız çocuklarında geç teşhis edilir.
-            </div>
-            <div class="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/40">
-              <strong class="text-emerald-600 dark:text-emerald-400 block">3. Kombine (Bileşik) (%40-50):</strong>
-              En yaygın profil. Hem dikkat dalgalanması hem dürtüsellik bir arada görülür.
-            </div>
-          </div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- SLAYT 5: Yaşam & Stratejiler -->
-    <div id="dehb-slide-stratejiler" class="dehb-slide-content hidden space-y-6">
-
-      <figure class="glass-card p-5 bg-white/90 dark:bg-slate-800/90 shadow-md">
-        <figcaption class="flex items-baseline justify-between gap-3 mb-3">
-          <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>🌙</span> 4 Boyutlu Günlük Yaşam & Başa Çıkma Şeması</h3>
+    <!-- SLAYT 2: 7 Temel Belirti -->
+    <div id="dehb-slide-belirtiler" class="dehb-slide-content hidden space-y-4">
+      <figure class="glass-card p-5 md:p-6 bg-white/95 dark:bg-slate-800/95 shadow-md">
+        <figcaption class="flex items-baseline justify-between gap-3 mb-4">
+          <h3 class="text-base md:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>⚡</span> 2. 7 Temel DEHB Belirtisi & Beyin Nöro-Mimarisi</h3>
           <span class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer">Büyütmek için tıkla 🔍</span>
         </figcaption>
-        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 cursor-pointer group" onclick="dehbGorselAc('dehb-gorsel/yasam.jpg')">
-          <img src="dehb-gorsel/yasam.jpg" alt="Günlük yaşam ve başa çıkma şeması" class="dehb-gorsel dehb-gorsel-tam w-full max-h-[300px] object-contain bg-slate-900 group-hover:scale-105 transition-transform" loading="lazy">
-          <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1 rounded-xl text-white text-xs font-bold pointer-events-none">
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 group cursor-pointer bg-white p-2" onclick="dehbGorselAc('dehb-gorsel/belirtiler.jpg')">
+          <img src="dehb-gorsel/belirtiler.jpg" alt="7 Temel DEHB Belirtisi" class="w-full max-h-[520px] object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300" loading="lazy">
+          <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Tam Ekran İncele
           </div>
         </div>
       </figure>
-
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-t-4 border-indigo-500 space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">🎯 Görsel & İşitsel Araçlar</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Eriyen donut timer'lar, Brown Noise / Lo-Fi ritimleri ve renk kodlu bilişsel yük etiketleri.</p>
-        </div>
-
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-t-4 border-amber-500 space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">🛏️ Uyku & Dopamin</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Geciken sirkadiyen ritim için sabit yatış saati, sabah protein ağırlıklı kahvaltı.</p>
-        </div>
-
-        <div class="glass-card p-5 bg-white dark:bg-slate-800 shadow-sm border-t-4 border-emerald-500 space-y-2">
-          <h4 class="font-bold text-slate-900 dark:text-white text-sm">💪 Kinestetik Hareket</h4>
-          <p class="text-xs text-slate-600 dark:text-slate-300">Ayakta çalışma, seans öncesi 2 dakikalık mikro esneme ve fidget araçları.</p>
-        </div>
-      </div>
-
     </div>
 
-    <!-- SLAYT 6: Kaynaklar & Yasal Uyarı -->
+    <!-- SLAYT 3: 3 Sunum Tipi -->
+    <div id="dehb-slide-tipler" class="dehb-slide-content hidden space-y-4">
+      <figure class="glass-card p-5 md:p-6 bg-white/95 dark:bg-slate-800/95 shadow-md">
+        <figcaption class="flex items-baseline justify-between gap-3 mb-4">
+          <h3 class="text-base md:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>🎯</span> 3. 3 DEHB Sunum Tipi ve Görülme Oranları</h3>
+          <span class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer">Büyütmek için tıkla 🔍</span>
+        </figcaption>
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 group cursor-pointer bg-white p-2" onclick="dehbGorselAc('dehb-gorsel/tipler.jpg')">
+          <img src="dehb-gorsel/tipler.jpg" alt="DEHB 3 Sunum Tipi" class="w-full max-h-[520px] object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300" loading="lazy">
+          <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
+            🔍 Tam Ekran İncele
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <!-- SLAYT 4: Yaşam & Stratejiler -->
+    <div id="dehb-slide-yasam" class="dehb-slide-content hidden space-y-4">
+      <figure class="glass-card p-5 md:p-6 bg-white/95 dark:bg-slate-800/95 shadow-md">
+        <figcaption class="flex items-baseline justify-between gap-3 mb-4">
+          <h3 class="text-base md:text-lg font-extrabold text-slate-900 dark:text-white flex items-center gap-2"><span>🌙</span> 4. Günlük Yaşamda 4 Boyutlu Başa Çıkma Stratejileri</h3>
+          <span class="text-xs text-indigo-600 dark:text-indigo-400 font-semibold cursor-pointer">Büyütmek için tıkla 🔍</span>
+        </figcaption>
+        <div class="relative overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700/60 group cursor-pointer bg-white p-2" onclick="dehbGorselAc('dehb-gorsel/yasam.jpg')">
+          <img src="dehb-gorsel/yasam.jpg" alt="Günlük Yaşam ve Başa Çıkma Şeması" class="w-full max-h-[440px] object-contain mx-auto group-hover:scale-[1.01] transition-transform duration-300" loading="lazy">
+          <div class="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md px-3.5 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
+            🔍 Tam Ekran İncele
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <!-- SLAYT 5: Kaynaklar & Yasal Uyarı -->
     <div id="dehb-slide-kaynaklar" class="dehb-slide-content hidden space-y-6">
-
       <div class="glass-card p-6 md:p-8 bg-white/95 dark:bg-slate-800/90 shadow-md space-y-6">
         <h3 class="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2"><span>🔗</span> Bilimsel Kaynaklar & İleri Okuma</h3>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 space-y-2">
+          <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 space-y-2">
             <p class="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400">🌍 Uluslararası Kuruluşlar</p>
-            <ul class="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-              <li>• <a href="https://chadd.org" target="_blank" class="text-indigo-600 hover:underline font-semibold">CHADD.org</a> — Küresel DEHB derneği</li>
-              <li>• <a href="https://www.adhd.org" target="_blank" class="text-indigo-600 hover:underline font-semibold">ADHD.org</a> — Güncel klinik araştırmalar</li>
-              <li>• <strong>Dr. Russell Barkley</strong> — Bilimsel DEHB konferansları</li>
+            <ul class="text-xs text-slate-700 dark:text-slate-300 space-y-2">
+              <li>• <a href="https://chadd.org" target="_blank" class="text-indigo-600 hover:underline font-bold">CHADD.org</a> — Küresel DEHB derneği</li>
+              <li>• <a href="https://www.adhd.org" target="_blank" class="text-indigo-600 hover:underline font-bold">ADHD.org</a> — Güncel klinik araştırmalar</li>
+              <li>• <strong>Dr. Russell Barkley</strong> — Bilimsel DEHB konferans serileri</li>
             </ul>
           </div>
 
-          <div class="p-4 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 space-y-2">
+          <div class="p-5 rounded-2xl bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600/50 space-y-2">
             <p class="text-xs font-black uppercase text-indigo-600 dark:text-indigo-400">🇹🇷 Türkçe Bilimsel Kaynaklar</p>
-            <ul class="text-xs text-slate-700 dark:text-slate-300 space-y-1.5">
-              <li>• <a href="https://psikiyatri.org.tr" target="_blank" class="text-indigo-600 hover:underline font-semibold">Türkiye Psikiyatri Derneği</a> — Tanı rehberleri</li>
-              <li>• <a href="https://bengisemerci.com" target="_blank" class="text-indigo-600 hover:underline font-semibold">Prof. Dr. Bengi Semerci</a> — DEHB yayınları</li>
-              <li>• <a href="https://dergipark.org.tr" target="_blank" class="text-indigo-600 hover:underline font-semibold">DergiPark</a> — Akademik makaleler</li>
+            <ul class="text-xs text-slate-700 dark:text-slate-300 space-y-2">
+              <li>• <a href="https://psikiyatri.org.tr" target="_blank" class="text-indigo-600 hover:underline font-bold">Türkiye Psikiyatri Derneği</a> — Tanı ve tedavi rehberleri</li>
+              <li>• <a href="https://bengisemerci.com" target="_blank" class="text-indigo-600 hover:underline font-bold">Prof. Dr. Bengi Semerci</a> — DEHB yayınları</li>
+              <li>• <a href="https://dergipark.org.tr" target="_blank" class="text-indigo-600 hover:underline font-bold">DergiPark</a> — Akademik makaleler ve araştırmalar</li>
             </ul>
           </div>
         </div>
@@ -985,11 +854,10 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
         <div class="bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 p-5 rounded-2xl">
           <h4 class="text-sm font-bold text-amber-900 dark:text-amber-200 mb-1 flex items-center gap-1.5"><span>⚠️</span> Önemli Hatırlatma</h4>
           <p class="text-xs text-amber-800 dark:text-amber-300/90 leading-relaxed">
-            Bu platformdaki bilgiler yalnızca <strong>eğitim ve farkındalık amaçlıdır</strong>. Tıbbi tanı veya tedavi yerine geçmez. Tanı ve tedavi için daima bir uzman psikiyatrist ile görüşün.
+            Bu platformdaki bilgiler yalnızca <strong>eğitim ve farkındalık amaçlıdır</strong>. Tıbbi tanı veya tedavi yerine geçmez. Tanı ve tıbbi yönlendirme için daima bir uzman psikiyatrist ile görüşün.
           </p>
         </div>
       </div>
-
     </div>
 
   </div>
@@ -1007,7 +875,6 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       <button onclick="showDehbSlide(2)" class="dehb-dot-indicator h-2.5 rounded-full transition-all duration-300"></button>
       <button onclick="showDehbSlide(3)" class="dehb-dot-indicator h-2.5 rounded-full transition-all duration-300"></button>
       <button onclick="showDehbSlide(4)" class="dehb-dot-indicator h-2.5 rounded-full transition-all duration-300"></button>
-      <button onclick="showDehbSlide(5)" class="dehb-dot-indicator h-2.5 rounded-full transition-all duration-300"></button>
     </div>
 
     <button id="dehb-next-btn" onclick="nextDehbSlide()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/25 transition-all flex items-center gap-1.5 active:scale-95">
