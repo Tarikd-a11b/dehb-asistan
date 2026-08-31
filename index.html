@@ -713,45 +713,65 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 <template id="tpl-dehb-info">
 <div class="animate-slide-in max-w-6xl mx-auto pb-10">
 
-  <!-- Başlık -->
-  <div class="mb-8">
-    <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">DEHB Bilgilendirme</h2>
-    <p class="text-slate-500 italic mt-1">Kendini anlamaya başla</p>
+  <!-- Hero Banner -->
+  <div class="adhd-hero-header rounded-[3rem] p-10 mb-8">
+    <div class="relative z-10">
+      <div class="flex items-center gap-3 mb-2">
+        <span class="text-4xl">📖</span>
+        <span class="adhd-badge">Bilgi Merkezi</span>
+      </div>
+      <h2 class="text-4xl font-extrabold text-white tracking-tight">DEHB Bilgilendirme</h2>
+      <p class="text-purple-200 mt-2 text-base">Kendini anlamaya başla — kısa, sindirilebilir parçalar halinde.</p>
+    </div>
+    <div class="hero-blob-1"></div>
+    <div class="hero-blob-2"></div>
   </div>
+
+  <!-- Genel bakis infografigi: sayfanin tamamini tek karede ozetliyor.
+       Asagidaki bolumler ayni bilgiyi acarak anlatiyor. -->
+  <figure class="glass-card p-5 mb-8">
+    <figcaption class="flex items-baseline justify-between gap-3 mb-3">
+      <h3 class="text-lg font-bold text-slate-900">Tek bakışta DEHB</h3>
+      <span class="text-xs text-slate-500">Büyütmek için tıkla</span>
+    </figcaption>
+    <img src="dehb-gorsel/infografik.jpg" alt="DEHB rehberi infografiği: temeller, yaygınlık, 7 temel belirti, 3 sunum tipi ve günlük yaşam stratejileri"
+         class="dehb-gorsel dehb-gorsel-tam" loading="lazy" onclick="dehbGorselAc(this.src)">
+    <p class="dehb-gorsel-not">Aşağıdaki bölümler bu şemayı tek tek açıyor.</p>
+  </figure>
 
   <!-- İçerik Container (Mini Nav + Bölümler) -->
   <div class="flex gap-8">
 
-    <!-- Mini Nav-Bar (Sol, Sabit) -->
-    <nav class="w-52 flex-shrink-0 space-y-2">
-      <button onclick="showDehbSection('nedir')" id="dehb-nav-nedir"
-        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
-        🧠 DEHB Nedir?
+    <!-- Icindekiler (Sol, sayfayla birlikte kayiyor) -->
+    <nav class="w-52 flex-shrink-0 space-y-2 dehb-nav-sticky">
+      <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest px-2 pb-1">İçindekiler</p>
+      <button onclick="showDehbSection('nedir')" id="dehb-nav-nedir" style="--nav-accent:#7c3aed" class="dehb-nav-item">
+        <span class="dehb-nav-icon">🧠</span><span>DEHB Nedir?</span>
       </button>
-      <button onclick="showDehbSection('belirtiler')" id="dehb-nav-belirtiler"
-        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
-        ⚡ Belirtiler
+      <button onclick="showDehbSection('belirtiler')" id="dehb-nav-belirtiler" style="--nav-accent:#f59e0b" class="dehb-nav-item">
+        <span class="dehb-nav-icon">⚡</span><span>Belirtiler</span>
       </button>
-      <button onclick="showDehbSection('stratejiler')" id="dehb-nav-stratejiler"
-        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
-        💡 Başa Çıkma
+      <button onclick="showDehbSection('stratejiler')" id="dehb-nav-stratejiler" style="--nav-accent:#059669" class="dehb-nav-item">
+        <span class="dehb-nav-icon">💡</span><span>Başa Çıkma</span>
       </button>
-      <button onclick="showDehbSection('yasam')" id="dehb-nav-yasam"
-        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
-        🌙 Yaşam İpuçları
+      <button onclick="showDehbSection('yasam')" id="dehb-nav-yasam" style="--nav-accent:#4f46e5" class="dehb-nav-item">
+        <span class="dehb-nav-icon">🌙</span><span>Yaşam İpuçları</span>
       </button>
-      <button onclick="showDehbSection('kaynaklar')" id="dehb-nav-kaynaklar"
-        class="dehb-nav-item w-full text-left px-4 py-3 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium">
-        🔗 Kaynaklar
+      <button onclick="showDehbSection('kaynaklar')" id="dehb-nav-kaynaklar" style="--nav-accent:#0891b2" class="dehb-nav-item">
+        <span class="dehb-nav-icon">🔗</span><span>Kaynaklar</span>
       </button>
     </nav>
 
-    <!-- İçerik Alanı (Sağ) -->
-    <div class="flex-1 space-y-6">
+    <!-- İçerik Alanı (Sağ) — bölümler tek sürekli kaydırmada -->
+    <div class="flex-1 space-y-10 min-w-0">
 
       <!-- Bölüm 1: DEHB Nedir? -->
       <div id="dehb-section-nedir" class="dehb-content">
   <div class="space-y-6">
+    <figure class="glass-card p-4">
+      <img src="dehb-gorsel/temeller.jpg" alt="DEHB temelleri ve yaygınlık oranlarını özetleyen görsel" class="dehb-gorsel" loading="lazy" onclick="dehbGorselAc(this.src)">
+      <figcaption class="dehb-gorsel-not">Nörogelişimsel temel, yaygınlık oranları ve "tembellik" yanılgısı bir arada.</figcaption>
+    </figure>
 
     <div class="glass-card p-6">
       <h3 class="text-2xl font-bold text-slate-900 mb-4">🧠 DEHB Nedir?</h3>
@@ -801,6 +821,11 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
   <div class="space-y-6">
 
     <h3 class="text-2xl font-bold text-slate-900">⚡ DEHB'ye Özgü Belirtiler</h3>
+
+    <figure class="glass-card p-4">
+      <img src="dehb-gorsel/belirtiler.jpg" alt="Beynin çevresine dizilmiş 7 temel DEHB belirtisi" class="dehb-gorsel" loading="lazy" onclick="dehbGorselAc(this.src)">
+      <figcaption class="dehb-gorsel-not">Yedi belirtinin tamamı tek şemada — ayrıntıları aşağıdaki kartlarda.</figcaption>
+    </figure>
 
     <!-- 1. Zamansal Miyopi -->
     <div class="glass-card p-6 border-t-4 border-purple-500">
@@ -936,6 +961,11 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
       </p>
     </div>
 
+    <figure class="glass-card p-4">
+      <img src="dehb-gorsel/tipler.jpg" alt="DEHB'nin üç sunum tipi ve görülme oranları" class="dehb-gorsel" loading="lazy" onclick="dehbGorselAc(this.src)">
+      <figcaption class="dehb-gorsel-not">Üç sunum tipi ve görülme oranları.</figcaption>
+    </figure>
+
     <!-- DEHB'nin 3 Türü -->
     <div class="bg-gradient-to-r from-indigo-50 to-purple-50 p-6 rounded-xl border border-indigo-200">
       <h4 class="text-lg font-bold text-slate-900 mb-4">🎯 DEHB'nin 3 Türü (Sunum Tipleri)</h4>
@@ -1020,6 +1050,11 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
   <div class="space-y-6">
 
     <h3 class="text-2xl font-bold text-slate-900">🌙 Günlük Yaşamda İpuçları</h3>
+
+    <figure class="glass-card p-4">
+      <img src="dehb-gorsel/yasam.jpg" alt="Günlük yaşam ve başa çıkma stratejileri: görsel-işitsel destek, hareket, uyku-beslenme, iletişim" class="dehb-gorsel" loading="lazy" onclick="dehbGorselAc(this.src)">
+      <figcaption class="dehb-gorsel-not">Dört başlıkta günlük destek: görsel-işitsel araçlar, hareket, uyku-beslenme, açık iletişim.</figcaption>
+    </figure>
 
     <!-- Uyku & Beslenme -->
     <div class="glass-card p-6">
