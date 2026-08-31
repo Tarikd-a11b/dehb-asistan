@@ -571,8 +571,9 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
 <header class="top">
   <div class="wrap top-in">
     <a class="mark" href="/">Focus<span>Aid</span></a>
-    <nav>
-      <a class="btn" href="auth.html">Ücretsiz başlat</a>
+    <nav style="display:flex;align-items:center;gap:12px;">
+      <a class="btn btn-ikincil" href="index.html" style="font-size:14px;padding:8px 16px;">Canlı Uygulama</a>
+      <button class="btn btn-giris" onclick="girisYap()" style="cursor:pointer;border:none;">Google ile Başla</button>
     </nav>
   </div>
 </header>
@@ -670,8 +671,8 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
             <p class="aciklama">Vicdan azabı yok, ertelenmiş yığınlar yok. Kendi zihnine uygun
                tasarlanmış üretkenliğin tadını çıkar.</p>
             <div class="cta-kut">
-              <a class="btn btn-lg" href="auth.html">FocusAid'i Ücretsiz Başlat</a>
-              <a class="btn btn-lg btn-ikincil" href="index.html">Canlı Demoyu İncele</a>
+              <button class="btn btn-lg btn-giris" onclick="girisYap()" style="cursor:pointer;border:none;">Google ile Ücretsiz Başlat</button>
+              <a class="btn btn-lg btn-ikincil" href="index.html">Canlı Uygulamaya Git</a>
             </div>
             <p class="cta-alt">Kredi kartı gerekmez • 60 saniyede hazır</p>
           </div>
@@ -1079,21 +1080,35 @@ footer{border-top:1px solid var(--cizgi);padding:26px 0 40px;font-size:14px;colo
   setTimeout(function () { t.classList.add('ac'); }, 0);
 })();
 
-function dehbLandingGorselAc(src) {
-  document.getElementById('landing-lightbox')?.remove();
-  var box = document.createElement('div');
-  box.id = 'landing-lightbox';
-  box.style.cssText = 'position:fixed;inset:0;background:rgba(10,14,20,0.92);backdrop-filter:blur(10px);z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;cursor:zoom-out;';
-  box.innerHTML = '<img src="' + src + '" alt="Tam ekran infografik" style="max-width:96vw;max-height:94vh;object-fit:contain;border-radius:4px;box-shadow:0 30px 80px rgba(0,0,0,0.9);cursor:default;">';
-  
-  var kapat = function () { box.remove(); document.removeEventListener('keydown', esc); };
-  var esc = function (e) { if (e.key === 'Escape') kapat(); };
-  
-  box.addEventListener('click', function (e) {
-    if (e.target.tagName !== 'IMG') kapat();
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script>
+// Supabase doğrudan entegrasyonu
+const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+
+// Eğer kullanıcı zaten giriş yapmışsa doğrudan uygulamaya yönlendir
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    document.querySelectorAll('.btn-giris').forEach(btn => {
+      btn.textContent = 'Uygulamaya Git →';
+      btn.onclick = () => window.location.href = 'index.html';
+    });
+  }
+});
+
+async function girisYap() {
+  const { data, error } = await sb.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: window.location.origin + '/index.html',
+      scopes: 'https://www.googleapis.com/auth/calendar.events',
+      queryParams: { access_type: 'offline', prompt: 'select_account' }
+    }
   });
-  document.addEventListener('keydown', esc);
-  document.body.appendChild(box);
+  if (error) {
+    console.error('Giriş hatası:', error);
+    alert('Giriş başlatılamadı: ' + error.message);
+  }
 }
 </script>
 </body>
