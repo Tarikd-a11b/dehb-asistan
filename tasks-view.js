@@ -344,10 +344,13 @@ function currentCardHTML(task) {
         
         <!-- Sol: Görev Detayları -->
         <div class="min-w-0 flex-1">
-          <div class="flex items-center gap-2 mb-2">
+          <div class="flex items-center gap-2 mb-2 flex-wrap">
             <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span></span>
             <p class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Şu Anda Odaklan</p>
             <div class="ml-2">${yukRozet}</div>
+            <button onclick="startInatModu('${task.id}', '${(task.name || 'Görevin').replace(/'/g, "\\'")}')" class="ml-auto px-3 py-1 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5 animate-pulse" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
+              <span>🥊</span> İnat Modu (3 Dk)
+            </button>
           </div>
           <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">${task.name || 'Görev'}</h3>
           ${task.summary ? `<p class="text-slate-500 dark:text-slate-400 mt-2 text-sm leading-relaxed">${task.summary}</p>` : ''}
