@@ -47,6 +47,7 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="doc-intake.js"></script>
 <script src="https://apis.google.com/js/api.js" defer onload="gapiLoaded()"></script>
 <script src="https://accounts.google.com/gsi/client" defer onload="gisLoaded()"></script>
+<script src="focus-audio.js"></script>
 <script src="dehb-info.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
@@ -644,9 +645,10 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
         <label class="block text-sm font-semibold text-slate-600">İşitsel Destek</label>
         <select id="focus-trigger" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
           <option value="silence">🔇 Mutlak Sessizlik</option>
-          <option value="lofi">🎵 Lo-Fi / Enstrümantal</option>
           <option value="brown-noise">🌊 Brown Noise</option>
-          <option value="binaural">🎶 Binaural Beats</option>
+          <option value="binaural">🎶 40Hz Binaural Beats</option>
+          <option value="lofi">🎵 Lo-Fi / Enstrümantal</option>
+          <option value="rain">🌧️ Yağmur Sesi</option>
           <option value="white-noise">📺 White Noise</option>
         </select>
       </div>
@@ -975,8 +977,45 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
       </nav>
     </div>
     <div class="space-y-3">
+      <!-- 🎧 Odak Müziği / İşitsel Destek Çalar Widget'ı -->
+      <div class="px-3 py-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 space-y-2">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-sm">🎧</span>
+            <span class="text-[10px] font-black text-slate-700 dark:text-slate-200 uppercase tracking-wider" id="focus-audio-label">Brown Noise</span>
+          </div>
+          <!-- Equalizer Animasyon Barları -->
+          <div id="focus-audio-eq" class="flex items-end gap-0.5 h-3 opacity-25 transition-opacity">
+            <span class="w-0.5 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+            <span class="w-0.5 h-3 bg-indigo-500 rounded-full animate-pulse" style="animation-delay: 150ms;"></span>
+            <span class="w-0.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" style="animation-delay: 300ms;"></span>
+            <span class="w-0.5 h-2.5 bg-indigo-500 rounded-full animate-pulse" style="animation-delay: 75ms;"></span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button id="focus-audio-toggle" onclick="FocusAudio.toggle()" class="w-7 h-7 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white flex items-center justify-center text-xs font-bold transition-all active:scale-95 shadow-sm">
+            ▶
+          </button>
+          <select id="focus-audio-select" onchange="FocusAudio.setMode(this.value, true)" class="flex-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-xl border border-slate-200 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer">
+            <option value="brown-noise">🌊 Brown Noise</option>
+            <option value="binaural">🎶 40Hz Binaural</option>
+            <option value="lofi">🎵 Lo-Fi Chords</option>
+            <option value="rain">🌧️ Yağmur Sesi</option>
+            <option value="white-noise">📺 White Noise</option>
+            <option value="silence">🔇 Sessizlik</option>
+          </select>
+        </div>
+
+        <div class="flex items-center gap-2 pt-0.5">
+          <span class="text-[9px] text-slate-400">🔉</span>
+          <input type="range" min="0" max="1" step="0.05" value="0.5" oninput="FocusAudio.setVolume(this.value)" class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+          <span class="text-[9px] text-slate-400">🔊</span>
+        </div>
+      </div>
+
       <div class="flex items-center justify-between px-3 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl">
-        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">🔊 Sesler</span>
+        <span class="text-[9px] font-black text-slate-400 uppercase tracking-widest">🔊 Efektler</span>
         <button id="sound-toggle-btn" onclick="toggleSound()" class="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:scale-105 active:scale-95 transition-all">Açık</button>
       </div>
       <div class="flex items-center justify-between px-3 py-2 bg-slate-50 rounded-xl">
@@ -1404,6 +1443,7 @@ async function loadProfileFromSupabase() {
   // Supabase satiri → userProfile (donusum profile-logic.js'te, testli).
   userProfile = rowToProfile(data);
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
+  if (window.FocusAudio && userProfile.focusTrigger) window.FocusAudio.setMode(userProfile.focusTrigger);
   // Bu tarayıcıda daha önce hiç tema seçilmemişse (yeni cihaz/tarayıcı), hesaba
   // kayıtlı ışık hassasiyetinden varsayılan temayı öner — açıkça seçilmiş bir
   // tercihin üzerine asla yazmaz.
@@ -2619,6 +2659,7 @@ async function saveProfile() {
 
     if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Kaydediliyor...'; }
     localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
+    if (window.FocusAudio && userProfile.focusTrigger) window.FocusAudio.setMode(userProfile.focusTrigger);
     // Supabase'e de kaydet. Yerel kayit zaten yapildi; ag hatasi olsa bile
     // kullanicinin girdisi kaybolmaz, ama BASARILI demeyiz.
     await saveProfileToSupabase(userProfile);
@@ -2693,6 +2734,7 @@ document.addEventListener('DOMContentLoaded', () => {
   console.log('🚀 FocusAid başlatılıyor...');
   syncThemeToggleUI();
   if (typeof syncSoundToggleUI === 'function') syncSoundToggleUI();
+  if (window.FocusAudio) window.FocusAudio.updateUI();
   if ('Notification' in window && Notification.permission === 'default') {
     // Nazikçe bildirim izni iste
     Notification.requestPermission().catch(() => {});
