@@ -84,10 +84,10 @@ function getBrainDumpDrawer() {
   if (!drawer) {
     drawer = document.createElement('div');
     drawer.id = 'brain-dump-drawer';
-    drawer.className = 'fixed inset-0 z-50 overflow-hidden pointer-events-none transition-all duration-300';
+    drawer.className = 'fixed inset-0 z-50 overflow-hidden hidden transition-all duration-300';
     drawer.innerHTML = `
-      <div id="bd-backdrop" onclick="closeBrainDump()" class="absolute inset-0 bg-black/40 backdrop-blur-sm opacity-0 transition-opacity duration-300 pointer-events-none"></div>
-      <div id="bd-panel" class="absolute inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between translate-x-full transition-transform duration-300 ease-out pointer-events-auto">
+      <div id="bd-backdrop" onclick="closeBrainDump()" class="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 cursor-pointer"></div>
+      <div id="bd-panel" class="absolute inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between translate-x-full transition-transform duration-300 ease-out z-10">
         <div class="space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div class="flex items-center gap-2.5">
@@ -97,7 +97,7 @@ function getBrainDumpDrawer() {
                 <p class="text-[11px] text-slate-400">Aklına takılanı buraya yaz, unutma kaygısını sil.</p>
               </div>
             </div>
-            <button onclick="closeBrainDump()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-500 hover:text-slate-900 flex items-center justify-center text-xs font-bold transition">✕</button>
+            <button type="button" onclick="closeBrainDump()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-xs font-bold transition active:scale-95" title="Kapat">✕</button>
           </div>
 
           <!-- Hızlı Düşünce Girişi -->
@@ -105,7 +105,7 @@ function getBrainDumpDrawer() {
             <input type="text" id="bd-input" placeholder="Aklına ne takıldı? (Örn: Faturayı öde, Kedinin maması...)" 
                    onkeydown="if(event.key==='Enter') submitBrainDumpInput()"
                    class="w-full pl-3.5 pr-20 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs md:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-inner">
-            <button onclick="submitBrainDumpInput()" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95">
+            <button type="button" onclick="submitBrainDumpInput()" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95">
               Ekle
             </button>
           </div>
@@ -118,7 +118,7 @@ function getBrainDumpDrawer() {
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <div class="flex items-center justify-between text-[11px] text-slate-400">
             <span>💡 Kısayol: <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono font-bold">Alt + D</kbd></span>
-            <button onclick="clearCompletedThoughts()" class="hover:text-red-500 transition">Tamamlananları Temizle</button>
+            <button type="button" onclick="clearCompletedThoughts()" class="hover:text-red-500 transition font-medium">Tamamlananları Temizle</button>
           </div>
         </div>
       </div>
@@ -135,6 +135,9 @@ function submitBrainDumpInput() {
   if (val) {
     addThought(val);
     input.value = '';
+    if (typeof showToast === 'function') {
+      showToast('🧠 Düşünce parka kaydedildi! Odaklanmaya devam 🌿', 'success');
+    }
   }
 }
 
@@ -160,9 +163,9 @@ function renderBrainDumpList() {
                  class="w-4 h-4 rounded-md accent-indigo-600 cursor-pointer shrink-0">
           <span class="text-xs text-slate-800 dark:text-slate-200 font-medium truncate ${t.completed ? 'line-through text-slate-400' : ''}">${_escapeBd(t.text)}</span>
         </div>
-        <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100 shrink-0">
-          <button onclick="convertThoughtToTask('${_escapeBd(t.text)}', '${t.id}')" title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1 text-xs hover:text-indigo-600 text-slate-400 transition">🧩</button>
-          <button onclick="deleteThought('${t.id}')" title="Sil" class="p-1 text-xs hover:text-red-500 text-slate-400 transition">✕</button>
+        <div class="flex items-center gap-1 shrink-0">
+          <button type="button" onclick="convertThoughtToTask('${_escapeBd(t.text)}', '${t.id}')" title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1.5 text-xs hover:text-indigo-600 text-slate-400 transition hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg">🧩</button>
+          <button type="button" onclick="deleteThought('${t.id}')" title="Sil" class="p-1.5 text-xs hover:text-red-500 text-slate-400 transition hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg">✕</button>
         </div>
       </div>`;
   }).join('');
@@ -188,16 +191,21 @@ function openBrainDump() {
   const backdrop = document.getElementById('bd-backdrop');
   const panel = document.getElementById('bd-panel');
 
-  drawer.classList.remove('pointer-events-none');
-  backdrop.classList.remove('opacity-0', 'pointer-events-none');
-  backdrop.classList.add('opacity-100');
-  panel.classList.remove('translate-x-full');
+  drawer.classList.remove('hidden');
   BrainDumpState.isOpen = true;
 
   renderBrainDumpList();
+  
+  // Slide in animation
+  requestAnimationFrame(() => {
+    backdrop.classList.remove('opacity-0');
+    backdrop.classList.add('opacity-100');
+    panel.classList.remove('translate-x-full');
+  });
+
   setTimeout(() => {
     document.getElementById('bd-input')?.focus();
-  }, 100);
+  }, 150);
 }
 
 function closeBrainDump() {
@@ -205,15 +213,19 @@ function closeBrainDump() {
   const backdrop = document.getElementById('bd-backdrop');
   const panel = document.getElementById('bd-panel');
 
-  if (drawer && backdrop && panel) {
-    backdrop.classList.remove('opacity-100');
-    backdrop.classList.add('opacity-0', 'pointer-events-none');
-    panel.classList.add('translate-x-full');
-    setTimeout(() => {
-      drawer.classList.add('pointer-events-none');
-    }, 300);
-  }
   BrainDumpState.isOpen = false;
+
+  if (backdrop && panel) {
+    backdrop.classList.remove('opacity-100');
+    backdrop.classList.add('opacity-0');
+    panel.classList.add('translate-x-full');
+  }
+
+  setTimeout(() => {
+    if (drawer && !BrainDumpState.isOpen) {
+      drawer.classList.add('hidden');
+    }
+  }, 300);
 }
 
 function toggleBrainDump() {
@@ -221,8 +233,17 @@ function toggleBrainDump() {
   else openBrainDump();
 }
 
-// Global Kısayol: Alt + D (veya Option + D)
+// Global Window Tanımları
 if (typeof window !== 'undefined') {
+  window.openBrainDump = openBrainDump;
+  window.closeBrainDump = closeBrainDump;
+  window.toggleBrainDump = toggleBrainDump;
+  window.submitBrainDumpInput = submitBrainDumpInput;
+  window.toggleThought = toggleThought;
+  window.deleteThought = deleteThought;
+  window.clearCompletedThoughts = clearCompletedThoughts;
+  window.convertThoughtToTask = convertThoughtToTask;
+
   window.addEventListener('keydown', (e) => {
     if (e.altKey && (e.key === 'd' || e.key === 'D')) {
       e.preventDefault();
