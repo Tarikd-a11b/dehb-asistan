@@ -364,6 +364,9 @@ function currentCardHTML(task) {
             <button onclick="startInatModu('${task.id}', '${(task.name || 'Görevin').replace(/'/g, "\\'")}')" class="ml-auto px-3 py-1 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5 animate-pulse" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
               <span>🥊</span> İnat Modu (3 Dk)
             </button>
+            <button onclick="openBrainDump()" class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all flex items-center gap-1.5 shadow-sm" title="Aklına gelen rastgele bir düşünceyi park et (Kısayol: Alt + D)">
+              <span>🧠</span> Düşünce Parkı
+            </button>
           </div>
           <h3 class="text-2xl md:text-3xl font-extrabold text-slate-900 dark:text-white leading-tight tracking-tight">${_escape(task.name || 'Görev')}</h3>
           ${task.summary ? `<p class="text-slate-500 dark:text-slate-400 mt-2 text-sm leading-relaxed">${_escape(task.summary)}</p>` : ''}

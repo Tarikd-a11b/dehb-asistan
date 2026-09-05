@@ -49,6 +49,7 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="inat-modu.js"></script>
 <script src="dopamin-carki.js"></script>
 <script src="dehb-info.js"></script>
+<script src="brain-dump.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap');
 :root{--indigo-main:#6366f1;--indigo-glow:rgba(99,102,241,0.15);--mint-success:#10b981;--slate-bg:#f8fafc;--glass-white:rgba(255,255,255,0.85);--border-light:rgba(226,232,240,0.8);--text-main:#1e293b;--text-soft:#64748b;--sidebar-bg:#ffffff;--sidebar-border:#f1f5f9;--input-bg:#ffffff;--input-border:#e2e8f0;--card-hover-bg:#f8fafc}
@@ -1072,6 +1073,12 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
         <button onclick="loadPage('projects')" id="nav-projects" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📁</span> <span>Projelerim</span></button>
         <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">👤</span> <span>Profil</span></button>
         <button onclick="loadPage('dehb-info')" id="nav-dehb-info" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">ℹ️</span> <span>DEHB Bilgisi</span></button>
+        <button onclick="openBrainDump()" id="nav-brain-dump" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center justify-between text-sm group">
+          <div class="flex items-center gap-3">
+            <span class="sidebar-icon">🧠</span> <span>Düşünce Parkı</span>
+          </div>
+          <span id="brain-dump-badge" class="hidden px-2 py-0.5 text-[10px] font-extrabold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300 rounded-full">0</span>
+        </button>
       </nav>
     </div>
 
