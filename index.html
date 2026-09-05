@@ -305,9 +305,29 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
   }
 }
 
-/* Responsive: Mobile'da mini nav-bar yatay olması (sonra yapılacak) */
-@media (max-width: 768px) {
-  /* TODO: Mini nav-bar horizontal tab'a dönüşsün */
+/* ── MOBIL (<768px) ────────────────────────────────────────────────────────
+   Uygulama kabugu masaustu icin yazilmisti: 256px'lik sabit sidebar 390px'lik
+   telefonda ana icerige 125px birakiyordu, o yuzden basliklar tek kelimeye
+   sarkiyor ve mutlak konumlu butonlar (orn. Parcala) input yazisinin ustune
+   biniyordu. Asagidaki kurallar sidebar'i cekmeceye alir ve mobilde asiri
+   buyuk tipografi/bosluklari kirpar. Tailwind CDN utility'leri ile ayni
+   ozgulluk seviyesinde olduklari icin !important gerekiyor. */
+@media (max-width: 767px) {
+  /* Devasa basliklar tek kelimeye sarkmasin */
+  .text-4xl { font-size: 1.75rem !important; line-height: 2.125rem !important; }
+  .text-3xl { font-size: 1.5rem  !important; line-height: 1.9rem   !important; }
+
+  /* Genis ic bosluklar dar ekranda icerik alanini yiyor */
+  .glass-card { border-radius: 1.5rem !important; }
+  .p-10 { padding: 1.25rem !important; }
+  .p-8  { padding: 1.1rem  !important; }
+  .rounded-\[3rem\] { border-radius: 1.75rem !important; }
+
+  /* Uzun kelimeler (URL, e-posta, gorev basligi) kutudan tasmasin */
+  h2, h3, h4, p, span, label { overflow-wrap: anywhere; }
+
+  /* Yatay kaydirma olusturan tasmalari kes */
+  body { overflow-x: hidden; }
 }
 </style>
 </head>
@@ -500,8 +520,8 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
 
 <template id="tpl-chatbot">
 <div class="animate-slide-in max-w-5xl mx-auto space-y-6">
-  <div class="flex justify-between items-center px-4">
-    <div>
+  <div class="flex flex-wrap justify-between items-center gap-3 px-1 md:px-4">
+    <div class="min-w-0">
       <h2 class="text-3xl font-extrabold text-slate-900 tracking-tight">FocusAid Akıllı Asistan</h2>
       <p class="text-slate-500 text-sm italic">n8n "Sis Giderici" algoritması ile görevlerini mikro parçalara böler.</p>
     </div>
@@ -510,8 +530,8 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
       <span class="text-[10px] font-black text-indigo-600 uppercase tracking-widest">n8n Bağlantısı Aktif</span>
     </div>
   </div>
-  <div class="glass-card p-2 bg-white/50 shadow-2xl flex flex-col h-[700px]">
-    <div id="chat-box" class="flex-1 overflow-y-auto m-4 p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-6">
+  <div class="glass-card p-2 bg-white/50 shadow-2xl flex flex-col h-auto md:h-[700px]">
+    <div id="chat-box" class="flex-1 overflow-y-auto min-h-[220px] max-h-[45vh] md:max-h-none m-2 p-3 md:m-4 md:p-6 bg-slate-50/50 rounded-[2.5rem] border border-slate-100 space-y-6">
       <div class="ai-bubble message-pop max-w-[80%] shadow-lg">
         <p class="font-medium">Selam kral! Bugün hangi büyük projeyi beraber mikro parçalara bölelim? Deadline seçmeyi unutma ki takvimini ona göre optimize edeyim! 🚀</p>
       </div>
@@ -524,17 +544,22 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
         <span id="loading-stage-text" class="text-indigo-900 dark:text-indigo-200 text-xs font-bold transition-all duration-300">Sis dağıtılıyor ve görev analiz ediliyor...</span>
       </div>
     </div>
-    <div class="p-6 pt-2 space-y-4">
-      <label id="intake-drop" class="block border-2 border-dashed border-slate-200 rounded-2xl p-5 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 hover:scale-[1.01] active:scale-[0.99] transition-all group">
+    <div class="p-3 md:p-6 pt-2 space-y-3 md:space-y-4">
+      <label id="intake-drop" class="block border-2 border-dashed border-slate-200 rounded-2xl p-3 md:p-5 text-center cursor-pointer hover:border-indigo-400 hover:bg-indigo-50/40 hover:scale-[1.01] active:scale-[0.99] transition-all group">
         <input type="file" id="intake-file" accept=".pdf,.docx" class="hidden">
         <span class="text-3xl inline-block group-hover:scale-125 transition-transform duration-200">📄</span>
         <p class="text-sm font-bold text-slate-700 dark:text-slate-200 mt-1">Yönerge dosyasını sürükle veya seç</p>
         <p class="text-[11px] text-slate-400">PDF veya Word (.docx) · en fazla 10 MB</p>
       </label>
       <p id="intake-status" class="hidden text-xs font-medium px-2"></p>
-      <div class="relative group">
-        <input type="text" id="task-input" class="w-full bg-white p-5 rounded-2xl outline-none border-2 border-slate-100 focus:border-indigo-300 transition-all font-semibold text-lg pr-40 placeholder:text-slate-300" placeholder="Ana görevi buraya yaz (Örn: Portfolyo Hazırla)">
-        <button onclick="sendTaskToN8N()" class="absolute right-2 top-2 bottom-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white px-8 rounded-xl font-bold active:scale-95 shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
+      <!-- Mobilde dikey akis (input ustte, buton altta) + gap; >=768px'te
+           tekrar block olur ve buton input icine mutlak konumlanir. -->
+      <div class="relative group flex flex-col gap-2 md:block">
+        <input type="text" id="task-input" class="w-full bg-white p-4 md:p-5 rounded-2xl outline-none border-2 border-slate-100 focus:border-indigo-300 transition-all font-semibold text-base md:text-lg pr-4 md:pr-40 placeholder:text-slate-300" placeholder="Ana görevi buraya yaz (Örn: Portfolyo Hazırla)">
+        <!-- Buton mobilde input'un ALTINDA akista durur; >=768px'te eskisi gibi
+             input icine mutlak konumlanir. Onceden her genislikte absolute idi
+             ve dar ekranda yazinin uzerine biniyordu. -->
+        <button onclick="sendTaskToN8N()" class="w-full py-3 justify-center md:w-auto md:py-0 md:justify-start md:absolute md:right-2 md:top-2 md:bottom-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white px-8 rounded-xl font-bold active:scale-95 shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input type="text" id="task-desc" class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-50 text-sm text-slate-600 focus:border-indigo-200 transition-all placeholder:text-slate-400" placeholder="Ek detaylar veya notlar (opsiyonel)...">
@@ -951,14 +976,28 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
 <!-- ════════════════════════════════════════
      UYGULAMA LAYOUT
      ════════════════════════════════════════ -->
+<!-- Mobil ust cubuk: sidebar cekmeceye alindigi icin gezinme girisi buradan -->
+<header id="mobile-topbar" class="md:hidden fixed top-0 inset-x-0 h-14 z-40 flex items-center gap-3 px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-100 dark:border-slate-800">
+  <button onclick="toggleMobileSidebar()" aria-label="Menuyu ac" aria-controls="app-sidebar" aria-expanded="false" id="mobile-menu-btn"
+          class="w-10 h-10 shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition">
+    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <span class="font-bold text-indigo-600 dark:text-indigo-400">🚀 FocusAid</span>
+</header>
+<div id="sidebar-backdrop" onclick="closeMobileSidebar()" class="md:hidden hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
+
 <div class="flex min-h-screen">
-  <aside class="w-64 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-4 sticky top-0 h-screen flex flex-col justify-between overflow-y-auto scrollbar-none shadow-sm z-30">
+  <aside id="app-sidebar" class="w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-4 h-screen flex flex-col justify-between overflow-y-auto scrollbar-none shadow-sm fixed md:sticky inset-y-0 left-0 top-0 z-50 md:z-30 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out">
     <div>
       <div class="mb-5 flex items-center justify-between">
         <div>
           <h1 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">🚀 FocusAid</h1>
           <p class="text-[9px] text-slate-400 uppercase tracking-widest">DEHB Odak Asistanı</p>
         </div>
+        <button onclick="closeMobileSidebar()" aria-label="Menuyu kapat"
+                class="md:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 active:scale-95 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
       </div>
       <nav class="space-y-1">
         <button onclick="loadPage('today')" id="nav-today" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">🎯</span> <span>Bugün</span></button>
@@ -1041,7 +1080,7 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
       </button>
     </div>
   </aside>
-  <main id="main-content" class="flex-1 p-8 overflow-y-auto">
+  <main id="main-content" class="flex-1 min-w-0 w-full p-4 pt-[4.5rem] md:p-8 md:pt-8 overflow-y-auto">
     <div class="flex items-center justify-center h-full text-slate-400">
       <div class="text-center"><div class="text-4xl mb-4 animate-spin">⚙️</div><p class="italic text-sm">Sherlock hazırlanıyor...</p></div>
     </div>
@@ -2526,9 +2565,39 @@ function setLoading(v) {
 }
 
 // ── SAYFA YÜKLEYİCİ — fetch YOK, <template> kullanıyor ──
+// ── MOBIL CEKMECE ────────────────────────────────────────────────────────────
+// <768px'te sidebar ekran disinda duruyor; hamburger onu iceri kaydiriyor.
+// Sayfa degisince otomatik kapanir, yoksa kullanici icerigi goremiyor.
+function openMobileSidebar() {
+  document.getElementById('app-sidebar')?.classList.remove('-translate-x-full');
+  document.getElementById('sidebar-backdrop')?.classList.remove('hidden');
+  document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'true');
+  document.body.style.overflow = 'hidden';
+}
+function closeMobileSidebar() {
+  if (window.innerWidth >= 768) return;          // masaustunde sidebar sabit
+  document.getElementById('app-sidebar')?.classList.add('-translate-x-full');
+  document.getElementById('sidebar-backdrop')?.classList.add('hidden');
+  document.getElementById('mobile-menu-btn')?.setAttribute('aria-expanded', 'false');
+  document.body.style.overflow = '';
+}
+function toggleMobileSidebar() {
+  const el = document.getElementById('app-sidebar');
+  if (!el) return;
+  el.classList.contains('-translate-x-full') ? openMobileSidebar() : closeMobileSidebar();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMobileSidebar(); });
+// Masaustune genisleyince cekmece kalintilari (kilitli scroll, backdrop) temizlensin
+window.addEventListener('resize', () => {
+  if (window.innerWidth < 768) return;
+  document.getElementById('sidebar-backdrop')?.classList.add('hidden');
+  document.body.style.overflow = '';
+});
+
 function loadPage(name) {
   const main = document.getElementById('main-content');
   if (!main) return;
+  closeMobileSidebar();
   if (typeof stopTodayTimer === 'function') stopTodayTimer();
   const tpl = document.getElementById(`tpl-${name}`);
   if (!tpl) { main.innerHTML = `<p class="p-8 text-red-500">Şablon bulunamadı: ${name}</p>`; return; }
