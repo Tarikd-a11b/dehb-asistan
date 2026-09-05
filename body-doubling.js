@@ -9,7 +9,7 @@
 const BodyDoublingState = {
   isEnabled: true,
   companionName: 'Sherlock Holmes',
-  status: 'idle', // 'idle', 'working', 'break'
+  status: 'working', // 'working', 'break'
   bubbleTimer: null
 };
 
@@ -33,30 +33,25 @@ function getSherlockStudyScene() {
       </defs>
 
       <style>
-        /* Tüy Kalemle Yazı Yazma Hareketi */
         @keyframes handWriting {
           0%, 100% { transform: translate(0, 0) rotate(0deg); }
           25% { transform: translate(2px, -3px) rotate(4deg); }
           50% { transform: translate(-2px, 1px) rotate(-3deg); }
           75% { transform: translate(3px, -2px) rotate(5deg); }
         }
-        /* Büyüteç Gezdirme */
         @keyframes glassInspect {
           0%, 100% { transform: translate(0, 0); }
           50% { transform: translate(-8px, 4px) rotate(-6deg); }
         }
-        /* Pipo Dumanı */
         @keyframes pipeSmokeFilm {
           0% { transform: translateY(0) scale(0.6); opacity: 0.8; }
           50% { transform: translateY(-14px) scale(1.1) translateX(5px); opacity: 0.4; }
           100% { transform: translateY(-28px) scale(1.6) translateX(-3px); opacity: 0; }
         }
-        /* Sarkaçlı Duvar Saati */
         @keyframes clockPendulum {
           0%, 100% { transform: rotate(14deg); }
           50% { transform: rotate(-14deg); }
         }
-        /* Göz Kırpma */
         @keyframes eyeBlink {
           0%, 90%, 100% { transform: scaleY(1); }
           95% { transform: scaleY(0.1); }
@@ -181,7 +176,6 @@ function getSherlockWalkingScene() {
       </defs>
 
       <style>
-        /* Odada Soldan Sağa Yürüme Hareketi (Film Volta Hareketi) */
         @keyframes roomPacing {
           0% { transform: translateX(20px); }
           45% { transform: translateX(130px) scaleX(1); }
@@ -189,7 +183,6 @@ function getSherlockWalkingScene() {
           95% { transform: translateX(20px) scaleX(-1); }
           100% { transform: translateX(20px) scaleX(1); }
         }
-        /* Bacak Adım Hareketi (Walk Cycle) */
         @keyframes legWalkLeft {
           0%, 100% { transform: rotate(20deg); }
           50% { transform: rotate(-20deg); }
@@ -198,12 +191,10 @@ function getSherlockWalkingScene() {
           0%, 100% { transform: rotate(-20deg); }
           50% { transform: rotate(20deg); }
         }
-        /* Gövde Hafif Yaylanma */
         @keyframes bodyBob {
           0%, 50%, 100% { transform: translateY(0); }
           25%, 75% { transform: translateY(-4px); }
         }
-        /* Kahve Dumanı */
         @keyframes coffeeSteamWalk {
           0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
           50% { transform: translateY(-10px) scale(1.2) translateX(3px); opacity: 0.4; }
@@ -219,13 +210,12 @@ function getSherlockWalkingScene() {
 
       <!-- Oda Arka Planı & Parke Zemin -->
       <rect x="0" y="0" width="240" height="160" rx="16" fill="#0b1120"/>
-      <!-- Parke Çizgileri -->
       <line x1="0" y1="145" x2="240" y2="145" stroke="#1e293b" stroke-width="2"/>
       <line x1="0" y1="155" x2="240" y2="155" stroke="#1e293b" stroke-width="1.5"/>
 
       <!-- Arka Planda Geriye İtilmiş Boş Çalışma Masası -->
       <rect x="15" y="105" width="60" height="35" rx="3" fill="#1e293b" stroke="#0f172a" stroke-width="2" opacity="0.6"/>
-      <rect x="25" y="70" width="30" height="38" rx="6" fill="#0f172a" opacity="0.5"/> <!-- Boş Sandalye -->
+      <rect x="25" y="70" width="30" height="38" rx="6" fill="#0f172a" opacity="0.5"/>
 
       <!-- Duvardaki Resim Tablosu -->
       <rect x="100" y="20" width="40" height="30" rx="3" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
@@ -234,12 +224,12 @@ function getSherlockWalkingScene() {
       <!-- YÜRÜYEN SHERLOCK HOLMES (Film Volta Animasyonu) -->
       <g class="anim-pacing-group">
         <g class="anim-body-bob">
-          <!-- Sol Bacak (Yürüyüş) -->
+          <!-- Sol Bacak -->
           <g class="anim-leg-left">
             <line x1="80" y1="105" x2="80" y2="140" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
             <rect x="74" y="136" width="13" height="6" rx="3" fill="#020617"/>
           </g>
-          <!-- Sağ Bacak (Yürüyüş) -->
+          <!-- Sağ Bacak -->
           <g class="anim-leg-right">
             <line x1="94" y1="105" x2="94" y2="140" stroke="#0f172a" stroke-width="7" stroke-linecap="round"/>
             <rect x="88" y="136" width="13" height="6" rx="3" fill="#020617"/>
@@ -247,20 +237,20 @@ function getSherlockWalkingScene() {
 
           <!-- Palto / Boydan Duruş -->
           <path d="M 68 45 C 68 35 106 35 106 45 L 112 106 L 62 106 Z" fill="#334155" stroke="#1e293b" stroke-width="2.5"/>
-          <path d="M 84 40 L 94 60 L 76 60 Z" fill="#e2e8f0"/> <!-- Yaka -->
+          <path d="M 84 40 L 94 60 L 76 60 Z" fill="#e2e8f0"/>
           <line x1="87" y1="60" x2="87" y2="102" stroke="#1e293b" stroke-width="2"/>
 
           <!-- Kafa & Yüz -->
           <circle cx="87" cy="25" r="12" fill="#fed7aa"/>
-          <circle cx="91" cy="24" r="1.8" fill="#0f172a"/> <!-- Göz -->
-          <path d="M 88 30 Q 92 33 95 30" stroke="#0f172a" stroke-width="1.5" fill="none" stroke-linecap="round"/> <!-- Tebessüm -->
+          <circle cx="91" cy="24" r="1.8" fill="#0f172a"/>
+          <path d="M 88 30 Q 92 33 95 30" stroke="#0f172a" stroke-width="1.5" fill="none" stroke-linecap="round"/>
 
           <!-- Deerstalker Şapka -->
           <path d="M 74 22 C 74 10 100 10 100 22 L 104 25 L 70 25 Z" fill="#64748b" stroke="#334155" stroke-width="1.5"/>
           <path d="M 64 25 L 108 25" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
           <circle cx="87" cy="10" r="1.5" fill="#f8fafc"/>
 
-          <!-- Elinde Kahve Fincanı (Sallanarak Yürüyor) -->
+          <!-- Elinde Kahve Fincanı -->
           <path d="M 104 52 Q 118 58 114 70" stroke="#334155" stroke-width="6" stroke-linecap="round" fill="none"/>
           <circle cx="114" cy="70" r="4" fill="#fed7aa"/>
           
@@ -280,32 +270,37 @@ function getCompanionWidget() {
   if (!widget) {
     widget = document.createElement('div');
     widget.id = 'body-doubling-widget';
-    widget.className = 'fixed bottom-5 right-5 z-40 transition-all duration-500 select-none hidden';
+    widget.className = 'fixed bottom-5 right-5 z-40 transition-all duration-500 select-none';
     widget.innerHTML = `
       <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-slate-900/95 shadow-2xl border-2 border-indigo-500/40 rounded-3xl backdrop-blur-2xl w-84 md:w-92 animate-slide-in relative group transition-all duration-500 overflow-hidden">
         
         <!-- Kapatma Butonu (Sağ Üstte) -->
-        <button onclick="toggleBodyDoublingVisibility(false)" class="absolute top-3 right-3 z-10 w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg" title="Gizle">✕</button>
+        <button type="button" onclick="toggleBodyDoublingVisibility(false)" class="absolute top-3 right-3 z-10 w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg" title="Gizle">✕</button>
 
         <!-- Üst Başlık & Durum Rozeti -->
         <div class="flex items-center gap-2 mb-2 pr-8">
           <span class="text-sm font-black text-white">🕵️‍♂️ Sherlock Holmes</span>
           <span id="sherlock-badge" class="text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-            <span>Masasında Davayı İnceliyor</span>
+            <span id="sherlock-status-text">Masasında Davayı İnceliyor</span>
           </span>
         </div>
 
         <!-- SİNEMATİK ANİMASYON ALANI (Masada Çalışma / Odada Volta Atma) -->
-        <div id="sherlock-scene-wrap" class="rounded-2xl overflow-hidden border border-slate-700/60 shadow-inner bg-slate-950">
+        <div id="sherlock-scene-wrap" class="rounded-2xl overflow-hidden border border-slate-700/60 shadow-inner bg-slate-950 min-h-[160px]">
           ${getSherlockStudyScene()}
         </div>
 
         <!-- Sherlock Fısıltısı -->
-        <div class="mt-2.5 p-2.5 rounded-xl bg-slate-800/70 border border-slate-700/50">
-          <p id="companion-speech" class="text-xs text-slate-300 italic leading-relaxed text-center">
+        <div class="mt-2.5 p-2 rounded-xl bg-slate-800/70 border border-slate-700/50 flex items-center justify-between gap-2">
+          <p id="companion-speech" class="text-xs text-slate-300 italic leading-snug truncate flex-1">
             "Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍"
           </p>
+          <!-- Sahne Değiştirme Butonu (Kolay Test / Kontrol) -->
+          <div class="flex gap-1 shrink-0">
+            <button type="button" onclick="showBodyDoubling('working')" title="Masada Çalış" class="px-2 py-1 bg-slate-700 hover:bg-indigo-600 text-white rounded-lg text-[10px] font-bold transition">📖</button>
+            <button type="button" onclick="showBodyDoubling('break')" title="Ayağa Kalk & Yürü" class="px-2 py-1 bg-slate-700 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-bold transition">🚶‍♂️</button>
+          </div>
         </div>
       </div>
     `;
@@ -315,21 +310,22 @@ function getCompanionWidget() {
 }
 
 function showBodyDoubling(status = 'working') {
-  if (!BodyDoublingState.isEnabled) return;
+  BodyDoublingState.isEnabled = true;
+  BodyDoublingState.status = status;
   const widget = getCompanionWidget();
   widget.classList.remove('hidden');
-  BodyDoublingState.status = status;
 
   const sceneWrap = document.getElementById('sherlock-scene-wrap');
   const speech = document.getElementById('companion-speech');
   const badge = document.getElementById('sherlock-badge');
+  const statusText = document.getElementById('sherlock-status-text');
   const card = document.getElementById('bd-companion-card');
 
   if (status === 'working') {
     if (sceneWrap) sceneWrap.innerHTML = getSherlockStudyScene();
+    if (statusText) statusText.textContent = "Masasında Davayı İnceliyor";
     if (badge) {
       badge.className = "text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5";
-      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span> <span>Masasında Davayı İnceliyor</span>';
     }
     if (speech) speech.textContent = '"Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍"';
     if (card) card.style.borderColor = 'rgba(99, 102, 241, 0.5)';
@@ -337,9 +333,9 @@ function showBodyDoubling(status = 'working') {
   } else if (status === 'break') {
     // ☕ MOLA: Sherlock Masadan Kalkıp Odada Kahvesiyle Volta Atar!
     if (sceneWrap) sceneWrap.innerHTML = getSherlockWalkingScene();
+    if (statusText) statusText.textContent = "Ayağa Kalktı & Kahve Molası ☕";
     if (badge) {
       badge.className = "text-[10px] px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold flex items-center gap-1.5";
-      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span>Ayağa Kalktı & Kahve Molası ☕</span>';
     }
     if (speech) speech.textContent = '"Harika odaklandık! Masadan kalktım, şimdi 5 dakika dinlenme zamanı ☕"';
     if (card) card.style.borderColor = 'rgba(16, 185, 129, 0.7)';
@@ -358,9 +354,7 @@ function toggleBodyDoublingVisibility(show) {
   if (show === undefined) show = !BodyDoublingState.isEnabled;
   BodyDoublingState.isEnabled = show;
   if (!show) hideBodyDoubling();
-  else if (typeof TaskTimerState !== 'undefined' && TaskTimerState.isRunning) {
-    showBodyDoubling(TaskTimerState.isBreak ? 'break' : 'working');
-  }
+  else showBodyDoubling(BodyDoublingState.status || 'working');
 }
 
 function startCompanionSpeechCycle() {
@@ -386,6 +380,7 @@ if (typeof window !== 'undefined') {
   window.showBodyDoubling = showBodyDoubling;
   window.hideBodyDoubling = hideBodyDoubling;
   window.toggleBodyDoublingVisibility = toggleBodyDoublingVisibility;
+  window.getCompanionWidget = getCompanionWidget;
 }
 
 // Node.js test
