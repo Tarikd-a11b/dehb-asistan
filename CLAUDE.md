@@ -106,7 +106,7 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 
 ```bash
 node --test          # 180 test, ~370 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 11 test, ~45 sn — gerçek Chrome'da yerleşim + CSS güncelliği
+npm run test:ui      # 15 test, ~90 sn — gerçek Chrome'da yerleşim + misafir modu + CSS güncelliği
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -128,6 +128,7 @@ CDN'den çekiyor).
 | dosya | ne doğruluyor |
 |---|---|
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
+| `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
 ⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
@@ -301,13 +302,24 @@ gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup
   cevaba `takvimeYazilan` / `toplam` sayaçları eklendi ve mesaj buna göre değişiyor
   (`parcalamaSonucMesaji`), yani kullanıcı artık yanlış bilgilendirilmiyor — ama sessiz atlama
   davranışının kendisi duruyor.
-- **Misafir modunda Supabase'e giden her istek patlıyor.** Misafir kullanıcıya `id: 'guest_user'`
-  veriliyor ve bu dize doğrudan sorgulara giriyor (`.eq('user_id', currentUser?.id)`); Postgres
-  UUID beklediği için `invalid input syntax for type uuid` dönüyor. Parçalayıcı'nın 401'i de aynı
-  kökten — misafirin Supabase oturumu yok, `serve.py` vekili kimlik doğruluyor. **Bilinçli olarak
-  düzeltilmedi** (2026-09-05, kullanıcı kararı): misafir modu ürünü çalıştırmak için değil,
-  arayüzü göstermek için var. Yine de gün modalinde ham Postgres hatası görünüyor; temiz bir
-  "demo modunda veri yok" durumuna çevrilmesi açık iş.
+- **Misafir modu veri saklamıyor — bilinçli.** Misafir modu ürünü çalıştırmak için değil
+  **arayüzü göstermek** için var (2026-09-05, kullanıcı kararı). Misafire `id: 'guest_user'`
+  veriliyor; bu bir UUID olmadığı için `.eq('user_id', ...)` içeren her sorgu Postgres'ten
+  `invalid input syntax for type uuid` ile dönerdi, Parçalayıcı da vekilden 401 alırdı
+  (misafirin Supabase oturumu yok, `serve.py` kimlik doğruluyor).
+
+  **Artık bu hatalar kullanıcıya GÖSTERİLMİYOR:** `misafirIstemcisiniKur()` misafirde
+  `supabaseClient.from`'u sahte bir sorgu katmanıyla değiştiriyor, ağa hiç çıkılmıyor. Okuma boş
+  sonuç dönüyor → ekranların zaten tasarlanmış boş durumları görünüyor. Yazma yolları (görev
+  ekleme, profil kaydı, Parçalayıcı, yönerge analizi) n8n vekiline gitmeden açık birer demo
+  mesajı basıyor. `auth` gerçek kalıyor, çıkış çalışıyor.
+
+  ⚠️ Sahte katmanda `.single()` özel: boş dizi değil **null** döner. Dizi dönerse `rowToProfile`
+  ve benzeri tek-satır bekleyen çağrılar sessizce yanlış davranır.
+
+  Sözü `test-ui/misafir-modu.mjs` koruyor (ham iz taraması + "Supabase/n8n'e hiç istek gitmiyor").
+  Misafir modunu gerçekten çalışır kılmak istenirse yol: veriyi localStorage'a alan ince bir
+  depolama katmanı — uygulama hangi arka uçta olduğunu bilmesin.
 - **Render ücretsiz planı uykuya geçiyor**; ilk istek 50 saniyeye kadar gecikebiliyor. Bu yüzden
   takvimin otomatik bağlanması normalde ~7 sn sürerken soğuk açılışta ~14 sn'yi bulabiliyor.
   Ölçüm yaparken sabırsız olma, "takvim bozuk" diye yanlış teşhis koymak kolay.
