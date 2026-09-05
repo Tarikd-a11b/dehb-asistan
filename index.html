@@ -121,6 +121,12 @@ html.dark [class*="border-yellow-200"]{border-color:oklch(0.75 0.16 70 / 0.3)!im
 html.dark [class*="text-indigo-900"],html.dark [class*="text-indigo-700"]{color:oklch(0.78 0.14 292)!important}
 html.dark [class*="text-emerald-900"],html.dark [class*="text-emerald-700"]{color:oklch(0.75 0.15 150)!important}
 .message-pop{animation:msg-appear .3s cubic-bezier(.34,1.56,.64,1)}
+/* ⚠️ `reveal` bir TRANSFORM animasyonu. Transformlu bir oge, icindeki
+   `position:fixed` ogeler icin kapsayici blok yaratir — animasyon
+   surdugu 0.6 sn boyunca tam ekran katmanlar kayar. Bu yuzden sablonlarin
+   ICINDE `fixed` oge BULUNMAMALI; modaller body seviyesinde durur.
+   Kurali `test/sablon-fixed.test.js` bekciligi yapiyor.
+   Ayni sebeple `-translate-x-1/2` ile ortalama yapma (bkz. CLAUDE.md). */
 .animate-slide-in{animation:reveal .6s cubic-bezier(.19,1,.22,1)}
 @keyframes reveal{0%{opacity:0;transform:translateY(16px)}100%{opacity:1;transform:translateY(0)}}
 @keyframes msg-appear{0%{opacity:0;transform:translateY(8px) scale(.97)}100%{opacity:1;transform:translateY(0) scale(1)}}
@@ -378,14 +384,24 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
   </div>
 </div>
 
-<!-- ⚠️ Gün Detayları Modalı ŞABLONUN DIŞINDA, body seviyesinde duruyor.
-     Takvim şablonunun kökündeki `animate-slide-in` bir transform bırakıyor;
-     transformlu bir ata, içindeki `position:fixed` öğe için yeni bir kapsayıcı
-     blok yaratıyor. Modal böylece viewport'a değil o kutuya oturuyordu:
-     ölçüldü, 717px'lik telefon ekranında modalın alt kenarı 819px'e düşüyor
-     ve "Kapat / + Yeni Görev" butonları ekranın dışında kalıyordu. Aynı
-     nedenle #confirm-modal da burada duruyor. Ek fayda: sayfa değişince
-     loadPage main'i silerken bu modal yok olmuyor. -->
+<!-- Gün Detayları Modalı ŞABLONUN DIŞINDA, body seviyesinde duruyor —
+     #confirm-modal ile aynı gerekçe.
+
+     1) loadPage `main`'in içeriğini siliyor; buradaki modal sayfa değişiminden
+        etkilenmiyor.
+     2) `position:fixed` bir öğe, transformlu bir atanın içindeyse viewport'a
+        değil O ATAYA göre konumlanır. Şablon kökleri `animate-slide-in`
+        taşıyor ve `reveal` kareleri 16px'lik bir transform uyguluyor; animasyon
+        sürdüğü 0.6 sn boyunca içerideki tam ekran katman kayar. Body
+        seviyesinde bu risk hiç doğmuyor.
+
+     ⚠️ DÜZELTME (2026-09-05): Bu taşımanın gerekçesi bir ara "modal telefonda
+     ekran dışına taşıyor, ölçüldü: 445–819px" diye yazılmıştı. YANLIŞTI —
+     o ölçüm donmuş bir renderer'da alındığı için animasyon %0'da kalmış ve
+     transform kalıcı görünmüştü. Sağlıklı tarayıcıda animasyon 600 ms'de
+     bitiyor (transform → none) ve modal taşımadan ÖNCE de doğru yerde
+     açılıyordu: kutu 250–594, ekran 844. Yani bu bir hata düzeltmesi değil,
+     yapısal sağlamlaştırma. -->
 <!-- Gün Detayları Modal -->
   <!-- Perde katmaninda `animate-slide-in` YOK: reveal 16px'lik bir transform ile
        basliyor, tam ekran perdeyi asagi kaydiriyordu. Animasyon zaten ic kutuda. -->

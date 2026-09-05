@@ -188,8 +188,9 @@ test('Gün modalı mobilde tamamen ekranın içinde açılıyor', async () => {
              ata: perde.parentElement.tagName };
   });
   assert.ok(!olcum.gizli, 'modal açılmadı');
-  // Şablonun içinde kalırsa `animate-slide-in`in bıraktığı transform yüzünden
-  // modal viewport yerine o kutuya oturuyor ve alt kenarı ekranın dışına düşüyor.
+  // Modal body seviyesinde durmalı: şablon içindeyken `animate-slide-in`in
+  // transformu, animasyon sürdüğü ~0.6 sn boyunca onu viewport yerine o kutuya
+  // oturtur. (Kural ayrıca `test/sablon-fixed.test.js` ile de korunuyor.)
   assert.strictEqual(olcum.ata, 'BODY', 'modal body seviyesinden çıkmış');
   assert.ok(olcum.ust >= -1 && olcum.alt <= olcum.vh + 1,
     `modal ekran dışında: ${olcum.ust}–${olcum.alt} (ekran ${olcum.vh})`);
