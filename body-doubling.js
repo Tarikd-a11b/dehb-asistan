@@ -1,7 +1,6 @@
 /* ══════════════════════════════════════════════════════════════
-   FocusAid — 👥 Sanal Body Doubling: Sherlock Holmes
-   Odak seansında masasında vaka dosyasını inceleyen,
-   süre bittiğinde otomatik ayağa kalkıp molaya eşlik eden sanal partner.
+   FocusAid — 👥 Sanal Body Doubling: Sherlock Holmes (Çalışma Sahnesi)
+   Masasında dosya inceleyen ve mola olunca ayağa kalkan görsel partner.
    ══════════════════════════════════════════════════════════════ */
 
 const BodyDoublingState = {
@@ -12,111 +11,187 @@ const BodyDoublingState = {
 };
 
 const SHERLOCK_WORKING_QUOTES = [
-  "Vaka dosyasındaki ipuçlarını inceliyorum, sen de ritmini koru dostum 🔍",
-  "En karmaşık problemler bile tek bir adımla çözülür. Harika gidiyorsun 📖",
-  "221B Baker Street'teki masamdayım; sessizce yanındayım 🌿",
-  "Zihnimiz tam kapasite çalışıyor. Odaklanmaya devam! ☕",
-  "İpuçları birleşiyor, bu seansı başarıyla tamamlayacağız 🚀"
+  "Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍",
+  "En karmaşık düğüm bile adım adım çözülür. Çok iyi gidiyorsun 📚",
+  "221B Baker Street'teki masamdayım; sessizce yanındayım ☕",
+  "Zihnimiz tam kapasite çalışıyor, seansı başarıyla bitireceğiz 🚀"
 ];
 
-function getSherlockSittingSVG() {
+function getSherlockSittingScene() {
   return `
-    <svg viewBox="0 0 120 120" class="w-16 h-16 md:w-20 md:h-20 shrink-0 select-none">
+    <svg viewBox="0 0 200 160" class="w-full h-36 md:h-40 select-none">
       <defs>
-        <radialGradient id="lampGlow" cx="70%" cy="30%" r="60%">
-          <stop offset="0%" stop-color="#4ade80" stop-opacity="0.8"/>
-          <stop offset="100%" stop-color="#15803d" stop-opacity="0.2"/>
+        <radialGradient id="deskLampGlow" cx="75%" cy="30%" r="70%">
+          <stop offset="0%" stop-color="#4ade80" stop-opacity="0.9"/>
+          <stop offset="40%" stop-color="#22c55e" stop-opacity="0.4"/>
+          <stop offset="100%" stop-color="#15803d" stop-opacity="0"/>
         </radialGradient>
+        <filter id="cozyGlow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="6" result="blur" />
+          <feComposite in="SourceGraphic" in2="blur" operator="over" />
+        </filter>
       </defs>
 
       <style>
-        @keyframes pipeSmoke {
-          0% { transform: translateY(0) scale(0.8); opacity: 0.7; }
-          50% { transform: translateY(-8px) scale(1.2) translateX(3px); opacity: 0.4; }
-          100% { transform: translateY(-16px) scale(1.6) translateX(-2px); opacity: 0; }
+        @keyframes sherlockInspect {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-4px) rotate(-3deg); }
         }
-        @keyframes glassMove {
-          0%, 100% { transform: translate(0, 0) rotate(0deg); }
-          50% { transform: translate(-3px, 2px) rotate(-8deg); }
+        @keyframes pipeSmokeRise {
+          0% { transform: translateY(0) scale(0.6); opacity: 0.8; }
+          50% { transform: translateY(-12px) scale(1.1) translateX(4px); opacity: 0.4; }
+          100% { transform: translateY(-24px) scale(1.6) translateX(-3px); opacity: 0; }
         }
-        .smoke-1 { animation: pipeSmoke 2.5s infinite ease-out; }
-        .smoke-2 { animation: pipeSmoke 2.5s infinite ease-out 1.2s; }
-        .sherlock-glass { animation: glassMove 3s infinite ease-in-out; transform-origin: 45px 75px; }
+        @keyframes pageFlicker {
+          0%, 100% { opacity: 0.95; }
+          50% { opacity: 0.75; }
+        }
+        .sherlock-anim-body { animation: sherlockInspect 3.5s infinite ease-in-out; transform-origin: 70px 110px; }
+        .smoke-particle-1 { animation: pipeSmokeRise 2.8s infinite ease-out; }
+        .smoke-particle-2 { animation: pipeSmokeRise 2.8s infinite ease-out 1.4s; }
+        .lamp-ambient { animation: pageFlicker 4s infinite ease-in-out; }
       </style>
 
-      <!-- Arka Plan / Masa Lambası Işığı -->
-      <circle cx="85" cy="45" r="25" fill="url(#lampGlow)" class="animate-pulse"/>
-      <path d="M 85 40 L 92 65 L 78 65 Z" fill="#166534" stroke="#15803d" stroke-width="1.5"/>
-      <rect x="83" y="65" width="4" height="20" fill="#78350f"/>
-      <rect x="76" y="85" width="18" height="4" rx="2" fill="#d97706"/>
-
-      <!-- Sherlock Gövde (Tweed Ceket) -->
-      <path d="M 30 75 C 30 60 55 60 55 75 L 58 95 L 25 95 Z" fill="#475569" stroke="#334155" stroke-width="2"/>
-      <path d="M 40 68 L 45 82 L 35 82 Z" fill="#cbd5e1"/> <!-- Yaka -->
-
-      <!-- Sherlock Kafa & İkonik Deerstalker Şapka -->
-      <circle cx="42" cy="48" r="12" fill="#fed7aa"/>
-      <path d="M 28 44 C 28 32 56 32 56 44 L 60 48 L 24 48 Z" fill="#64748b" stroke="#334155" stroke-width="1.5"/> <!-- Şapka -->
-      <path d="M 20 48 L 64 48" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/> <!-- Siperlik -->
-      <path d="M 42 32 L 42 36" stroke="#f8fafc" stroke-width="2" stroke-linecap="round"/> <!-- Üst Kurdele -->
-
-      <!-- Pipo & Duman -->
-      <path d="M 48 53 Q 56 55 58 60 Q 60 63 56 65" stroke="#78350f" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-      <circle cx="58" cy="56" r="2" fill="#94a3b8" class="smoke-1"/>
-      <circle cx="59" cy="54" r="2.5" fill="#cbd5e1" class="smoke-2"/>
-
-      <!-- Çalışma Masası -->
-      <rect x="10" y="85" width="100" height="22" rx="4" fill="#334155" stroke="#1e293b" stroke-width="2"/>
+      <!-- Oda Arka Planı & Sıcak Gece Havası -->
+      <rect x="0" y="0" width="200" height="160" rx="16" fill="#0f172a"/>
       
-      <!-- Masadaki Vaka Dosyaları / Belgeler -->
-      <rect x="25" y="80" width="30" height="14" rx="2" fill="#f8fafc" stroke="#94a3b8" stroke-width="1" transform="rotate(-6 25 80)"/>
-      <line x1="28" y1="84" x2="48" y2="82" stroke="#64748b" stroke-width="1.5"/>
-      <line x1="29" y1="88" x2="45" y2="86" stroke="#94a3b8" stroke-width="1"/>
+      <!-- Pencere & Ay Işığı -->
+      <rect x="15" y="15" width="45" height="55" rx="6" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+      <line x1="37" y1="15" x2="37" y2="70" stroke="#334155" stroke-width="2"/>
+      <line x1="15" y1="42" x2="60" y2="42" stroke="#334155" stroke-width="2"/>
+      <circle cx="48" cy="28" r="6" fill="#fde047" opacity="0.8"/> <!-- Hilal Ay -->
 
-      <!-- Büyüteç (Animasyonlu) -->
-      <g class="sherlock-glass">
-        <circle cx="42" cy="76" r="6" stroke="#d97706" stroke-width="2" fill="rgba(147, 197, 253, 0.4)"/>
-        <line x1="46" y1="80" x2="54" y2="88" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Yeşil Bankacı Lambası Işığı -->
+      <circle cx="155" cy="65" r="45" fill="url(#deskLampGlow)" class="lamp-ambient"/>
+      
+      <!-- Ahşap Kitaplık (Arka Duvar) -->
+      <rect x="145" y="12" width="45" height="60" rx="3" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+      <rect x="148" y="16" width="8" height="24" fill="#818cf8"/>
+      <rect x="157" y="18" width="6" height="22" fill="#f43f5e"/>
+      <rect x="164" y="15" width="10" height="25" fill="#38bdf8"/>
+      <rect x="175" y="20" width="12" height="20" fill="#fbbf24"/>
+      <line x1="145" y1="42" x2="190" y2="42" stroke="#475569" stroke-width="2"/>
+
+      <!-- Sandalye Arkalığı -->
+      <rect x="48" y="65" width="44" height="55" rx="8" fill="#1e293b" stroke="#334155" stroke-width="2"/>
+
+      <!-- SHERLOCK KARAKTERİ (Masada Oturan) -->
+      <g class="sherlock-anim-body">
+        <!-- Palto / Gövde -->
+        <path d="M 50 82 C 50 68 88 68 88 82 L 92 118 L 46 118 Z" fill="#334155" stroke="#1e293b" stroke-width="2"/>
+        <path d="M 64 74 L 72 90 L 58 90 Z" fill="#e2e8f0"/> <!-- Beyaz Yaka & Kravat -->
+
+        <!-- Kafa & Yüz -->
+        <circle cx="68" cy="54" r="14" fill="#fed7aa"/>
+        <circle cx="73" cy="53" r="2" fill="#0f172a"/> <!-- Göz -->
+        
+        <!-- İkonik Deerstalker Şapka -->
+        <path d="M 52 50 C 52 34 84 34 84 50 L 90 54 L 46 54 Z" fill="#64748b" stroke="#334155" stroke-width="2"/>
+        <path d="M 42 54 L 94 54" stroke="#475569" stroke-width="3" stroke-linecap="round"/>
+        <path d="M 68 34 L 68 39" stroke="#f8fafc" stroke-width="2.5" stroke-linecap="round"/>
+
+        <!-- Dedektif Piposu & Tüten Duman -->
+        <path d="M 76 60 Q 86 62 88 68 Q 90 72 84 74" stroke="#78350f" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="87" cy="62" r="2.5" fill="#94a3b8" class="smoke-particle-1"/>
+        <circle cx="89" cy="58" r="3.5" fill="#cbd5e1" class="smoke-particle-2"/>
+
+        <!-- Kol & Büyüteç Tutan El -->
+        <path d="M 78 88 Q 95 95 90 108" stroke="#334155" stroke-width="7" stroke-linecap="round" fill="none"/>
+        <circle cx="92" cy="108" r="4" fill="#fed7aa"/>
+        
+        <!-- Büyüteç -->
+        <circle cx="98" cy="112" r="8" stroke="#f59e0b" stroke-width="2.5" fill="rgba(186, 230, 253, 0.4)"/>
+        <line x1="93" y1="108" x2="86" y2="102" stroke="#78350f" stroke-width="3.5" stroke-linecap="round"/>
       </g>
+
+      <!-- ÇALIŞMA MASASI -->
+      <rect x="25" y="110" width="165" height="35" rx="5" fill="#1e293b" stroke="#0f172a" stroke-width="3"/>
+      <rect x="35" y="116" width="35" height="12" rx="2" fill="#0f172a" opacity="0.6"/> <!-- Çekmece -->
+      <circle cx="52" cy="122" r="1.5" fill="#94a3b8"/>
+
+      <!-- Masadaki Vaka Dosyaları ve Notlar -->
+      <rect x="75" y="104" width="42" height="18" rx="2" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5" transform="rotate(-5 75 104)"/>
+      <line x1="80" y1="109" x2="110" y2="107" stroke="#64748b" stroke-width="2"/>
+      <line x1="81" y1="114" x2="105" y2="112" stroke="#94a3b8" stroke-width="1.5"/>
+
+      <!-- Yeşil Lamba -->
+      <ellipse cx="155" cy="92" rx="14" ry="7" fill="#15803d" stroke="#166534" stroke-width="1.5"/>
+      <path d="M 155 92 L 155 110" stroke="#d97706" stroke-width="3" stroke-linecap="round"/>
+      <rect x="148" y="110" width="14" height="3" rx="1.5" fill="#d97706"/>
     </svg>
   `;
 }
 
-function getSherlockStandingSVG() {
+function getSherlockStandingScene() {
   return `
-    <svg viewBox="0 0 120 120" class="w-16 h-16 md:w-20 md:h-20 shrink-0 select-none">
+    <svg viewBox="0 0 200 160" class="w-full h-36 md:h-40 select-none">
+      <defs>
+        <linearGradient id="coffeeSteamGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="#fbbf24" stop-opacity="0"/>
+        </linearGradient>
+      </defs>
+
       <style>
-        @keyframes cupSteam {
-          0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
-          50% { transform: translateY(-6px) scale(1.1) translateX(2px); opacity: 0.4; }
-          100% { transform: translateY(-12px) scale(1.4) translateX(-1px); opacity: 0; }
+        @keyframes sherlockCelebration {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-6px); }
         }
-        .cup-steam { animation: cupSteam 2s infinite ease-out; }
+        @keyframes steamRise {
+          0% { transform: translateY(0) scale(0.8); opacity: 0.8; }
+          50% { transform: translateY(-8px) scale(1.1) translateX(2px); opacity: 0.4; }
+          100% { transform: translateY(-16px) scale(1.4) translateX(-2px); opacity: 0; }
+        }
+        .sherlock-standing-anim { animation: sherlockCelebration 3s infinite ease-in-out; }
+        .coffee-steam-anim { animation: steamRise 2s infinite ease-out; }
       </style>
 
-      <!-- Sherlock Ayakta (Boydan Duruş) -->
-      <!-- Bacaklar & Pantolon -->
-      <line x1="42" y1="85" x2="42" y2="110" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
-      <line x1="56" y1="85" x2="56" y2="110" stroke="#334155" stroke-width="5" stroke-linecap="round"/>
-      <rect x="38" y="108" width="8" height="4" rx="2" fill="#0f172a"/>
-      <rect x="54" y="108" width="8" height="4" rx="2" fill="#0f172a"/>
+      <!-- Oda Arka Planı -->
+      <rect x="0" y="0" width="200" height="160" rx="16" fill="#0f172a"/>
+      
+      <!-- Kutlama Işıkları / Yıldızlar -->
+      <circle cx="45" cy="35" r="2" fill="#fbbf24" class="animate-ping"/>
+      <circle cx="165" cy="30" r="2.5" fill="#38bdf8" class="animate-ping"/>
+      <circle cx="150" cy="60" r="1.5" fill="#34d399"/>
+      
+      <!-- Masanın Geriye Çekilmiş Hali -->
+      <rect x="120" y="115" width="70" height="35" rx="4" fill="#1e293b" stroke="#0f172a" stroke-width="2"/>
+      <ellipse cx="155" cy="105" rx="12" ry="6" fill="#15803d"/>
+      <line x1="155" y1="105" x2="155" y2="115" stroke="#d97706" stroke-width="2.5"/>
 
-      <!-- Palto & Gövde -->
-      <path d="M 32 45 C 32 35 66 35 66 45 L 70 88 L 28 88 Z" fill="#475569" stroke="#1e293b" stroke-width="2"/>
-      <path d="M 44 42 L 50 60 L 38 60 Z" fill="#cbd5e1"/> <!-- Yaka & Kravat -->
-      <line x1="49" y1="60" x2="49" y2="85" stroke="#334155" stroke-width="2"/>
+      <!-- SHERLOCK AYAKTA (Boydan Sahne) -->
+      <g class="sherlock-standing-anim">
+        <!-- Bacaklar & Ayakkabılar -->
+        <line x1="72" y1="105" x2="72" y2="142" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
+        <line x1="90" y1="105" x2="90" y2="142" stroke="#1e293b" stroke-width="7" stroke-linecap="round"/>
+        <rect x="66" y="138" width="12" height="6" rx="3" fill="#020617"/>
+        <rect x="86" y="138" width="12" height="6" rx="3" fill="#020617"/>
 
-      <!-- Kafa & Şapka -->
-      <circle cx="49" cy="26" r="10" fill="#fed7aa"/>
-      <path d="M 38 23 C 38 13 60 13 60 23 L 64 26 L 34 26 Z" fill="#64748b" stroke="#334155" stroke-width="1.5"/>
-      <path d="M 30 26 L 68 26" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
-      <circle cx="49" cy="13" r="1.5" fill="#f8fafc"/>
+        <!-- Palto / Boydan Duruş -->
+        <path d="M 60 48 C 60 38 102 38 102 48 L 108 108 L 54 108 Z" fill="#334155" stroke="#1e293b" stroke-width="2.5"/>
+        <path d="M 76 44 L 86 64 L 68 64 Z" fill="#e2e8f0"/> <!-- Yaka -->
+        <line x1="81" y1="64" x2="81" y2="105" stroke="#1e293b" stroke-width="2"/>
 
-      <!-- Elinde Kahve / Çay Fincanı -->
-      <g transform="translate(62, 55)">
-        <rect x="0" y="0" width="12" height="10" rx="3" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
-        <path d="M 12 2 Q 16 5 12 8" stroke="#cbd5e1" stroke-width="1.5" fill="none"/>
-        <path d="M 3 -3 Q 6 -6 3 -9" stroke="#94a3b8" stroke-width="1.5" fill="none" class="cup-steam"/>
+        <!-- Kafa & Şapka -->
+        <circle cx="81" cy="28" r="12" fill="#fed7aa"/>
+        <circle cx="85" cy="27" r="1.8" fill="#0f172a"/> <!-- Gülen Göz -->
+        <path d="M 82 33 Q 86 36 89 33" stroke="#0f172a" stroke-width="1.5" fill="none" stroke-linecap="round"/> <!-- Gülümseme -->
+
+        <!-- Deerstalker Şapka -->
+        <path d="M 68 25 C 68 12 94 12 94 25 L 98 28 L 64 28 Z" fill="#64748b" stroke="#334155" stroke-width="1.5"/>
+        <path d="M 58 28 L 102 28" stroke="#475569" stroke-width="2.5" stroke-linecap="round"/>
+        <circle cx="81" cy="13" r="1.5" fill="#f8fafc"/>
+
+        <!-- Sağ El: Kahve / Çay Fincanını Havaya Kaldırmış -->
+        <path d="M 100 56 Q 115 62 110 75" stroke="#334155" stroke-width="6" stroke-linecap="round" fill="none"/>
+        <circle cx="110" cy="75" r="4" fill="#fed7aa"/>
+        
+        <!-- Kahve Fincanı -->
+        <g transform="translate(112, 68)">
+          <rect x="0" y="0" width="14" height="12" rx="3" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1.5"/>
+          <path d="M 14 3 Q 18 6 14 9" stroke="#cbd5e1" stroke-width="2" fill="none"/>
+          <path d="M 4 -3 Q 7 -7 4 -11" stroke="#fbbf24" stroke-width="2" fill="none" class="coffee-steam-anim"/>
+        </g>
       </g>
     </svg>
   `;
@@ -127,27 +202,31 @@ function getCompanionWidget() {
   if (!widget) {
     widget = document.createElement('div');
     widget.id = 'body-doubling-widget';
-    widget.className = 'fixed bottom-4 right-4 z-40 transition-all duration-500 select-none hidden';
+    widget.className = 'fixed bottom-5 right-5 z-40 transition-all duration-500 select-none hidden';
     widget.innerHTML = `
-      <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-white/95 dark:bg-slate-900/95 shadow-2xl border-2 border-indigo-200/80 dark:border-indigo-900/80 rounded-3xl flex items-center gap-3.5 backdrop-blur-xl max-w-sm animate-slide-in relative group transition-all duration-500">
-        <button onclick="toggleBodyDoublingVisibility(false)" class="absolute -top-2 -right-2 w-6 h-6 bg-slate-200 dark:bg-slate-700 hover:bg-red-500 hover:text-white rounded-full text-xs font-bold flex items-center justify-center opacity-0 group-hover:opacity-100 transition shadow-md" title="Kapat">✕</button>
+      <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-slate-900/95 shadow-2xl border-2 border-indigo-500/40 rounded-3xl backdrop-blur-2xl w-80 md:w-88 animate-slide-in relative group transition-all duration-500 overflow-hidden">
+        
+        <!-- Kapatma Butonu (Sağ Üstte Temiz) -->
+        <button onclick="toggleBodyDoublingVisibility(false)" class="absolute top-3 right-3 z-10 w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg" title="Gizle">✕</button>
 
-        <!-- Sherlock Sahnesi (Masada / Ayakta) -->
-        <div id="sherlock-scene-wrap" class="shrink-0 transition-all duration-500">
-          ${getSherlockSittingSVG()}
+        <!-- Üst Başlık & Durum Rozeti -->
+        <div class="flex items-center gap-2 mb-2 pr-8">
+          <span class="text-sm font-black text-white">🕵️‍♂️ Sherlock Holmes</span>
+          <span id="sherlock-badge" class="text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
+            <span>Davayı İnceliyor</span>
+          </span>
         </div>
 
-        <!-- Durum ve Fısıltı Balonu -->
-        <div class="min-w-0 flex-1 space-y-1">
-          <div class="flex items-center gap-2">
-            <p class="text-xs font-black text-slate-800 dark:text-slate-100 truncate">Sherlock Holmes</p>
-            <span id="sherlock-badge" class="text-[9px] px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-950/90 dark:text-indigo-300 rounded-full font-bold flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span>
-              <span>🔍 Davayı İnceliyor</span>
-            </span>
-          </div>
-          <p id="companion-speech" class="text-[11px] text-slate-600 dark:text-slate-300 italic leading-snug">
-            "Vaka dosyasını inceliyorum, sen de ritmini koru dostum 🔍"
+        <!-- BÜYÜK GÖRSEL ÇALIŞMA SAHNESİ -->
+        <div id="sherlock-scene-wrap" class="rounded-2xl overflow-hidden border border-slate-700/60 shadow-inner bg-slate-950">
+          ${getSherlockSittingScene()}
+        </div>
+
+        <!-- Sherlock Fısıltısı -->
+        <div class="mt-2.5 p-2.5 rounded-xl bg-slate-800/70 border border-slate-700/50">
+          <p id="companion-speech" class="text-xs text-slate-300 italic leading-relaxed text-center">
+            "Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍"
           </p>
         </div>
       </div>
@@ -169,23 +248,23 @@ function showBodyDoubling(status = 'working') {
   const card = document.getElementById('bd-companion-card');
 
   if (status === 'working') {
-    if (sceneWrap) sceneWrap.innerHTML = getSherlockSittingSVG();
+    if (sceneWrap) sceneWrap.innerHTML = getSherlockSittingScene();
     if (badge) {
-      badge.className = "text-[9px] px-2 py-0.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-950/90 dark:text-indigo-300 rounded-full font-bold flex items-center gap-1";
-      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping"></span> <span>🔍 Davayı İnceliyor</span>';
+      badge.className = "text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5";
+      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span> <span>Davayı İnceliyor</span>';
     }
-    if (speech) speech.textContent = "Vaka dosyasındaki ipuçlarını inceliyorum, sen de ritmini koru dostum 🔍";
-    if (card) card.style.borderColor = 'rgba(99, 102, 241, 0.4)';
+    if (speech) speech.textContent = '"Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍"';
+    if (card) card.style.borderColor = 'rgba(99, 102, 241, 0.5)';
     startCompanionSpeechCycle();
   } else if (status === 'break') {
     // ☕ MOLA: Sherlock Masadan Ayağa Kalkar!
-    if (sceneWrap) sceneWrap.innerHTML = getSherlockStandingSVG();
+    if (sceneWrap) sceneWrap.innerHTML = getSherlockStandingScene();
     if (badge) {
-      badge.className = "text-[9px] px-2 py-0.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-950/90 dark:text-emerald-300 rounded-full font-bold flex items-center gap-1";
-      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> <span>☕ Ayağa Kalktı & Mola</span>';
+      badge.className = "text-[10px] px-2.5 py-0.5 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full font-bold flex items-center gap-1.5";
+      badge.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> <span>Ayağa Kalktı & Mola ☕</span>';
     }
-    if (speech) speech.textContent = "Vaka bu seanslık çözüldü! Ben de masadan kalktım, şimdi 5 dakikalık mola zamanı ☕";
-    if (card) card.style.borderColor = 'rgba(16, 185, 129, 0.6)';
+    if (speech) speech.textContent = '"Vaka bu seanslık çözüldü! Ben de masadan kalktım, şimdi 5 dakikalık mola zamanı ☕"';
+    if (card) card.style.borderColor = 'rgba(16, 185, 129, 0.7)';
     stopCompanionSpeechCycle();
   }
 }
