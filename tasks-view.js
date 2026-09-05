@@ -255,6 +255,17 @@ function startTaskTimer() {
   TaskTimerState.isRunning = true;
   getAudioContext();
   updateTimerUI();
+
+  // 👥 Sanal Çalışma Arkadaşını (Body Doubling) aktif et
+  if (typeof showBodyDoubling === 'function') {
+    showBodyDoubling('working');
+  }
+
+  // 🔔 Bildirim izni sor (ilk başlatmada)
+  if (typeof NotificationManager !== 'undefined' && NotificationManager.isSupported && Notification.permission === 'default') {
+    NotificationManager.requestPermission();
+  }
+
   TaskTimerState.interval = setInterval(() => {
     if (TaskTimerState.remainingSeconds > 0) {
       TaskTimerState.remainingSeconds--;
@@ -264,13 +275,15 @@ function startTaskTimer() {
         playTimerEndChime();
         fireDopamineConfetti(false);
         showToast('⏰ Odak seansı tamamlandı! Harika iş çıkardın.', 'success');
-        if ('Notification' in window && Notification.permission === 'granted') {
-          try {
-            new Notification('FocusAid — Odak Seansı Tamamlandı!', {
-              body: 'Tebrikler! Seansın bitti. Mola verebilir veya görevi işaretleyebilirsin.',
-              icon: 'dehb.png'
-            });
-          } catch(e) {}
+        
+        // 👥 Body Doubling Mola Moduna Geçiş
+        if (typeof showBodyDoubling === 'function') {
+          showBodyDoubling('break');
+        }
+
+        // 🔔 Arka Plan Bildirimi Gönder
+        if (typeof NotificationManager !== 'undefined') {
+          NotificationManager.notifySessionComplete();
         }
       }
     }
@@ -282,6 +295,10 @@ function pauseTaskTimer() {
   if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
   TaskTimerState.interval = null;
   updateTimerUI();
+
+  if (typeof hideBodyDoubling === 'function') {
+    hideBodyDoubling();
+  }
 }
 
 function addBonusToTimer(minutes = 5) {
