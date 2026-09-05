@@ -4,3 +4,7 @@ config.js
 # Duzenleme oncesi alinan yerel yedekler (orn. index.yedek-20260905-124317.html).
 # Iceriklerinin git gecmisinde zaten durdugu dogrulandi, repoya girmesinler.
 *.yedek-*.html
+
+# Gelistirme araclari (playwright-core). Uygulamanin kendisi hala build adimsiz
+# statik dosyalardan olusuyor; bunlar yalnizca `npm run test:ui` icin.
+node_modules/

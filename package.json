@@ -1,0 +1,19 @@
+{
+  "name": "focusaid",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DEHB'li kullanıcılar için yapay zeka destekli görev parçalama ve takvim planlama uygulaması. Bu package.json YALNIZCA geliştirme araçları içindir — uygulamanın kendisi hâlâ build adımsız, paket yöneticisiz statik dosyalardan oluşuyor ve serve.py ile sunuluyor.",
+  "scripts": {
+    "test": "node --test",
+    "test:ui": "node test-ui/layout-check.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Tarikd-a11b/dehb-asistan.git"
+  },
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "playwright-core": "^1.63.0"
+  }
+}
