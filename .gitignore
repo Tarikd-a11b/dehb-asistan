@@ -1,2 +1,6 @@
 config.js
 *.pdf
+
+# Duzenleme oncesi alinan yerel yedekler (orn. index.yedek-20260905-124317.html).
+# Iceriklerinin git gecmisinde zaten durdugu dogrulandi, repoya girmesinler.
+*.yedek-*.html
