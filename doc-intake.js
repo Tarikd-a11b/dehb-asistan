@@ -58,6 +58,12 @@ async function analyzeDocument(text, fileName) {
   if (typeof localDayISO !== 'function') {
     throw new Error('tasks-logic.js yüklenmemiş');
   }
+  // Demo modunda analiz kapalı: vekil (serve.py /api/n8n/analyze) Supabase
+  // token'ı istiyor, misafirin oturumu yok ve istek 401 dönüyordu. Kullanıcı
+  // "analiz 401" gibi ham bir mesaj görüyordu.
+  if (typeof isGuestMode !== 'undefined' && isGuestMode) {
+    throw new Error('Demo modunda yönerge analizi kapalı — giriş yaparsan dosyandan görevler çıkarılır.');
+  }
 
   const bugun = localDayISO();   // tasks-logic.js — yerel tarih, UTC değil
   const res = await fetch(url, {

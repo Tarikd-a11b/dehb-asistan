@@ -1239,6 +1239,51 @@ function checkGuestMode() {
   try { return localStorage.getItem('focusaid_guest_mode') === '1'; } catch (e) { return false; }
 }
 
+/**
+ * MİSAFİR / DEMO MODU — Supabase'e hiç çıkmayan sahte sorgu katmanı.
+ *
+ * SORUN: misafire `id: 'guest_user'` veriliyor, bu bir UUID değil. Dolayısıyla
+ * `.eq('user_id', currentUser.id)` içeren HER sorgu Postgres'ten
+ * `invalid input syntax for type uuid: "guest_user"` ile dönüyordu ve bu ham
+ * mesaj ekranlara basılıyordu (gün modalinde kırmızı "❌ invalid input syntax…").
+ *
+ * KARAR (2026-09-05): misafir modu ürünü ÇALIŞTIRMAK için değil ARAYÜZÜ
+ * göstermek için var. O yüzden sorgular ağa hiç çıkmıyor:
+ *   okuma → boş sonuç. Ekranların zaten tasarlanmış boş durumları görünüyor
+ *           ("Bugün için planlanmış mikro görev yok", "📭 Bu gün için görev yok").
+ *   yazma → sessiz. Çağıranlar ayrıca kullanıcıya demo uyarısı gösteriyor
+ *           (bkz. saveProfile, saveTask, sendTaskToN8N).
+ *
+ * Ne ham hata çıkıyor ne de kaydetmiş gibi yapan sahte bir başarı.
+ * Yalnızca `.from()` değiştiriliyor; `auth` gerçek kalıyor (çıkış çalışsın).
+ */
+function misafirSorguKuklasi() {
+  let tekil = false;
+  const sonuc = () => ({ data: tekil ? null : [], error: null, count: 0, status: 200 });
+  const zincir = new Proxy(function () {}, {
+    get(_h, ad) {
+      // await edilince buraya düşer: PostgREST sorgu kurucusu da "thenable".
+      if (ad === 'then')    return (c, r) => Promise.resolve(sonuc()).then(c, r);
+      if (ad === 'catch')   return f => Promise.resolve(sonuc()).catch(f);
+      if (ad === 'finally') return f => Promise.resolve(sonuc()).finally(f);
+      return (...a) => {
+        // .single()/.maybeSingle() dizi değil TEK satır bekliyor; boş dizi
+        // dönersek `rowToProfile(data)` gibi çağrılar hatalı davranır.
+        if (ad === 'single' || ad === 'maybeSingle') tekil = true;
+        return zincir;
+      };
+    }
+  });
+  return zincir;
+}
+
+function misafirIstemcisiniKur() {
+  if (!window.supabaseClient || window.supabaseClient.__misafirKuklasi) return;
+  window.supabaseClient.from = () => misafirSorguKuklasi();
+  window.supabaseClient.__misafirKuklasi = true;
+  console.info('[Misafir] Supabase sorguları devre dışı — demo modunda veri okunmuyor/yazılmıyor.');
+}
+
 async function startGuestSession() {
   isGuestMode = true;
   _authReady = true;
@@ -1247,6 +1292,9 @@ async function startGuestSession() {
     email: 'misafir@focusaid.local',
     user_metadata: { full_name: 'Misafir Kullanıcı (Demo)' }
   };
+  // ⚠️ Kukla, ilk Supabase çağrısından ÖNCE kurulmalı — loadProfileFromSupabase
+  // hemen aşağıda `.eq('id','guest_user')` ile sorgu atıyor.
+  misafirIstemcisiniKur();
   showUserInfo(currentUser);
   await loadProfileFromSupabase();
   if (typeof initToday === 'function' && document.getElementById('today-list') && !TodayState.loaded) {
@@ -1561,6 +1609,10 @@ async function loadProfileFromSupabase() {
 
 async function saveProfileToSupabase(profile) {
   if (!currentUser) return;
+  // Demo modunda buluta yazılmıyor. Burada SESSİZ dönüyoruz: bu fonksiyon tema
+  // değişiminde de çağrılıyor, her geçişte uyarı basmak gürültü olurdu.
+  // Kullanıcıya bildirimi açık kaydetme yolunda saveProfile veriyor.
+  if (isGuestMode) return;
   // profileToRow her kolonu doldurur (undefined birakmaz): JSON.stringify
   // undefined alani duserir, upsert o kolonu hic gondermez ve eski deger
   // sessizce yerinde kalirdi.
@@ -2538,6 +2590,14 @@ async function triggerN8N_Split() {
   if (!title) { showToast('Parçalamak için bir başlık girmelisin kral! ⚠️', 'error'); return; }
   // Parçalayıcı da aynı form tarihine görev yazıyor — aynı kural burada da geçerli.
   if (date && isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
+  // Demo modunda n8n vekiline gidilmiyor: misafirin Supabase oturumu yok, vekil
+  // kimlik doğruluyor ve 401 dönüyordu — kullanıcı da "n8n ulaşılamadı, webhook
+  // açık mı?" gibi kendisini ilgilendirmeyen bir hata görüyordu.
+  if (isGuestMode) {
+    showToast('👤 Demo modu: görev oluşturma kapalı. Giriş yaparsan planın gerçekten kaydedilir.', 'info');
+    closeForm();
+    return;
+  }
   const btn = formGonderButonu();
   if (btn) { btn.textContent = '⏳ Analiz Ediyor...'; btn.disabled = true; }
   const profile = JSON.parse(localStorage.getItem('focusaid_profile') || '{}');
@@ -2559,6 +2619,20 @@ async function sendTaskToN8N() {
   const task   = taskEl?.value?.trim();
   const dl     = dlEl?.value;
   if (!task || !dl) { addMessageToChat('⚠️ Bir görev adı ve teslim tarihi girmelisin kral!', 'error'); return; }
+
+  // Demo modunda parçalama kapalı. Parçalayıcı gerçek bir plan üretip onu
+  // kullanıcının Supabase satırlarına ve Google Takvim'ine yazıyor; misafirin
+  // ikisi de yok. Eskiden istek yine de gidiyor, vekilden 401 dönüyor ve ekrana
+  // "n8n bağlantısı kurulamadı. n8n açık mı?" düşüyordu — yanlış teşhis.
+  if (isGuestMode) {
+    addMessageToChat(
+      '👤 <b>Demo modundasın.</b> Parçalayıcı görevini gerçek bir plana çevirip ' +
+      'takvimine yazıyor, bunun için bir hesap gerekiyor — o yüzden demo modunda kapalı.<br><br>' +
+      'Arayüzü buradan rahatça inceleyebilirsin. <a href="landing.html" ' +
+      'class="font-bold underline">Giriş yaparsan</a> görevin gerçekten parçalanır ve ' +
+      'takvimine düşer.', 'ai');
+    return;
+  }
 
   // Takvim bağlı değilse görevler yine kaydedilir ama Google Takvim'e HİÇBİR ŞEY
   // yazılmaz: n8n'deki "Create an event" node'u token'sız 401 alır ve
@@ -2844,6 +2918,7 @@ async function saveProfile() {
     // Supabase'e de kaydet. Yerel kayit zaten yapildi; ag hatasi olsa bile
     // kullanicinin girdisi kaybolmaz, ama BASARILI demeyiz.
     await saveProfileToSupabase(userProfile);
+    if (isGuestMode) showToast('👤 Demo modu: profilin bu cihazda saklandı, buluta yazılmadı.', 'info');
     profiliTemizle();
     tamamlanmaCubuguGuncelle(userProfile);
     if (btn) {

@@ -5,7 +5,7 @@
   "description": "DEHB'li kullanıcılar için yapay zeka destekli görev parçalama ve takvim planlama uygulaması. Bu package.json YALNIZCA geliştirme araçları içindir — uygulamanın kendisi hâlâ build adımsız, paket yöneticisiz statik dosyalardan oluşuyor ve serve.py ile sunuluyor.",
   "scripts": {
     "test": "node --test",
-    "test:ui": "node test-ui/layout-check.mjs && node test-ui/tailwind-guncel.mjs",
+    "test:ui": "node test-ui/layout-check.mjs && node test-ui/misafir-modu.mjs && node test-ui/tailwind-guncel.mjs",
     "build:css": "tailwindcss -c tailwind.config.js -i tailwind-giris.css -o tailwind.css --minify",
     "watch:css": "tailwindcss -c tailwind.config.js -i tailwind-giris.css -o tailwind.css --watch"
   },
