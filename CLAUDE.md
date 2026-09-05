@@ -4,16 +4,21 @@ DEHB odak asistanı. Kullanıcı görev veya yönerge dosyası girer → n8n wor
 seanslarına böler → Google Calendar'a ekler → Supabase `tasks` tablosuna yazar → "Bugün" ekranında
 listelenir.
 
-**Stack:** vanilla HTML/JS + Tailwind (CDN) + FullCalendar + Supabase (Google OAuth + Postgres) +
-n8n (**Oracle Cloud'da self-hosted**, `https://focusaid-n8n.duckdns.org`) + Google Gemini.
-Build adımı yok, paket yöneticisi yok — dosyalar doğrudan servis edilir.
+**Stack:** vanilla HTML/JS + Tailwind (**derlenmiş**, artık CDN değil) + FullCalendar +
+Supabase (Google OAuth + Postgres) + n8n (**Oracle Cloud'da self-hosted**,
+`https://focusaid-n8n.duckdns.org`) + Google Gemini.
+
+HTML ve JS hâlâ build adımsız, doğrudan servis edilir. **Tek istisna CSS:** Tailwind
+2026-09-05'te play CDN'inden çıkarıldı, `tailwind.css` olarak bir kez üretiliyor
+(bkz. [CSS derlemesi](#css-derlemesi)). `package.json` **yalnızca geliştirme araçları** için
+(Tailwind CLI, Playwright); uygulamanın çalışması için `npm i` gerekmez, `serve.py` yeter.
 
 `serve.py` hem yerel geliştirme sunucusu hem de Render'daki üretim sunucusu: statik dosyaları
 servis eder, `config.js`'i ortam değişkenlerinden üretir, Google token'ını yeniler ve n8n'e
 giden istekleri vekiller.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-08-30.
+Son güncelleme: 2026-09-05.
 
 ---
 
@@ -36,6 +41,32 @@ python serve.py                      # port 3000, önbelleksiz
 
 **n8n'i artık yerelde çalıştırmana gerek yok** — Oracle Cloud'da 7/24 ayakta ve `serve.py`
 oraya vekillik ediyor. (Eski not "localhost:5678 açık olmalı" diyordu; 2026-08-26'da geçersizleşti.)
+
+## CSS derlemesi
+
+```bash
+npm i                 # bir kez: Tailwind CLI + Playwright (yalnızca geliştirme)
+npm run build:css     # üretim (minified) → tailwind.css
+npm run watch:css     # geliştirirken açık bırak
+```
+
+Sayfa eskiden `cdn.tailwindcss.com` yüklüyordu: **407 KB ham / 123 KB gzip JavaScript** indirip
+CSS'i her açılışta tarayıcıda derliyordu. Şimdi `tailwind.css` **53.600 bayt / 9.118 bayt gzip**
+ve derleme yok.
+
+⚠️ **Yeni bir Tailwind sınıfı yazdığında `npm run build:css` çalıştır.** Unutursan o sınıf
+dosyada olmaz ve öğe **sessizce stilsiz** kalır — konsolda hata yok, sayfa patlamaz.
+`test-ui/tailwind-guncel.mjs` bunu yakalıyor (CSS'i yeniden üretip bayt bayt karşılaştırır).
+
+`<link rel="stylesheet" href="tailwind.css">` **bilerek** sayfanın kendi `<style>` bloğundan
+SONRA duruyor: play CDN de stylesheet'ini çalışma anında `<head>`'in sonuna enjekte ediyordu.
+Eşitlikte Tailwind yardımcılarının kazandığı kaskad sırası böylece değişmedi — sayfanın kendi
+`.fc-*` kurallarının çoğu bu yüzden zaten `!important` taşıyor. Link'i yukarı taşıma.
+
+Geçişte görünümün değişmediği ölçüldü: iki sürüm de headless Chrome'da açılıp tüm öğelerin
+36 hesaplanmış stili karşılaştırıldı (6 sayfa × 2 ekran). Kontrol grubu (CDN vs CDN) 1899 öğede
+8 fark verdi; asıl karşılaştırma (CDN vs derlenmiş) 2234 öğede 8 fark — gürültü tabanıyla eşit,
+hepsi canlı animasyon opaklığı. Yerleşim/renk/boyut farkı sıfır.
 
 ## Deploy
 
@@ -71,17 +102,43 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 
 ## Testler
 
+İki ayrı takım var. **Karıştırma:** hızlı olan hiçbir şey kurmadan çalışır, yavaş olan tarayıcı açar.
+
 ```bash
-node --test          # 166 test — kök dizinden, ARGÜMANSIZ
+node --test          # 180 test, ~370 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
+npm run test:ui      # 11 test, ~45 sn — gerçek Chrome'da yerleşim + CSS güncelliği
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
 dosyaları tek tek ver.
 
-Test edilen: `tasks-logic.js`, `doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js`,
-`scheduling-logic.js`, `hyperfocus-logic.js` — altısı da bilinçli olarak
-DOM'suz ve ağsız. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve `fetch`
-`*-view.js` / `doc-intake.js`'e.
+**`test/` — saf mantık, DOM'suz, ağsız, bağımlılıksız.** Test edilen: `tasks-logic.js`,
+`doc-intake-logic.js`, `calendar-logic.js`, `profile-logic.js`, `scheduling-logic.js`,
+`hyperfocus-logic.js`. Yeni mantık yazarken bu ayrımı koru: saf hesap `*-logic.js`'e, DOM ve
+`fetch` `*-view.js` / `doc-intake.js`'e.
+
+`test/sablon-fixed.test.js` bunlardan farklı: `index.html`i **metin olarak** okuyup şablonların
+içinde `position:fixed` öğe olmadığını doğruluyor (gerekçesi Tuzaklar'da). Tarayıcı gerektirmediği
+için hızlı takımda kalabiliyor.
+
+**`test-ui/` — gerçek tarayıcıda yerleşim.** `playwright-core` + sistemde kurulu Chrome
+(`channel: 'chrome'`); tarayıcı indirmesi yok, internet ister (sayfa Supabase/FullCalendar'ı
+CDN'den çekiyor).
+
+| dosya | ne doğruluyor |
+|---|---|
+| `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
+| `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
+
+⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
+BULMASIN diye. Buraya `x.test.js` adında dosya koyarsan hızlı takım 45 saniyeye çıkar.
+
+⚠️ **Yeni bir yerleşim testi yazdığında bozuk kodda kırmızıya döndüğünü GÖSTER.** Geçen bir test
+hiçbir şey kanıtlamaz. Bu takımın tamamı böyle doğrulandı: `git show 715fc43:index.html` (mobil
+düzeltmelerden önceki sürüm) yerine konup koşuldu, 9 testin 7'si düştü. "Yatay taşma yok"
+iddiası tek başına o sürümü GEÇİYORDU — 256px'lik sabit sidebar ana içeriği 125px'e eziyor,
+içerik taşmak yerine tek kelimelik sütuna sarıyordu. O yüzden "ana sütun ekranın en az %85'ini
+kullanır" iddiası eklendi.
 
 **`test/n8n-placement.test.js` ayrı bir şey yapıyor: n8n node kodunu doğrudan koşturuyor.** Node
 kodu repoda bir JSON alanında duruyor ve canlıya elle kopyalanıyor; 2026-08-30'a kadar hiçbir şey
@@ -89,6 +146,35 @@ onu test etmiyordu. Dosya `new Function('$','$json', jsCode)` ile node'u çalı�
 değişmezlerini kilitliyor (çakışma yok, görev kaybı yok, mevcut takvim etkinliğinin üstüne
 yazılmıyor) ve `dailyCaps` kopyasının `scheduling-logic.js` ile birebir aynılığını doğruluyor.
 **n8n node kodunu değiştirdiğinde bu dosyayı çalıştır.**
+
+## Mobil arayüz
+
+2026-09-05'e kadar mobil düzen **hiç yazılmamıştı**: `index.html`deki `@media (max-width:768px)`
+bloğunun içinde boş bir TODO duruyordu. Sidebar her genişlikte `w-64` (256px) sabitti, 390px'lik
+telefonda ana içeriğe 125px kalıyordu.
+
+**Kırılma noktası 768px (Tailwind `md:`).** Altında:
+
+- Sidebar ekran dışında bekleyen bir **çekmece** (`#app-sidebar` + `-translate-x-full`), üstte
+  hamburger çubuğu (`#mobile-topbar`), arkada perde. `loadPage` her çağrıldığında
+  `closeMobileSidebar()` çalışıyor — yoksa sayfa değişiyor ama kullanıcı içeriği göremiyor.
+- `main`'de `min-w-0` **şart**: flex çocuğu varsayılan olarak `min-width:auto` ile büzülmeyi
+  reddediyor, içerik ezilip tek kelimelik sütuna sarıyordu.
+- Parçalayıcı'da "Parçala" butonu input'un **altına** akıyor. ≥768px'te eskisi gibi input'un
+  içine mutlak konumlanıyor — o düzeltmenin masaüstüne sızmadığını bir test bekliyor.
+- Takvim **liste görünümüyle** (`listWeek`) açılıyor. Gerekçe ölçüm: ay ızgarası 7 sütuna
+  bölününce hücre 46px kalıyor, görev başlığına 4-6px düşüyor (metin 105-129px istiyor) —
+  görevler okunamaz renkli çizgilere dönüşüyordu. Ay görünümü erişilebilir ama orada başlık
+  yerine bilişsel yük renginde 5px'lik şerit basılıyor; detay güne dokununca gün modalinde.
+- FullCalendar ızgarası `table-layout:fixed` ile sabitleniyor: sütun genişliği içeriğin
+  min-content'inden hesaplandığı için Pazar sütunu kırpılıyordu.
+
+**Mobil ve masaüstü bilinçli olarak ayrı** (kullanıcı kararı, 2026-09-05): aynı veriyi her ekranın
+kaldırdığı biçimde göstermek, 46px'lik hücreye metin sığdırmaya çalışmaktan iyi.
+
+Landing'de ayrı bir tuzak vardı: `.sahne.merkez .sahne-in` (0,3,0) mevcut `@media(max-width:980px)`
+kuralından (0,1,0) daha özgül olduğu için hero telefonda da iki sütunlu kalıyor, maket metnin
+üstüne biniyordu. Mobil override'lar **aynı özgüllükte** yazılmalı.
 
 ## Profil
 
@@ -180,6 +266,11 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `infra/n8n/` | n8n sunucusunun kurulum kiti (Oracle + Docker + Caddy + `KURULUM.md`) |
 | `render.yaml` | Render yapılandırması ve ortam değişkeni listesi (servisi yönetmez) |
 | `config.js` | **gitignored** — Supabase/Google anahtarları; şablonu `config.example.js` |
+| `tailwind.css` | **Üretilen dosya** — elle düzenleme, `npm run build:css` ile yenilenir. Commit'li: canlıda servis ediliyor |
+| `tailwind.config.js` / `tailwind-giris.css` | Tailwind derleme yapılandırması ve giriş dosyası |
+| `package.json` | **Yalnızca geliştirme araçları** (Tailwind CLI, playwright-core). Uygulama bunlarsız çalışır; `node_modules/` gitignored |
+| `test/` | Saf mantık testleri — `node --test`, bağımlılıksız |
+| `test-ui/` | Tarayıcıda yerleşim testleri — `npm run test:ui`. Dosya adları bilerek `*.test.js` DEĞİL |
 
 `docs/superpowers/` altındaki plan ve spec'ler **tamamlanmış işin tarihsel kaydıdır**, güncel talimat
 değil. Özellikle oradaki "`index.html` ve `index_2.html` ikizdir, birini değiştirince diğerine kopyala"
@@ -210,6 +301,13 @@ gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup
   cevaba `takvimeYazilan` / `toplam` sayaçları eklendi ve mesaj buna göre değişiyor
   (`parcalamaSonucMesaji`), yani kullanıcı artık yanlış bilgilendirilmiyor — ama sessiz atlama
   davranışının kendisi duruyor.
+- **Misafir modunda Supabase'e giden her istek patlıyor.** Misafir kullanıcıya `id: 'guest_user'`
+  veriliyor ve bu dize doğrudan sorgulara giriyor (`.eq('user_id', currentUser?.id)`); Postgres
+  UUID beklediği için `invalid input syntax for type uuid` dönüyor. Parçalayıcı'nın 401'i de aynı
+  kökten — misafirin Supabase oturumu yok, `serve.py` vekili kimlik doğruluyor. **Bilinçli olarak
+  düzeltilmedi** (2026-09-05, kullanıcı kararı): misafir modu ürünü çalıştırmak için değil,
+  arayüzü göstermek için var. Yine de gün modalinde ham Postgres hatası görünüyor; temiz bir
+  "demo modunda veri yok" durumuna çevrilmesi açık iş.
 - **Render ücretsiz planı uykuya geçiyor**; ilk istek 50 saniyeye kadar gecikebiliyor. Bu yüzden
   takvimin otomatik bağlanması normalde ~7 sn sürerken soğuk açılışta ~14 sn'yi bulabiliyor.
   Ölçüm yaparken sabırsız olma, "takvim bozuk" diye yanlış teşhis koymak kolay.
@@ -237,6 +335,23 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
   aşan görev ise *görünür bir gerçek*. Görev düşürmek hiçbir durumda seçenek değil.
 - **Tailwind `-translate-x-1/2` ile ortalama yapma.** `.animate-slide-in`'in `reveal` kareleri
   `transform`'u komple eziyor. `inset-x-0 mx-auto` kullan.
+- **Şablonların İÇİNE `position:fixed` öğe koyma** — aynı `reveal` transformunun ikinci yüzü.
+  Transformlu bir öğe, içindeki `fixed` çocuklar için yeni bir *kapsayıcı blok* yaratır: o çocuk
+  artık viewport'a değil transformlu ataya göre konumlanır, yani animasyon sürdüğü ~0.6 sn boyunca
+  tam ekran katman kayar. `#confirm-modal` ve `#day-modal` bu yüzden body seviyesinde duruyor.
+  Kuralı `test/sablon-fixed.test.js` bekliyor.
+  ⚠️ Tarihçe düzeltmesi: 42e1157 bu taşımayı "modal telefonda ekran dışına taşıyor, ölçüldü"
+  diye anlatmıştı — **yanlıştı**, o ölçüm donmuş bir renderer'da alınmıştı. Sağlıklı tarayıcıda
+  modal taşımadan önce de doğru yerde açılıyordu. Taşıma yine de doğru (loadPage `main`'i silerken
+  modal yok olmuyor), ama bir hata düzeltmesi değil, sağlamlaştırma.
+- **Sınıf adını parça parça üretme:** `'bg-' + renk`, `` `text-${x}-500` `` çalışmaz. Tailwind
+  artık derleniyor ve kaynağı **düz metin** olarak tarıyor; oluşturamadığı sınıf CSS'e girmez.
+  ⚠️ Bu play CDN'de ÇALIŞIYORDU (JIT, DOM'u çalışma anında izliyordu) — 2026-09-05'teki geçişle
+  davranış değişti. Değişken sınıf gerekiyorsa **tam adları** bir sözlükte tut, `tasks-view.js`
+  içindeki `YUK_KENAR` gibi; tarayıcı literalleri orada bulur.
+- **Mobil override'ları aynı özgüllükte yaz.** `@media` bir kuralı otomatik kazandırmaz; kaskad
+  yine özgüllüğe bakar. Landing'de `.sahne.merkez .sahne-in` (0,3,0) mobil `.sahne-in` (0,1,0)
+  kuralını eziyor ve hero telefonda iki sütunlu kalıyordu.
 - **Canlı `tasks` tablosu `schema.sql`'den ayrışabiliyor.** Bir insert beklenmedik şekilde patlarsa
   repo'daki şemaya güvenme, `information_schema.columns` ile canlı yapıya bak. Geçmişte eski nesilden
   kalan `title NOT NULL` kolonu tüm insert'leri `23502` ile düşürmüştü.
@@ -296,6 +411,9 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
 
 ## Çalışma düzeni
 
-- **Commit ve push**: kullanıcı istediğinde. Kendiliğinden commit atma.
+- **Commit ve push**: kullanıcı istediğinde. Kendiliğinden commit atma. İzin geldiğinde iş
+  `main`'e kadar gitmeli — Render `main`'den deploy ediyor, dalda bırakılan commit kullanıcı için
+  "yapılmamış" demek. Dalda commit'le, sonra `main`'e fast-forward merge et, push et ve
+  **deploy'u canlı URL'den doğrula**; "pushlandı" demekle iş bitmiyor.
 - **Bu dosyanın güncellenmesi**: kullanıcı "CLAUDE.md'yi güncelle" dediğinde, günün işi bitince.
 - Uzun oturumlardan kaçın; iş bitince `/clear`. Şişmiş bir oturuma geri dönmek çok pahalı.
