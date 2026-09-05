@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FocusAid | Giriş Yap</title>
-<script src="https://cdn.tailwindcss.com"></script>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;600;700;800&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
@@ -58,6 +57,16 @@
   @keyframes fadeIn { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
   .fade-in { animation: fadeIn 0.6s cubic-bezier(0.19,1,0.22,1) both; }
 </style>
+<!-- Tailwind ARTIK CDN'den gelmiyor: play CDN 407 KB ham / 123 KB gzip
+     JavaScript indirip CSS'i her acilista TARAYICIDA derliyordu. Bu dosya bir
+     kez uretiliyor: 54 KB ham / 9 KB gzip. Olculdu; iki surumun hesaplanmis
+     stilleri 2234 ogede birebir ayni cikti (fark yalnizca canli animasyon
+     opakligi, gurultu tabaniyla esit).
+     ⚠️ Yeni bir Tailwind sinifi kullandiginda: npm run build:css
+     Konum bilincli — sayfanin kendi <style>'indan SONRA. CDN de kendi
+     stylesheet'ini <head>'in sonuna enjekte ediyordu; esitlikte Tailwind
+     yardimcilarinin kazandigi kaskad sirasi boylece degismiyor. -->
+<link rel="stylesheet" href="tailwind.css">
 </head>
 <body class="bg-auth min-h-screen flex items-center justify-center p-4">
 
