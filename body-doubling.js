@@ -272,7 +272,7 @@ function getCompanionWidget() {
     widget.id = 'body-doubling-widget';
     widget.className = 'fixed bottom-5 right-5 z-40 transition-all duration-500 select-none';
     widget.innerHTML = `
-      <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-slate-900/95 shadow-2xl border-2 border-indigo-500/40 rounded-3xl backdrop-blur-2xl w-84 md:w-92 animate-slide-in relative group transition-all duration-500 overflow-hidden">
+      <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-slate-900/95 shadow-2xl border-2 border-indigo-500/40 rounded-3xl backdrop-blur-2xl w-80 md:w-96 animate-slide-in relative group transition-all duration-500 overflow-hidden">
         
         <!-- Kapatma Butonu (Sağ Üstte) -->
         <button type="button" onclick="toggleBodyDoublingVisibility(false)" class="absolute top-3 right-3 z-10 w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg" title="Gizle">✕</button>
