@@ -51,7 +51,7 @@ npm run watch:css     # geliştirirken açık bırak
 ```
 
 Sayfa eskiden `cdn.tailwindcss.com` yüklüyordu: **407 KB ham / 123 KB gzip JavaScript** indirip
-CSS'i her açılışta tarayıcıda derliyordu. Şimdi `tailwind.css` **57.762 bayt / 9.623 bayt gzip**
+CSS'i her açılışta tarayıcıda derliyordu. Şimdi `tailwind.css` **58.412 bayt / 9.704 bayt gzip**
 ve derleme yok.
 
 ⚠️ **Yeni bir Tailwind sınıfı yazdığında `npm run build:css` çalıştır.** Unutursan o sınıf
@@ -116,8 +116,8 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 İki ayrı takım var. **Karıştırma:** hızlı olan hiçbir şey kurmadan çalışır, yavaş olan tarayıcı açar.
 
 ```bash
-node --test          # 192 test, ~475 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 22 test, ~115 sn — gerçek Chrome'da yerleşim + misafir modu + Sherlock + CSS
+node --test          # 203 test, ~500 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
+npm run test:ui      # 33 test, ~150 sn — Chrome'da yerleşim, misafir modu, Sherlock, odalar, CSS
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -141,6 +141,7 @@ CDN'den çekiyor).
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
 | `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
 | `test-ui/sherlock-yanimda.mjs` | Body doubling kullanıcıyla birlikte geliyor mu: 6 sayfada gezerken kayboluyor mu, ayrı pencereye **taşınıyor mu** (kopyalanmıyor), taşındıktan sonra butonlar çalışıyor mu, kalan süre ilerliyor mu, geri alınca tek widget kalıyor mu, sayaç durunca pencere kapanıyor mu, **açılamazsa kullanıcı sebebini görüyor mu** |
+| `test-ui/calisma-odalari.mjs` | Odalar listeleniyor mu, oynatıcı doğru `youtube-nocookie` adresini alıyor mu, odadan çıkınca ve sayfa değişince **video susuyor mu**, sayaç işliyor mu, kötü bağlantı özel oda olarak eklenmiyor mu, mobilde taşma var mı |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
 ⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
@@ -277,6 +278,7 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `scheduling-logic.js` | Gün ataması, gün içi bilişsel yük sıralaması, `dailyCaps` — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
 | `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
 | `body-doubling.js` | 🕵️ Sherlock: iki sinematik SVG sahnesi + widget + ayrı pencere (PiP). Aşağıda kendi bölümü var |
+| `study-rooms-logic.js` / `study-rooms.js` | 📺 Çalışma Odaları: oda kataloğu + YouTube kimliği çözümleme (saf) / oynatıcı, oda sayacı (DOM) |
 | `brain-dump.js` | 🧠 Düşünce Parkı çekmecesi (Alt+D) |
 | `notifications.js` | 🔔 Arka plan web bildirimleri (izin isteme + seans sonu bildirimi) |
 | `inat-modu.js` / `dopamin-carki.js` | 🥊 İnat Modu (kademeli yorulan boss) / 🎡 Dopamin Şans Çarkı |
@@ -330,6 +332,11 @@ Odak sayacı başlayınca sağ altta beliren arkadaş. `startTaskTimer` →
 2. **Başka sekme/site** — karttaki **⧉** butonu widget'ı Document Picture-in-Picture penceresine
    **TAŞIR** (kopyalamaz). Tek Sherlock kalır, durumu bölünmez. **⇤** geri alır.
 
+Kullanıcı ⧉ ile bir kez açtıysa, sonraki seanslarda pencere **kendiliğinden** açılıyor
+(`showBodyDoubling` içinden, `startTaskTimer` tıklama zincirinde). Varsayılan KAPALI: davetsiz
+pencere açmak saldırgan bir davranış. ⇤ ile kapatmak tercihi geri kapatıyor — karar kullanıcının
+son davranışı, ayrı bir ayar ekranı yok (`focusaid_sherlock_ayri_pencere`).
+
 ### Ayrı pencerenin üç tuzağı (üçü de yaşandı)
 
 - **Inline `onclick` KULLANMA.** Inline handler öğenin *kendi belgesinin* window'unda çözülür.
@@ -380,6 +387,40 @@ Gerçekçilik detaydan değil **ışıktan** geliyor; yeni sahne/varyant eklenec
 verilmeyince figür dönüş karesinde odanın öbür ucuna **ışınlanır**. Tek kare ekran görüntüsüyle
 bu görünmez — animasyonu `anim.currentTime` ile birkaç yüzdede dondurup bbox ölç. **Animasyon
 doğrulaması tek kareyle yapılmaz.**
+
+## Çalışma Odaları
+
+"Study with me" videolarıyla body doubling: kullanıcı bir odaya girer, ekranda **gerçek biri**
+çalışır, kendi 50/10 sayacı yanında işler. Sherlock'un animasyonlu arkadaşından farkı bu
+(kullanıcı kararı, 2026-09-06: "animasyon şeklinde bir çalışma arkadaşı değil, gerçek kişiler").
+
+Katalog `study-rooms-logic.js` içinde; oynatıcı ve sayaç `study-rooms.js`.
+
+⚠️ **Yeni oda eklerken videonun GÖMÜLEBİLİR olduğunu doğrula.** Sahibi gömmeyi kapatmış bir
+video sessizce siyah kutu olarak kalır — konsolda hata yok, kullanıcı uygulamayı bozuk sanır.
+Kataloğun tamamı YouTube IFrame API ile tek tek açılıp `onReady` aldığı doğrulanarak seçildi:
+
+```js
+new YT.Player(el, { videoId, events: {
+  onReady: () => console.log('gomulebilir', p.getDuration()),
+  onError: e => console.log('HATA', e.data)   // 101/150 = gomme YASAK
+}});
+```
+
+⚠️ **`iframe.src = ''` videoyu DURDURMAZ.** Boş dize göreli adres sayılır: iframe uygulamanın
+kendisini yükler ve `X-Frame-Options: SAMEORIGIN` olduğu için bu gerçekten başarılı olur —
+iç içe bir FocusAid açılır. `about:blank` yaz. Nöbetçisi `test-ui/calisma-odalari.mjs`.
+
+⚠️ **Kullanıcının yapıştırdığı adres doğrudan iframe'e girmez.** `youtubeVideoIdCikar` beyaz
+liste uygular: yalnızca YouTube alan adları ve tam 11 karakterlik `[A-Za-z0-9_-]` kimlik.
+`javascript:`, `data:`, `youtube.com.kotu.example` gibi girdiler null döner. Kara liste yazma.
+
+Oda sayacı **Bugün ekranındaki görev sayacından ayrı** (`OdaState` vs `TaskTimerState`):
+oradaki belirli bir göreve bağlı, buradaki odada geçirdiğin süreye. Bağlamak, görev seçmeden
+odaya giren kullanıcıyı kilitlerdi. Sayfa değiştiğinde `loadPage` → `odalardanAyril()` çağırıyor;
+yoksa video arka planda çalmaya devam eder.
+
+Adres `youtube-nocookie.com`: izleme çerezi kullanıcı oynatmadan yazılmıyor.
 
 ## Bilinen Sorunlar
 
@@ -442,6 +483,9 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
   diye anlatmıştı — **yanlıştı**, o ölçüm donmuş bir renderer'da alınmıştı. Sağlıklı tarayıcıda
   modal taşımadan önce de doğru yerde açılıyordu. Taşıma yine de doğru (loadPage `main`'i silerken
   modal yok olmuyor), ama bir hata düzeltmesi değil, sağlamlaştırma.
+- **`iframe.src = ''` içeriği boşaltmaz.** Boş dize göreli adres sayılır ve iframe içinde
+  bulunduğu sayfayı yükler; `X-Frame-Options: SAMEORIGIN` olduğu için uygulama kendi içinde
+  açılır. `about:blank` yaz. Ayrıntı: [Çalışma Odaları](#çalışma-odaları).
 - **Belge sınırını aşan DOM'da inline `onclick` kullanma.** Inline handler öğenin kendi
   belgesinin window'unda çözülür; Document PiP penceresine taşınan bir öğede o fonksiyonlar
   yoktur ve buton sessizce ölür. Ayrıntı: [Sherlock](#sherlock-body-doubling).
