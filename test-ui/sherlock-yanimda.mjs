@@ -231,3 +231,40 @@ test('odak sayacı durunca ayrı pencere de kapanıyor', async () => {
 
   await sayfa.close();
 });
+
+test('ayrı pencere açılamazsa kullanıcı sebebini görüyor', async () => {
+  // ⚠️ Sessiz başarısızlık nöbetçisi: canlıda butona basılıp hiçbir şey
+  // olmadığında sebebin görünmediği fark edildi. En sık sebep
+  // NotAllowedError (tarayıcı yalnızca gerçek tıklamada izin veriyor).
+  const sayfa = await sherlockli();
+  if (!await pipVar(sayfa)) { await sayfa.close(); return; }
+
+  const mesaj = await sayfa.evaluate(async () => {
+    // requestWindow'u reddedecek şekilde değiştir: kullanıcı jesti olmadan
+    // çağrıldığında tarayıcının verdiği hatanın aynısı.
+    const asil = documentPictureInPicture.requestWindow.bind(documentPictureInPicture);
+    documentPictureInPicture.requestWindow = () => {
+      const h = new Error('Document PiP requires user activation');
+      h.name = 'NotAllowedError';
+      return Promise.reject(h);
+    };
+    await window.sherlockYanimaGel();
+    documentPictureInPicture.requestWindow = asil;
+    const t = document.getElementById('focusaid-toast');
+    return t ? t.textContent : null;
+  });
+  assert.ok(mesaj, 'pencere açılmadı ama kullanıcıya hiçbir şey söylenmedi');
+  assert.match(mesaj, /tıklaman gerekiyor/, `beklenmeyen mesaj: ${mesaj}`);
+
+  // Yarım kalmış durum bırakmamalı: widget ana belgede ve tek olmalı.
+  const d = await sayfa.evaluate(() => ({
+    adet: document.querySelectorAll('#body-doubling-widget').length,
+    yerTutucu: !!document.getElementById('bd-yer-tutucu'),
+    pip: !!BodyDoublingState.pipPenceresi
+  }));
+  assert.equal(d.adet, 1);
+  assert.equal(d.yerTutucu, false, 'başarısız denemeden yer tutucu kaldı');
+  assert.equal(d.pip, false);
+
+  await sayfa.close();
+});

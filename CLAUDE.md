@@ -117,7 +117,7 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 
 ```bash
 node --test          # 192 test, ~475 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 21 test, ~112 sn — gerçek Chrome'da yerleşim + misafir modu + Sherlock + CSS
+npm run test:ui      # 22 test, ~115 sn — gerçek Chrome'da yerleşim + misafir modu + Sherlock + CSS
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -140,7 +140,7 @@ CDN'den çekiyor).
 |---|---|
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
 | `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
-| `test-ui/sherlock-yanimda.mjs` | Body doubling kullanıcıyla birlikte geliyor mu: 6 sayfada gezerken kayboluyor mu, ayrı pencereye **taşınıyor mu** (kopyalanmıyor), taşındıktan sonra butonlar çalışıyor mu, kalan süre ilerliyor mu, geri alınca tek widget kalıyor mu, sayaç durunca pencere kapanıyor mu |
+| `test-ui/sherlock-yanimda.mjs` | Body doubling kullanıcıyla birlikte geliyor mu: 6 sayfada gezerken kayboluyor mu, ayrı pencereye **taşınıyor mu** (kopyalanmıyor), taşındıktan sonra butonlar çalışıyor mu, kalan süre ilerliyor mu, geri alınca tek widget kalıyor mu, sayaç durunca pencere kapanıyor mu, **açılamazsa kullanıcı sebebini görüyor mu** |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
 ⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
@@ -154,7 +154,8 @@ içerik taşmak yerine tek kelimelik sütuna sarıyordu. O yüzden "ana sütun e
 kullanır" iddiası eklendi.
 
 `test-ui/sherlock-yanimda.mjs` de aynı yolla doğrulandı: `93d5dcf`teki (inline onclick'li,
-PiP'siz) `body-doubling.js` yerine konup koşuldu, **6 testin 5'i düştü**. Geçen tek test uygulama
+PiP'siz) `body-doubling.js` yerine konup koşuldu, **6 testin 5'i düştü**; "sessiz başarısızlık" testi de
+geri bildirim eklenmeden önceki kodda kırmızıydı. Geçen tek test uygulama
 içi gezinme — o davranış zaten vardı, oradaki nöbetçi gelecekteki regresyon için.
 
 **`test/n8n-placement.test.js` ayrı bir şey yapıyor: n8n node kodunu doğrudan koşturuyor.** Node
@@ -342,6 +343,12 @@ Odak sayacı başlayınca sağ altta beliren arkadaş. `startTaskTimer` →
 - **PiP belgesi CSS miras almaz.** `stilleriAktar()` sayfanın stylesheet'lerini kopyalıyor
   (çapraz-kaynak olanlar `cssRules`a izin vermez, onlar `<link>` olarak taşınıyor). Aktarılmazsa
   Sherlock stilsiz bir yığın olarak görünür.
+
+- **`requestWindow` yalnızca gerçek kullanıcı tıklamasında çalışır** (`NotAllowedError:
+  Document PiP requires user activation`). Programatik çağrı — otomasyon, `setTimeout`,
+  await'ten sonraki ikinci çağrı — reddedilir. Reddi **yutma**: buton hiçbir şey yapmıyormuş
+  gibi görünür. `bdBilgiVer()` sebebi toast ile söylüyor, nöbetçisi
+  `test-ui/sherlock-yanimda.mjs` içindeki "sessiz başarısızlık" testi.
 
 Ek not: PiP'te sahne kutusuna `flex:1` verme — 2:1'lik viewBox `slice` ile üstten/alttan kırpılır,
 masa ve tavan kadraj dışında kalır. `aspect-ratio: 2 / 1` ile sabit.

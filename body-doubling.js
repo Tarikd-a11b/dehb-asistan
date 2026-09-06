@@ -931,8 +931,17 @@ function stilleriAktar(pip) {
   pip.document.head.appendChild(ek);
 }
 
+/** Butona basıldı ama pencere açılmadıysa kullanıcı sebebini bilmeli. */
+function bdBilgiVer(mesaj) {
+  if (typeof showToast === 'function') showToast(mesaj, 'info');
+  else console.warn('[Sherlock]', mesaj);
+}
+
 async function sherlockYanimaGel() {
-  if (!sherlockAyriPencereDestekli()) return false;
+  if (!sherlockAyriPencereDestekli()) {
+    bdBilgiVer('Ayrı pencere bu tarayıcıda desteklenmiyor (Chrome 116+ gerekiyor).');
+    return false;
+  }
   if (BodyDoublingState.pipPenceresi) { BodyDoublingState.pipPenceresi.focus(); return true; }
 
   const widget = getCompanionWidget();
@@ -940,7 +949,12 @@ async function sherlockYanimaGel() {
   try {
     pip = await documentPictureInPicture.requestWindow(PIP_OLCU);
   } catch (e) {
-    // Kullanıcı jesti yoksa veya tarayıcı reddederse sessizce vazgeç.
+    // ⚠️ Sessizce vazgeçme: buton hiçbir şey yapmıyormuş gibi görünüyordu.
+    // En sık sebep NotAllowedError — tarayıcı bunu yalnızca gerçek bir
+    // kullanıcı tıklamasında (user activation) veriyor.
+    bdBilgiVer(e && e.name === 'NotAllowedError'
+      ? 'Sherlock’u ayrı pencereye almak için butona doğrudan tıklaman gerekiyor.'
+      : 'Ayrı pencere açılamadı: ' + ((e && e.message) || 'bilinmeyen hata'));
     return false;
   }
   BodyDoublingState.pipPenceresi = pip;
