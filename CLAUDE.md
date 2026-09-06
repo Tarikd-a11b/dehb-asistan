@@ -422,6 +422,27 @@ yoksa video arka planda çalmaya devam eder.
 
 Adres `youtube-nocookie.com`: izleme çerezi kullanıcı oynatmadan yazılmıyor.
 
+### Telif ve gömme şartları
+
+Videolar **barındırılmıyor, indirilmiyor, kopyalanmıyor** — YouTube'un kendi oynatıcısı
+gömülüyor ve YouTube Hizmet Şartları bunun için üçüncü taraf sitelere alt lisans veriyor.
+Yükleyen gömmeyi kapatmışsa oynatıcı zaten açılmaz (bu yüzden katalog `onReady` ile
+doğrulanıyor). Riski düşük tutan şey şu üç kural:
+
+- **Oynatıcıya dokunma.** Videoyu ya da oynatıcıyı değiştirmek, YouTube markasını gizlemek,
+  reklamları engellemek gömme iznini düşürür. ⚠️ `modestbranding` KULLANMA: YouTube onu
+  2023 Ağustos'ta kaldırdı (etkisiz) ve amacı tam da markayı gizlemekti. `controls=0` gibi
+  oynatıcıyı örten parametrelerden de kaçın. Nöbetçisi `test-ui/calisma-odalari.mjs`.
+- **Atıf görünür kalsın.** Oda sahnesindeki "▶ kanal — YouTube'da aç" bağlantısı videoyu
+  kaynağında açıyor; oda kartlarında kanal adı yazıyor. İçeriği kendi içeriğimiz gibi
+  sunmuyoruz.
+- **Reklam gelirse durum değişir.** YouTube şartları, gömülü içeriğin bulunduğu sayfada
+  reklam/sponsorluk satışını ayrı bir izne bağlıyor (sayfada YouTube'dan gelmeyen, kendi
+  başına değerli içerik varsa istisna tanıyor). FocusAid'de reklam yok; **ileride reklam ya
+  da ücretli plan eklenirse bu madde yeniden okunmalı.**
+
+Not: bu bir hukuki görüş değil, uygulamanın hangi varsayımlarla yazıldığının kaydı.
+
 ## Bilinen Sorunlar
 
 - **Takvim senkronu sessizce atlanabiliyor.** n8n'deki takvim node'ları `onError: continue` ile

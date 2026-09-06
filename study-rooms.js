@@ -100,8 +100,21 @@ function odayaGir(odaId) {
 
   // Kimlik beyaz listeden geçmiş olsa da adresi burada da kendimiz kuruyoruz;
   // hiçbir kullanıcı metni sorgu dizesine karışmıyor.
+  //
+  // ⚠️ `modestbranding` KULLANMA: YouTube onu 2023 Ağustos'ta kaldırdı (artık
+  // hiçbir etkisi yok) ve amacı YouTube markasını gizlemekti. Gömme izni,
+  // oynatıcının olduğu gibi gösterilmesi şartına bağlı — oynatıcıyı ya da
+  // videoyu değiştirmek, markasını örtmek, reklamları engellemek gömme
+  // hakkını düşürür. Oynatıcıya dokunmuyoruz.
   const cerceve = document.getElementById('oda-oynatici');
-  cerceve.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(oda.videoId)}?rel=0&modestbranding=1&playsinline=1`;
+  cerceve.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(oda.videoId)}?rel=0&playsinline=1`;
+
+  // Atıf: videoyu kaynağında açma yolu her zaman görünür dursun.
+  const kaynak = document.getElementById('oda-kaynak');
+  if (kaynak) {
+    kaynak.href = `https://www.youtube.com/watch?v=${encodeURIComponent(oda.videoId)}`;
+    kaynak.textContent = oda.kanal ? `▶ ${oda.kanal} — YouTube'da aç` : "▶ YouTube'da aç";
+  }
 
   odaSayacSifirla();
 }

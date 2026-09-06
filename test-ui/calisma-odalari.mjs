@@ -234,3 +234,25 @@ test('mobilde odalar taşmıyor ve oynatıcı ekrana sığıyor', async () => {
   assert.ok(d.oynaticiYukseklik > 100, `oynatıcı yüksekliği çökmüş: ${d.oynaticiYukseklik}px`);
   await sayfa.close();
 });
+
+test('oynatıcı YouTube markasını gizlemeye çalışmıyor ve kaynağa atıf var', async () => {
+  // ⚠️ Gömme izni oynatıcının OLDUĞU GİBİ gösterilmesine bağlı. `modestbranding`
+  // YouTube tarafından 2023'te kaldırıldı (etkisiz) ve amacı markayı gizlemekti;
+  // reklam engelleme / oynatıcıyı örtme de gömme hakkını düşürür.
+  const sayfa = await odalar();
+  await sayfa.click('[data-oda="lofi-kafe"]');
+  await sayfa.waitForTimeout(500);
+
+  const d = await sayfa.evaluate(() => {
+    const f = document.getElementById('oda-oynatici');
+    const a = document.getElementById('oda-kaynak');
+    return { src: f.src, kaynakHref: a ? a.href : null, kaynakMetin: a ? a.textContent : null };
+  });
+  assert.ok(!/modestbranding/.test(d.src), `oynatıcıda modestbranding var: ${d.src}`);
+  assert.ok(!/controls=0/.test(d.src), 'oynatıcı kontrolleri gizlenmiş');
+  // Videoyu kaynağında açma yolu her zaman görünür olmalı (atıf).
+  assert.match(d.kaynakHref, /^https:\/\/www\.youtube\.com\/watch\?v=[A-Za-z0-9_-]{11}$/,
+    `kaynak bağlantısı yok ya da bozuk: ${d.kaynakHref}`);
+  assert.match(d.kaynakMetin, /YouTube/);
+  await sayfa.close();
+});
