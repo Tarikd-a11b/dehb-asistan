@@ -18,7 +18,7 @@ servis eder, `config.js`'i ortam değişkenlerinden üretir, Google token'ını 
 giden istekleri vekiller.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-09-05.
+Son güncelleme: 2026-09-06.
 
 ---
 
@@ -51,12 +51,23 @@ npm run watch:css     # geliştirirken açık bırak
 ```
 
 Sayfa eskiden `cdn.tailwindcss.com` yüklüyordu: **407 KB ham / 123 KB gzip JavaScript** indirip
-CSS'i her açılışta tarayıcıda derliyordu. Şimdi `tailwind.css` **53.600 bayt / 9.118 bayt gzip**
+CSS'i her açılışta tarayıcıda derliyordu. Şimdi `tailwind.css` **57.762 bayt / 9.623 bayt gzip**
 ve derleme yok.
 
 ⚠️ **Yeni bir Tailwind sınıfı yazdığında `npm run build:css` çalıştır.** Unutursan o sınıf
 dosyada olmaz ve öğe **sessizce stilsiz** kalır — konsolda hata yok, sayfa patlamaz.
 `test-ui/tailwind-guncel.mjs` bunu yakalıyor (CSS'i yeniden üretip bayt bayt karşılaştırır).
+
+⚠️ **Bu gerçekten oldu (2026-09-06).** 5 Eylül'ün özellik commit'leri yeni sınıflar getirdi ama
+CSS üretilmedi; `bottom-5`/`right-5` dosyada olmadığı için body doubling widget'i `bottom: -258px`
+ile **ekranın tamamen altında** kaldı — DOM'a giriyor, animasyon dönüyor, kullanıcı hiçbir şey
+görmüyordu. Canlıda da öyleydi. Bekçi yakaladı; hatayı gören başka hiçbir test yoktu.
+
+⚠️ **Tailwind ölçeğinde OLMAYAN sınıf yazma.** `w-84` / `w-92` diye bir şey yok (standart
+`w-80` / `w-96`) ve `theme.extend` boş. Böyle bir sınıf sessizce hiçbir şey yapmaz: kart
+genişliği içerikten gelir. Aynı widget bu yüzden 390px telefonda 517px genişlikteydi ve sol
+kenarı 147px ekran dışında kalıyordu. Özel bir ölçü gerekiyorsa ya `theme.extend`e ekle ya da
+köşeli parantezli tam değer yaz (`w-[21rem]`).
 
 `<link rel="stylesheet" href="tailwind.css">` **bilerek** sayfanın kendi `<style>` bloğundan
 SONRA duruyor: play CDN de stylesheet'ini çalışma anında `<head>`'in sonuna enjekte ediyordu.
@@ -105,8 +116,8 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 İki ayrı takım var. **Karıştırma:** hızlı olan hiçbir şey kurmadan çalışır, yavaş olan tarayıcı açar.
 
 ```bash
-node --test          # 180 test, ~370 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 15 test, ~90 sn — gerçek Chrome'da yerleşim + misafir modu + CSS güncelliği
+node --test          # 192 test, ~475 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
+npm run test:ui      # 21 test, ~112 sn — gerçek Chrome'da yerleşim + misafir modu + Sherlock + CSS
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -129,6 +140,7 @@ CDN'den çekiyor).
 |---|---|
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
 | `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
+| `test-ui/sherlock-yanimda.mjs` | Body doubling kullanıcıyla birlikte geliyor mu: 6 sayfada gezerken kayboluyor mu, ayrı pencereye **taşınıyor mu** (kopyalanmıyor), taşındıktan sonra butonlar çalışıyor mu, kalan süre ilerliyor mu, geri alınca tek widget kalıyor mu, sayaç durunca pencere kapanıyor mu |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
 ⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
@@ -140,6 +152,10 @@ düzeltmelerden önceki sürüm) yerine konup koşuldu, 9 testin 7'si düştü. 
 iddiası tek başına o sürümü GEÇİYORDU — 256px'lik sabit sidebar ana içeriği 125px'e eziyor,
 içerik taşmak yerine tek kelimelik sütuna sarıyordu. O yüzden "ana sütun ekranın en az %85'ini
 kullanır" iddiası eklendi.
+
+`test-ui/sherlock-yanimda.mjs` de aynı yolla doğrulandı: `93d5dcf`teki (inline onclick'li,
+PiP'siz) `body-doubling.js` yerine konup koşuldu, **6 testin 5'i düştü**. Geçen tek test uygulama
+içi gezinme — o davranış zaten vardı, oradaki nöbetçi gelecekteki regresyon için.
 
 **`test/n8n-placement.test.js` ayrı bir şey yapıyor: n8n node kodunu doğrudan koşturuyor.** Node
 kodu repoda bir JSON alanında duruyor ve canlıya elle kopyalanıyor; 2026-08-30'a kadar hiçbir şey
@@ -259,6 +275,11 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `profile-logic.js` | Profil alanları, doluluk hesabı, n8n'e giden `planningProfile()` — DOM'suz |
 | `scheduling-logic.js` | Gün ataması, gün içi bilişsel yük sıralaması, `dailyCaps` — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
 | `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
+| `body-doubling.js` | 🕵️ Sherlock: iki sinematik SVG sahnesi + widget + ayrı pencere (PiP). Aşağıda kendi bölümü var |
+| `brain-dump.js` | 🧠 Düşünce Parkı çekmecesi (Alt+D) |
+| `notifications.js` | 🔔 Arka plan web bildirimleri (izin isteme + seans sonu bildirimi) |
+| `inat-modu.js` / `dopamin-carki.js` | 🥊 İnat Modu (kademeli yorulan boss) / 🎡 Dopamin Şans Çarkı |
+| `focus-audio.js` | İşitsel odak motoru: brown noise, 40 Hz binaural, lofi, rain, white noise |
 | `doc-intake-logic.js` / `doc-intake.js` | Yönerge dosyası yükleme: saf mantık / arayüz |
 | `dehb-info.js` | DEHB Bilgilendirme Platformu içeriği |
 | `serve.py` | uygulama sunucusu: statik + config enjeksiyonu + n8n vekili + `/api/google/refresh`. **`/` → `landing.html`** (uygulama `/index.html`'de) |
@@ -294,6 +315,64 @@ değiştir, en son köprüyü sil.
 dahil tüm async iş bitince ateşlendiği için yönlendirme döngüsünü engeller. Oturum yoksa `auth.html`'e
 gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup teşhis ekranı basar
 (`gosterOturumTeshisi()`), tarayıcıda bounce eden bir sayfayı incelemek zor olduğu için.
+
+## Sherlock (body doubling)
+
+Odak sayacı başlayınca sağ altta beliren arkadaş. `startTaskTimer` →
+`showBodyDoubling('working')`, seans bitince `'break'`, sayaç durunca `hideBodyDoubling()`.
+
+**Sherlock kullanıcıyla birlikte gelir.** İki ayrı mekanizma:
+
+1. **Uygulama içi gezinme** — widget `document.body` seviyesinde duruyor, `loadPage` yalnızca
+   `#main-content`i siliyor, dolayısıyla sayfa değiştirince kaybolmuyor. Bedava değil: widget'ı
+   bir şablonun içine taşırsan sessizce yok olur (ve `position:fixed` tuzağına da girer).
+2. **Başka sekme/site** — karttaki **⧉** butonu widget'ı Document Picture-in-Picture penceresine
+   **TAŞIR** (kopyalamaz). Tek Sherlock kalır, durumu bölünmez. **⇤** geri alır.
+
+### Ayrı pencerenin üç tuzağı (üçü de yaşandı)
+
+- **Inline `onclick` KULLANMA.** Inline handler öğenin *kendi belgesinin* window'unda çözülür.
+  Widget PiP belgesine taşındığında orada `showBodyDoubling` yoktur; butonlar **sessizce ölür**,
+  konsolda tek satır çıkmaz. Hepsi `addEventListener` ile bağlı — kapanış ana window'da kaldığı
+  için taşıma etkilemiyor.
+- **İç öğeleri `document.getElementById` ile arama.** Widget PiP'e geçince ana belgede yoktur.
+  Sorgular `bdOge()` ile **widget üzerinden** yapılıyor; ayrıca widget'ın kendisi
+  `BodyDoublingState.widget` içinde tutuluyor — aksi halde `getCompanionWidget` onu bulamayıp
+  **ikinci bir Sherlock** üretiyordu.
+- **PiP belgesi CSS miras almaz.** `stilleriAktar()` sayfanın stylesheet'lerini kopyalıyor
+  (çapraz-kaynak olanlar `cssRules`a izin vermez, onlar `<link>` olarak taşınıyor). Aktarılmazsa
+  Sherlock stilsiz bir yığın olarak görünür.
+
+Ek not: PiP'te sahne kutusuna `flex:1` verme — 2:1'lik viewBox `slice` ile üstten/alttan kırpılır,
+masa ve tavan kadraj dışında kalır. `aspect-ratio: 2 / 1` ile sabit.
+
+### Sahnelerin tasarım dili
+
+Gerçekçilik detaydan değil **ışıktan** geliyor; yeni sahne/varyant eklenecekse bu kurallar korunmalı:
+
+- **Tek ışık kaynağı (chiaroscuro).** Her yüzeyin rengi o ışıktan aldığı payla belirlenir; düz
+  dolgu yok, her kütle gradyanlı. Karakter neredeyse siluet — onu fondan ayıran şey konturundaki
+  sıcak "rim light".
+- **Yüz karanlıkta.** Işık yalnızca profil kenarından içeri söner (`clipPath` ile kafanın içine
+  hapsedilmiş kalın stroke: 10px sönük → 4.5px orta → 1.5px keskin). İlk denemede geniş düz ten
+  dolgusu kullanıldı ve **maske gibi durdu**; bu ölçekte okunmayan göz/ağız detayı çizmektense
+  güçlü bir profil silueti.
+- **Sıcak/soğuk kontrast.** Çalışma sahnesinde sağda amber lamba + solda yağmurlu pencere; mola
+  sahnesinde arkadan ay ışığı (kontra) + sağdan şömine.
+- **Atmosferik derinlik.** Arka plan `feGaussianBlur` + düşük kontrast, karakter net, ön plan koyu.
+  En parlak değer masadaki kağıt — göz oraya gidiyor.
+- **viewBox 480×240 (2:1) + `preserveAspectRatio="slice"`.** Eski 3:2'de kutunun yanlarında siyah
+  bant kalıyordu.
+- `prefers-reduced-motion: reduce` altında **bütün** animasyonlar kapanmalı.
+
+⚠️ **SVG'de çizim sırası = derinlik.** Karakter masanın ARKASINDA oturur ama eller masanın
+ÜSTÜNDEdir: gövde masadan önce, kollar masadan **sonra** çizilir. İlk sürümde kollar masadan önce
+çizildi ve büyüteç tamamen masanın altında kalıp görünmez oldu.
+
+⚠️ **`scaleX(-1)` animasyonuna `transform-origin` ŞART.** SVG'de varsayılan (0,0); origin
+verilmeyince figür dönüş karesinde odanın öbür ucuna **ışınlanır**. Tek kare ekran görüntüsüyle
+bu görünmez — animasyonu `anim.currentTime` ile birkaç yüzdede dondurup bbox ölç. **Animasyon
+doğrulaması tek kareyle yapılmaz.**
 
 ## Bilinen Sorunlar
 
@@ -356,6 +435,9 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
   diye anlatmıştı — **yanlıştı**, o ölçüm donmuş bir renderer'da alınmıştı. Sağlıklı tarayıcıda
   modal taşımadan önce de doğru yerde açılıyordu. Taşıma yine de doğru (loadPage `main`'i silerken
   modal yok olmuyor), ama bir hata düzeltmesi değil, sağlamlaştırma.
+- **Belge sınırını aşan DOM'da inline `onclick` kullanma.** Inline handler öğenin kendi
+  belgesinin window'unda çözülür; Document PiP penceresine taşınan bir öğede o fonksiyonlar
+  yoktur ve buton sessizce ölür. Ayrıntı: [Sherlock](#sherlock-body-doubling).
 - **Sınıf adını parça parça üretme:** `'bg-' + renk`, `` `text-${x}-500` `` çalışmaz. Tailwind
   artık derleniyor ve kaynağı **düz metin** olarak tarıyor; oluşturamadığı sınıf CSS'e girmez.
   ⚠️ Bu play CDN'de ÇALIŞIYORDU (JIT, DOM'u çalışma anında izliyordu) — 2026-09-05'teki geçişle
