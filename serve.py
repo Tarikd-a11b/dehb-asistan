@@ -182,6 +182,13 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
             self._json_yanit(400, {'error': 'bad_request'})
             return
 
+        # Bu uc GOOGLE_CLIENT_SECRET ile token uretiyor; kimliksiz birakilirsa
+        # herkese acik bir "token yenileme servisi" olur ve Google kotasi/Render
+        # kaynagi somurulebilir. n8n vekilindeki ayni kontrol burada da olmali.
+        if not dogrula_supabase_kullanicisi((govde or {}).get('supabaseToken')):
+            self._json_yanit(401, {'error': 'unauthorized'})
+            return
+
         durum, yanit = refresh_google_access_token(refresh_token)
         self._json_yanit(durum, yanit)
 

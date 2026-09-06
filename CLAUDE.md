@@ -408,6 +408,44 @@ doğrulanıyor). Riski düşük tutan şey şu üç kural:
 
 Not: bu bir hukuki görüş değil, uygulamanın hangi varsayımlarla yazıldığının kaydı.
 
+## Ön yüze inen anahtarlar
+
+`config.js` tarayıcıya iniyor: **içindeki hiçbir şey sır değildir.** `SUPABASE_URL`,
+`SUPABASE_ANON_KEY`, `GOOGLE_API_KEY`, `GOOGLE_CLIENT_ID` — dördü de sayfa kaynağına bakan
+herkesçe görülebilir ve bu **normaldir**; tarayıcıda çalışan uygulamalarda gizlenemezler.
+Güvenlik bunları saklamaktan değil, **kötüye kullanımlarını kapatmaktan** geliyor:
+
+| anahtar | onu güvenli kılan şey |
+|---|---|
+| `SUPABASE_ANON_KEY` | **RLS.** Anon anahtarla oturumsuz okuma boş dizi döner, insert `42501` ile reddedilir |
+| `GOOGLE_API_KEY` | **HTTP referrer kısıtı** + yalnızca Calendar API'ye izin |
+| `GOOGLE_CLIENT_ID` | OAuth akışı; secret sunucuda, `Authorized JavaScript origins` Google tarafında |
+| n8n secret | Ön yüzde **yok** — `serve.py` ekliyor (aşağı bak) |
+
+⚠️ **`GOOGLE_API_KEY`i "açıkta duruyor" diye SİLME** — `gapi.client.init` onu istiyor, silersen
+takvim komple kırılır. Doğrusu Google Cloud Console → Credentials → anahtar → *Application
+restrictions: Websites*. Listeye **ikisini birden** yaz:
+
+```
+https://dehb-asistan.onrender.com/*
+http://localhost:3000/*          ← bunu unutursan YEREL geliştirmede takvim kırılır
+```
+
+Ayrıca *API restrictions* → yalnızca **Google Calendar API** (başka Google API'si kullanılmıyor).
+Değişiklik ~5 dakikada yayılıyor. 2026-09-06'da uygulandı ve dışarıdan doğrulandı: sahte
+referrer → `403 API_KEY_HTTP_REFERRER_BLOCKED`, canlı ve localhost → `200`.
+
+**Sunucu tarafındaki sırlar ön yüze hiç inmiyor:** `GOOGLE_CLIENT_SECRET`, `N8N_SECRET`,
+`SUPABASE_SERVICE_ROLE`. `serve.py` bunları ortam değişkeninden okuyup istekleri vekilliyor.
+Bu yüzden `/api/n8n/split`, `/api/n8n/analyze` ve `/api/google/refresh` uçlarının **üçü de**
+Supabase token'ı doğruluyor (`dogrula_supabase_kullanicisi`) ve kimliksiz isteğe `401` dönüyor.
+⚠️ Yeni bir vekil uç eklersen aynı kontrolü koy: aksi halde uç, sırrı kullanan **herkese açık
+bir servis** olur. `_n8n_vekil` ayrıca gövdedeki `userId`'yi doğrulanan kimlikle **eziyor** —
+istemcinin yolladığı kimliğe asla güvenme.
+
+Hassas dosyalar HTTP üzerinden de kapalı: `serve.py`, `schema.sql`, `CLAUDE.md`, `package.json`,
+`n8n-workflow-*.json`, `.git/` → **403**.
+
 ## Bilinen Sorunlar
 
 - **Takvim senkronu sessizce atlanabiliyor.** n8n'deki takvim node'ları `onError: continue` ile

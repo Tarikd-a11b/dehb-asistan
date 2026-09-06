@@ -1839,9 +1839,19 @@ async function yenilemeyiDene() {
       .from('profiles').select('google_refresh_token').eq('id', currentUser.id).single();
     if (error || !data?.google_refresh_token) return;   // hiç izin alınmamış
 
+    // Uç kimlik doğruluyor (bkz. serve.py). Oturum token'ı AppState'e session
+    // olayında yazılıyor ama bu fonksiyon ondan önce koşabiliyor; o yüzden
+    // yoksa oturumdan tazeliyoruz. Token bulunamazsa isteği hiç atmıyoruz.
+    let sbToken = AppState.supabaseToken;
+    if (!sbToken) {
+      const { data: o } = await window.supabaseClient.auth.getSession();
+      sbToken = o?.session?.access_token || null;
+    }
+    if (!sbToken) return;
+
     const res = await fetch('/api/google/refresh', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: data.google_refresh_token })
+      body: JSON.stringify({ refresh_token: data.google_refresh_token, supabaseToken: sbToken })
     });
     const govde = await res.json().catch(() => ({}));
     if (!res.ok || !govde.access_token) {
