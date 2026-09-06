@@ -10,7 +10,10 @@ const BodyDoublingState = {
   isEnabled: true,
   companionName: 'Sherlock Holmes',
   status: 'working', // 'working', 'break'
-  bubbleTimer: null
+  bubbleTimer: null,
+  widget: null,        // widget referansi: PiP'e tasininca document'ta bulunamiyor
+  pipPenceresi: null,  // acik Document Picture-in-Picture penceresi
+  sureTimer: null      // ayri penceredeki kalan sure sayaci
 };
 
 const SHERLOCK_WORKING_QUOTES = [
@@ -770,48 +773,248 @@ function getSherlockWalkingScene() {
   `;
 }
 
+/* ── SHERLOCK SENİNLE GELİR ───────────────────────────────────────
+   Uygulama içi sayfa geçişlerinde (Bugün → Takvim → Parçalayıcı…) widget
+   zaten kalıyor: `loadPage` yalnızca `#main-content`i siliyor, widget ise
+   `document.body` seviyesinde duruyor. Ölçüldü, 5 sayfada da kalıyor.
+
+   Asıl boşluk şuydu: kullanıcı İŞİ İÇİN başka bir sekmeye/siteye geçtiğinde
+   Sherlock arkada kalıyordu — oysa body doubling'in bütün fikri "yanında
+   biri olsun". Çözüm Document Picture-in-Picture: widget, her zaman üstte
+   duran küçük bir pencereye TAŞINIYOR (kopyalanmıyor), böylece tek bir
+   Sherlock var ve durumu bölünmüyor.
+
+   Taşıma üç şeyi kırıyordu; üçü de burada çözülü:
+
+   1. `document.getElementById('sherlock-scene-wrap')` — widget PiP belgesine
+      geçince ana belgede yok. Artık her sorgu WIDGET ÜZERİNDEN yapılıyor
+      (`bdOge`), yani widget hangi belgede olursa olsun çalışıyor.
+   2. `getCompanionWidget` widget'ı ana belgede arıyordu; bulamayınca
+      İKİNCİ bir widget üretirdi. Artık referans `BodyDoublingState.widget`
+      içinde tutuluyor.
+   3. Inline `onclick="showBodyDoubling(...)"` — inline handler öğenin KENDİ
+      belgesinin window'unda çözülür, PiP penceresinde o fonksiyonlar yok,
+      butonlar sessizce ölürdü. Hepsi `addEventListener`a çevrildi; kapanış
+      bu window'da kaldığı için taşımadan etkilenmiyor.
+
+   PiP belgesi CSS'i miras ALMAZ; `stilleriAktar` sayfanın stylesheet'lerini
+   kopyalıyor. Çapraz-kaynak (CDN) sayfalar `cssRules`a izin vermez, onlar
+   zaten `href` ile `<link>` olarak taşınıyor.
+   ──────────────────────────────────────────────────────────────── */
+
+// Yukseklik icerige gore secildi: 340px genislikte sahne 2:1 oraninda 170px,
+// ustunde baslik, altinda fisilti satiri. Fazlasi sahneyi gereksiz kirpiyordu.
+const PIP_OLCU = { width: 340, height: 300 };
+
+/** Widget hangi belgede yaşıyorsa oradaki öğeyi bulur. */
+function bdOge(id) {
+  const w = BodyDoublingState.widget;
+  return w ? w.querySelector('#' + id) : null;
+}
+
+function sherlockAyriPencereDestekli() {
+  return typeof window !== 'undefined' && 'documentPictureInPicture' in window;
+}
+
 function getCompanionWidget() {
-  let widget = document.getElementById('body-doubling-widget');
+  let widget = BodyDoublingState.widget;
+  // isConnected: PiP'e taşınmış widget da bağlıdır (PiP belgesine).
+  if (widget && widget.isConnected) return widget;
+  widget = document.getElementById('body-doubling-widget');
   if (!widget) {
     widget = document.createElement('div');
     widget.id = 'body-doubling-widget';
     widget.className = 'fixed bottom-5 right-5 z-40 transition-all duration-500 select-none';
     widget.innerHTML = `
       <div id="bd-companion-card" class="glass-card p-3 md:p-4 bg-slate-900/95 shadow-2xl border-2 border-indigo-500/40 rounded-3xl backdrop-blur-2xl w-80 md:w-96 animate-slide-in relative group transition-all duration-500 overflow-hidden">
-        
-        <!-- Kapatma Butonu (Sağ Üstte) -->
-        <button type="button" onclick="toggleBodyDoublingVisibility(false)" class="absolute top-3 right-3 z-10 w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg" title="Gizle">✕</button>
 
-        <!-- Üst Başlık & Durum Rozeti -->
-        <div class="flex items-center gap-2 mb-2 pr-8">
-          <span class="text-sm font-black text-white">🕵️‍♂️ Sherlock Holmes</span>
-          <span id="sherlock-badge" class="text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></span>
-            <span id="sherlock-status-text">Masasında Davayı İnceliyor</span>
-          </span>
+        <div class="absolute top-3 right-3 z-10 flex gap-1.5">
+          <button type="button" id="bd-pip-btn"
+                  class="w-7 h-7 bg-slate-800 hover:bg-indigo-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg"
+                  title="Yanımda gelsin — ayrı pencerede, hep üstte">⧉</button>
+          <button type="button" id="bd-kapat-btn"
+                  class="w-7 h-7 bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white rounded-full text-xs font-bold flex items-center justify-center transition shadow-lg"
+                  title="Gizle">✕</button>
         </div>
 
-        <!-- SİNEMATİK ANİMASYON ALANI (Masada Çalışma / Odada Volta Atma) -->
+        <div id="bd-baslik" class="flex items-center flex-nowrap gap-2 mb-2 pr-20">
+          <span id="bd-ad" class="text-sm font-black text-white whitespace-nowrap shrink-0">🕵️‍♂️ Sherlock</span>
+          <span id="sherlock-badge" class="text-[10px] px-2.5 py-0.5 bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-bold flex items-center gap-1.5 min-w-0">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping shrink-0"></span>
+            <span id="sherlock-status-text" class="truncate">Masasında Davayı İnceliyor</span>
+          </span>
+          <!-- Ayrı pencerede sayaç görünmez olurdu: kalan süre buraya düşüyor -->
+          <span id="bd-kalan" hidden
+                class="text-[11px] font-black tabular-nums text-indigo-200 bg-slate-800/80 px-2 py-0.5 rounded-full"></span>
+        </div>
+
         <div id="sherlock-scene-wrap" class="rounded-2xl overflow-hidden border border-slate-700/60 shadow-inner bg-slate-950 min-h-[160px]">
           ${getSherlockStudyScene()}
         </div>
 
-        <!-- Sherlock Fısıltısı -->
         <div class="mt-2.5 p-2 rounded-xl bg-slate-800/70 border border-slate-700/50 flex items-center justify-between gap-2">
           <p id="companion-speech" class="text-xs text-slate-300 italic leading-snug truncate flex-1">
             "Vaka dosyasındaki ipuçlarını inceliyorum, sen de odağını koru dostum 🔍"
           </p>
-          <!-- Sahne Değiştirme Butonu (Kolay Test / Kontrol) -->
           <div class="flex gap-1 shrink-0">
-            <button type="button" onclick="showBodyDoubling('working')" title="Masada Çalış" class="px-2 py-1 bg-slate-700 hover:bg-indigo-600 text-white rounded-lg text-[10px] font-bold transition">📖</button>
-            <button type="button" onclick="showBodyDoubling('break')" title="Ayağa Kalk & Yürü" class="px-2 py-1 bg-slate-700 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-bold transition">🚶‍♂️</button>
+            <button type="button" id="bd-sahne-calis" title="Masada Çalış"
+                    class="px-2 py-1 bg-slate-700 hover:bg-indigo-600 text-white rounded-lg text-[10px] font-bold transition">📖</button>
+            <button type="button" id="bd-sahne-mola" title="Ayağa Kalk & Yürü"
+                    class="px-2 py-1 bg-slate-700 hover:bg-emerald-600 text-white rounded-lg text-[10px] font-bold transition">🚶‍♂️</button>
           </div>
         </div>
       </div>
     `;
     document.body.appendChild(widget);
   }
+  BodyDoublingState.widget = widget;
+
+  // ⚠️ Inline onclick DEĞİL: PiP belgesine taşınınca inline handler o
+  // pencerenin window'unda aranır ve bulunamaz. Kapanış burada kalıyor.
+  // Bayrak: bu fonksiyon widget varken de çağrılabiliyor; handler birikmesin.
+  if (widget.dataset.bdBagli === '1') { pipButonunuGuncelle(); return widget; }
+  widget.dataset.bdBagli = '1';
+  bdOge('bd-kapat-btn')?.addEventListener('click', () => toggleBodyDoublingVisibility(false));
+  bdOge('bd-sahne-calis')?.addEventListener('click', () => showBodyDoubling('working'));
+  bdOge('bd-sahne-mola')?.addEventListener('click', () => showBodyDoubling('break'));
+  bdOge('bd-pip-btn')?.addEventListener('click', () => {
+    if (BodyDoublingState.pipPenceresi) sherlockGeriDon();
+    else sherlockYanimaGel();
+  });
+  pipButonunuGuncelle();
+
   return widget;
+}
+
+/** PiP belgesi stil miras almaz; sayfanın stylesheet'lerini oraya taşı. */
+function stilleriAktar(pip) {
+  for (const ss of Array.from(document.styleSheets)) {
+    try {
+      if (ss.href) {
+        const link = pip.document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = ss.href;
+        pip.document.head.appendChild(link);
+      } else {
+        const st = pip.document.createElement('style');
+        st.textContent = Array.from(ss.cssRules).map(r => r.cssText).join('\n');
+        pip.document.head.appendChild(st);
+      }
+    } catch (e) {
+      // Çapraz-kaynak stylesheet cssRules'a izin vermez; href'i olanlar
+      // zaten yukarıdaki dalda <link> olarak taşındı.
+    }
+  }
+  const ek = pip.document.createElement('style');
+  ek.textContent = `
+    html, body { margin: 0; padding: 0; background: #0b1120; overflow: hidden; height: 100%; }
+    #body-doubling-widget { display: block; height: 100%; }
+    #bd-companion-card {
+      width: 100% !important; height: 100%; border-radius: 0 !important;
+      border-left: 0 !important; border-right: 0 !important; border-bottom: 0 !important;
+      display: flex; flex-direction: column;
+    }
+    /* Sahne kutusu esnerse (flex:1) 2:1 viewBox slice ile ustten/alttan
+       kirpilir ve masa/tavan kadraj disinda kalir. Orani sabitliyoruz;
+       artan bosluk fisilti satirina gidiyor. */
+    #sherlock-scene-wrap { flex: 0 0 auto; aspect-ratio: 2 / 1; min-height: 0; }
+    #sherlock-scene-wrap svg { height: 100%; width: 100%; display: block; }
+    #bd-companion-card > div:last-child { margin-top: auto; }
+    /* 340px'lik pencerede baslik satiri sariyor, kalan sure butonlarin
+       altina dusuyordu: tek satira zorla, rozeti gizle (durum zaten
+       sahnede ve fisiltida okunuyor), ada biraz daha az yer ayir. */
+    #bd-baslik { flex-wrap: nowrap; white-space: nowrap; padding-right: 5rem; }
+    #bd-baslik #sherlock-badge { display: none; }
+    #bd-ad { font-size: 12px; }
+    #bd-kalan { margin-left: auto; }
+  `;
+  pip.document.head.appendChild(ek);
+}
+
+async function sherlockYanimaGel() {
+  if (!sherlockAyriPencereDestekli()) return false;
+  if (BodyDoublingState.pipPenceresi) { BodyDoublingState.pipPenceresi.focus(); return true; }
+
+  const widget = getCompanionWidget();
+  let pip;
+  try {
+    pip = await documentPictureInPicture.requestWindow(PIP_OLCU);
+  } catch (e) {
+    // Kullanıcı jesti yoksa veya tarayıcı reddederse sessizce vazgeç.
+    return false;
+  }
+  BodyDoublingState.pipPenceresi = pip;
+  stilleriAktar(pip);
+
+  // Widget'ın ana belgedeki yerini işaretle ki geri dönünce aynı yere otursun.
+  const yer = document.createElement('div');
+  yer.id = 'bd-yer-tutucu';
+  yer.hidden = true;
+  widget.parentNode.insertBefore(yer, widget);
+
+  // PiP penceresinde sağ-alt köşeye sabitlemek anlamsız: kart pencereyi kaplıyor.
+  widget.classList.remove('fixed', 'bottom-5', 'right-5', 'z-40');
+  pip.document.body.appendChild(widget);
+
+  pip.addEventListener('pagehide', () => sherlockGeriDon(), { once: true });
+  kalanSureyiIzle(true);
+  pipButonunuGuncelle();
+  return true;
+}
+
+function sherlockGeriDon() {
+  const widget = BodyDoublingState.widget;
+  const yer = document.getElementById('bd-yer-tutucu');
+  if (widget) {
+    widget.classList.add('fixed', 'bottom-5', 'right-5', 'z-40');
+    if (yer && yer.parentNode) yer.parentNode.insertBefore(widget, yer);
+    else document.body.appendChild(widget);
+  }
+  if (yer) yer.remove();
+
+  const pencere = BodyDoublingState.pipPenceresi;
+  BodyDoublingState.pipPenceresi = null;
+  if (pencere && !pencere.closed) pencere.close();
+
+  kalanSureyiIzle(false);
+  pipButonunuGuncelle();
+}
+
+function pipButonunuGuncelle() {
+  const btn = bdOge('bd-pip-btn');
+  if (!btn) return;
+  if (!sherlockAyriPencereDestekli()) { btn.hidden = true; return; }
+  const acik = !!BodyDoublingState.pipPenceresi;
+  btn.textContent = acik ? '⇤' : '⧉';
+  btn.title = acik ? 'Uygulamaya geri al' : 'Yanımda gelsin — ayrı pencerede, hep üstte';
+}
+
+/** sn → "MM:SS" */
+function bdSureMetni(saniye) {
+  const s = Math.max(0, Math.floor(saniye || 0));
+  return `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** Ayrı pencerede odak sayacı görünmez kalırdı; rozetin yanına düşürüyoruz. */
+function kalanSureyiIzle(baslat) {
+  if (BodyDoublingState.sureTimer) {
+    clearInterval(BodyDoublingState.sureTimer);
+    BodyDoublingState.sureTimer = null;
+  }
+  const kutu = bdOge('bd-kalan');
+  if (!baslat) { if (kutu) kutu.hidden = true; return; }
+  if (!kutu) return;
+
+  const yaz = () => {
+    if (typeof TaskTimerState === 'undefined' || !TaskTimerState.taskId) {
+      kutu.hidden = true;
+      return;
+    }
+    kutu.hidden = false;
+    kutu.textContent = bdSureMetni(TaskTimerState.remainingSeconds);
+  };
+  yaz();
+  BodyDoublingState.sureTimer = setInterval(yaz, 1000);
 }
 
 function showBodyDoubling(status = 'working') {
@@ -820,11 +1023,11 @@ function showBodyDoubling(status = 'working') {
   const widget = getCompanionWidget();
   widget.classList.remove('hidden');
 
-  const sceneWrap = document.getElementById('sherlock-scene-wrap');
-  const speech = document.getElementById('companion-speech');
-  const badge = document.getElementById('sherlock-badge');
-  const statusText = document.getElementById('sherlock-status-text');
-  const card = document.getElementById('bd-companion-card');
+  const sceneWrap = bdOge('sherlock-scene-wrap');
+  const speech = bdOge('companion-speech');
+  const badge = bdOge('sherlock-badge');
+  const statusText = bdOge('sherlock-status-text');
+  const card = bdOge('bd-companion-card');
 
   if (status === 'working') {
     if (sceneWrap) sceneWrap.innerHTML = getSherlockStudyScene();
@@ -836,7 +1039,7 @@ function showBodyDoubling(status = 'working') {
     if (card) card.style.borderColor = 'rgba(99, 102, 241, 0.5)';
     startCompanionSpeechCycle();
   } else if (status === 'break') {
-    // ☕ MOLA: Sherlock Masadan Kalkıp Odada Kahvesiyle Volta Atar!
+    // ☕ MOLA: Sherlock masadan kalkıp odada kahvesiyle volta atar.
     if (sceneWrap) sceneWrap.innerHTML = getSherlockWalkingScene();
     if (statusText) statusText.textContent = "Ayağa Kalktı & Kahve Molası ☕";
     if (badge) {
@@ -849,7 +1052,10 @@ function showBodyDoubling(status = 'working') {
 }
 
 function hideBodyDoubling() {
-  const widget = document.getElementById('body-doubling-widget');
+  // Sayaç durunca ayrı pencereyi de kapat: içi boş bir Sherlock penceresinin
+  // ekranda asılı kalması kullanıcıyı rahatsız eder.
+  if (BodyDoublingState.pipPenceresi) sherlockGeriDon();
+  const widget = BodyDoublingState.widget || document.getElementById('body-doubling-widget');
   if (widget) widget.classList.add('hidden');
   stopCompanionSpeechCycle();
   BodyDoublingState.status = 'idle';
@@ -865,7 +1071,7 @@ function toggleBodyDoublingVisibility(show) {
 function startCompanionSpeechCycle() {
   stopCompanionSpeechCycle();
   BodyDoublingState.bubbleTimer = setInterval(() => {
-    const speech = document.getElementById('companion-speech');
+    const speech = bdOge('companion-speech');
     if (speech && BodyDoublingState.status === 'working') {
       const q = SHERLOCK_WORKING_QUOTES[Math.floor(Math.random() * SHERLOCK_WORKING_QUOTES.length)];
       speech.textContent = `"${q}"`;
@@ -886,6 +1092,9 @@ if (typeof window !== 'undefined') {
   window.hideBodyDoubling = hideBodyDoubling;
   window.toggleBodyDoublingVisibility = toggleBodyDoublingVisibility;
   window.getCompanionWidget = getCompanionWidget;
+  window.sherlockYanimaGel = sherlockYanimaGel;
+  window.sherlockGeriDon = sherlockGeriDon;
+  window.sherlockAyriPencereDestekli = sherlockAyriPencereDestekli;
 }
 
 // Node.js test
@@ -895,6 +1104,8 @@ if (typeof module !== 'undefined' && module.exports) {
     SHERLOCK_WORKING_QUOTES,
     showBodyDoubling,
     hideBodyDoubling,
-    toggleBodyDoublingVisibility
+    toggleBodyDoublingVisibility,
+    sherlockAyriPencereDestekli,
+    bdSureMetni
   };
 }
