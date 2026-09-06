@@ -116,8 +116,8 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 İki ayrı takım var. **Karıştırma:** hızlı olan hiçbir şey kurmadan çalışır, yavaş olan tarayıcı açar.
 
 ```bash
-node --test          # 203 test, ~500 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 33 test, ~150 sn — Chrome'da yerleşim, misafir modu, Sherlock, odalar, CSS
+node --test          # 196 test, ~490 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
+npm run test:ui      # 24 test, ~110 sn — Chrome'da yerleşim, misafir modu, odalar, CSS
 ```
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
@@ -140,7 +140,6 @@ CDN'den çekiyor).
 |---|---|
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
 | `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
-| `test-ui/sherlock-yanimda.mjs` | Body doubling kullanıcıyla birlikte geliyor mu: 6 sayfada gezerken kayboluyor mu, ayrı pencereye **taşınıyor mu** (kopyalanmıyor), taşındıktan sonra butonlar çalışıyor mu, kalan süre ilerliyor mu, geri alınca tek widget kalıyor mu, sayaç durunca pencere kapanıyor mu, **açılamazsa kullanıcı sebebini görüyor mu** |
 | `test-ui/calisma-odalari.mjs` | Odalar listeleniyor mu, oynatıcı doğru `youtube-nocookie` adresini alıyor mu, odadan çıkınca ve sayfa değişince **video susuyor mu**, sayaç işliyor mu, kötü bağlantı özel oda olarak eklenmiyor mu, mobilde taşma var mı |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
@@ -154,10 +153,6 @@ iddiası tek başına o sürümü GEÇİYORDU — 256px'lik sabit sidebar ana i�
 içerik taşmak yerine tek kelimelik sütuna sarıyordu. O yüzden "ana sütun ekranın en az %85'ini
 kullanır" iddiası eklendi.
 
-`test-ui/sherlock-yanimda.mjs` de aynı yolla doğrulandı: `93d5dcf`teki (inline onclick'li,
-PiP'siz) `body-doubling.js` yerine konup koşuldu, **6 testin 5'i düştü**; "sessiz başarısızlık" testi de
-geri bildirim eklenmeden önceki kodda kırmızıydı. Geçen tek test uygulama
-içi gezinme — o davranış zaten vardı, oradaki nöbetçi gelecekteki regresyon için.
 
 **`test/n8n-placement.test.js` ayrı bir şey yapıyor: n8n node kodunu doğrudan koşturuyor.** Node
 kodu repoda bir JSON alanında duruyor ve canlıya elle kopyalanıyor; 2026-08-30'a kadar hiçbir şey
@@ -277,7 +272,6 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `profile-logic.js` | Profil alanları, doluluk hesabı, n8n'e giden `planningProfile()` — DOM'suz |
 | `scheduling-logic.js` | Gün ataması, gün içi bilişsel yük sıralaması, `dailyCaps` — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
 | `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
-| `body-doubling.js` | 🕵️ Sherlock: iki sinematik SVG sahnesi + widget + ayrı pencere (PiP). Aşağıda kendi bölümü var |
 | `study-rooms-logic.js` / `study-rooms.js` | 📺 Çalışma Odaları: oda kataloğu + YouTube kimliği çözümleme (saf) / oynatıcı, oda sayacı (DOM) |
 | `brain-dump.js` | 🧠 Düşünce Parkı çekmecesi (Alt+D) |
 | `notifications.js` | 🔔 Arka plan web bildirimleri (izin isteme + seans sonu bildirimi) |
@@ -319,69 +313,39 @@ dahil tüm async iş bitince ateşlendiği için yönlendirme döngüsünü enge
 gider; `sessionStorage` bayrağı sayesinde döngü oluşursa ikinci turda durup teşhis ekranı basar
 (`gosterOturumTeshisi()`), tarayıcıda bounce eden bir sayfayı incelemek zor olduğu için.
 
-## Sherlock (body doubling)
+## Kaldırılan: Sherlock (body doubling)
 
-Odak sayacı başlayınca sağ altta beliren arkadaş. `startTaskTimer` →
-`showBodyDoubling('working')`, seans bitince `'break'`, sayaç durunca `hideBodyDoubling()`.
+2026-09-06'da **kaldırıldı** (kullanıcı kararı). Odak sayacı başlayınca sağ altta beliren,
+sinematik SVG sahneleriyle çalışan animasyonlu bir arkadaştı; Document Picture-in-Picture ile
+ayrı pencereye de geçebiliyordu. Yerini aşağıdaki Çalışma Odaları aldı: aynı ihtiyaca (yanında
+biri olsun) iki ayrı cevap kullanıcıyı bölüyordu ve aranan şey animasyon değil **gerçek bir
+insanın** çalışıyor olmasıydı.
 
-**Sherlock kullanıcıyla birlikte gelir.** İki ayrı mekanizma:
+Kod `c530aaf`'te duruyor (`body-doubling.js`, `test/body-doubling.test.js`,
+`test-ui/sherlock-yanimda.mjs`). Aşağıdaki dersler kaldı, çünkü hâlâ geçerli — özellikle
+odalara ayrı pencere eklenmek istenirse.
 
-1. **Uygulama içi gezinme** — widget `document.body` seviyesinde duruyor, `loadPage` yalnızca
-   `#main-content`i siliyor, dolayısıyla sayfa değiştirince kaybolmuyor. Bedava değil: widget'ı
-   bir şablonun içine taşırsan sessizce yok olur (ve `position:fixed` tuzağına da girer).
-2. **Başka sekme/site** — karttaki **⧉** butonu widget'ı Document Picture-in-Picture penceresine
-   **TAŞIR** (kopyalamaz). Tek Sherlock kalır, durumu bölünmez. **⇤** geri alır.
-
-Kullanıcı ⧉ ile bir kez açtıysa, sonraki seanslarda pencere **kendiliğinden** açılıyor
-(`showBodyDoubling` içinden, `startTaskTimer` tıklama zincirinde). Varsayılan KAPALI: davetsiz
-pencere açmak saldırgan bir davranış. ⇤ ile kapatmak tercihi geri kapatıyor — karar kullanıcının
-son davranışı, ayrı bir ayar ekranı yok (`focusaid_sherlock_ayri_pencere`).
-
-### Ayrı pencerenin üç tuzağı (üçü de yaşandı)
+### Document Picture-in-Picture'ın dört tuzağı
 
 - **Inline `onclick` KULLANMA.** Inline handler öğenin *kendi belgesinin* window'unda çözülür.
-  Widget PiP belgesine taşındığında orada `showBodyDoubling` yoktur; butonlar **sessizce ölür**,
-  konsolda tek satır çıkmaz. Hepsi `addEventListener` ile bağlı — kapanış ana window'da kaldığı
-  için taşıma etkilemiyor.
-- **İç öğeleri `document.getElementById` ile arama.** Widget PiP'e geçince ana belgede yoktur.
-  Sorgular `bdOge()` ile **widget üzerinden** yapılıyor; ayrıca widget'ın kendisi
-  `BodyDoublingState.widget` içinde tutuluyor — aksi halde `getCompanionWidget` onu bulamayıp
-  **ikinci bir Sherlock** üretiyordu.
-- **PiP belgesi CSS miras almaz.** `stilleriAktar()` sayfanın stylesheet'lerini kopyalıyor
-  (çapraz-kaynak olanlar `cssRules`a izin vermez, onlar `<link>` olarak taşınıyor). Aktarılmazsa
-  Sherlock stilsiz bir yığın olarak görünür.
-
+  Öğe PiP belgesine taşındığında orada o fonksiyonlar yoktur; butonlar **sessizce ölür**,
+  konsolda tek satır çıkmaz. `addEventListener` kullan — kapanış ana window'da kalır.
+- **İç öğeleri `document.getElementById` ile arama.** Taşınan öğe ana belgede yoktur; sorguları
+  kökün kendisi üzerinden yap ve kök referansını bir değişkende tut. Aksi halde "bulamadım,
+  yenisini üreteyim" mantığı **ikinci bir kopya** üretir.
+- **PiP belgesi CSS miras almaz.** Sayfanın stylesheet'lerini oraya kopyala (çapraz-kaynak
+  olanlar `cssRules`a izin vermez, onlar `<link>` olarak taşınır). Aktarılmazsa içerik stilsiz
+  bir yığın olarak görünür.
 - **`requestWindow` yalnızca gerçek kullanıcı tıklamasında çalışır** (`NotAllowedError:
-  Document PiP requires user activation`). Programatik çağrı — otomasyon, `setTimeout`,
-  await'ten sonraki ikinci çağrı — reddedilir. Reddi **yutma**: buton hiçbir şey yapmıyormuş
-  gibi görünür. `bdBilgiVer()` sebebi toast ile söylüyor, nöbetçisi
-  `test-ui/sherlock-yanimda.mjs` içindeki "sessiz başarısızlık" testi.
+  Document PiP requires user activation`). Programatik çağrı reddedilir; reddi **yutma**, yoksa
+  buton hiçbir şey yapmıyormuş gibi görünür. ⚠️ Playwright'ın `evaluate`i de user activation
+  ürettiği için testlerde beklenmedik biçimde açılabiliyor.
 
-Ek not: PiP'te sahne kutusuna `flex:1` verme — 2:1'lik viewBox `slice` ile üstten/alttan kırpılır,
-masa ve tavan kadraj dışında kalır. `aspect-ratio: 2 / 1` ile sabit.
+### SVG animasyonundan kalan iki ders
 
-### Sahnelerin tasarım dili
-
-Gerçekçilik detaydan değil **ışıktan** geliyor; yeni sahne/varyant eklenecekse bu kurallar korunmalı:
-
-- **Tek ışık kaynağı (chiaroscuro).** Her yüzeyin rengi o ışıktan aldığı payla belirlenir; düz
-  dolgu yok, her kütle gradyanlı. Karakter neredeyse siluet — onu fondan ayıran şey konturundaki
-  sıcak "rim light".
-- **Yüz karanlıkta.** Işık yalnızca profil kenarından içeri söner (`clipPath` ile kafanın içine
-  hapsedilmiş kalın stroke: 10px sönük → 4.5px orta → 1.5px keskin). İlk denemede geniş düz ten
-  dolgusu kullanıldı ve **maske gibi durdu**; bu ölçekte okunmayan göz/ağız detayı çizmektense
-  güçlü bir profil silueti.
-- **Sıcak/soğuk kontrast.** Çalışma sahnesinde sağda amber lamba + solda yağmurlu pencere; mola
-  sahnesinde arkadan ay ışığı (kontra) + sağdan şömine.
-- **Atmosferik derinlik.** Arka plan `feGaussianBlur` + düşük kontrast, karakter net, ön plan koyu.
-  En parlak değer masadaki kağıt — göz oraya gidiyor.
-- **viewBox 480×240 (2:1) + `preserveAspectRatio="slice"`.** Eski 3:2'de kutunun yanlarında siyah
-  bant kalıyordu.
-- `prefers-reduced-motion: reduce` altında **bütün** animasyonlar kapanmalı.
-
-⚠️ **SVG'de çizim sırası = derinlik.** Karakter masanın ARKASINDA oturur ama eller masanın
-ÜSTÜNDEdir: gövde masadan önce, kollar masadan **sonra** çizilir. İlk sürümde kollar masadan önce
-çizildi ve büyüteç tamamen masanın altında kalıp görünmez oldu.
+⚠️ **Çizim sırası = derinlik.** Karakter masanın ARKASINDA oturur ama eller masanın ÜSTÜNDEdir:
+gövde masadan önce, kollar masadan **sonra** çizilir. İlk sürümde kollar önce çizildi ve büyüteç
+masanın altında kalıp görünmez oldu.
 
 ⚠️ **`scaleX(-1)` animasyonuna `transform-origin` ŞART.** SVG'de varsayılan (0,0); origin
 verilmeyince figür dönüş karesinde odanın öbür ucuna **ışınlanır**. Tek kare ekran görüntüsüyle
@@ -391,8 +355,9 @@ doğrulaması tek kareyle yapılmaz.**
 ## Çalışma Odaları
 
 "Study with me" videolarıyla body doubling: kullanıcı bir odaya girer, ekranda **gerçek biri**
-çalışır, kendi 50/10 sayacı yanında işler. Sherlock'un animasyonlu arkadaşından farkı bu
-(kullanıcı kararı, 2026-09-06: "animasyon şeklinde bir çalışma arkadaşı değil, gerçek kişiler").
+çalışır, kendi 50/10 sayacı yanında işler. Bir dönem burada animasyonlu bir arkadaş
+(Sherlock) vardı; 2026-09-06'da kullanıcı kararıyla kaldırıldı — "animasyon şeklinde bir
+çalışma arkadaşı değil, gerçek kişiler". Bkz. yukarıdaki arşiv notu.
 
 Katalog `study-rooms-logic.js` içinde; oynatıcı ve sayaç `study-rooms.js`.
 
@@ -509,7 +474,7 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
   açılır. `about:blank` yaz. Ayrıntı: [Çalışma Odaları](#çalışma-odaları).
 - **Belge sınırını aşan DOM'da inline `onclick` kullanma.** Inline handler öğenin kendi
   belgesinin window'unda çözülür; Document PiP penceresine taşınan bir öğede o fonksiyonlar
-  yoktur ve buton sessizce ölür. Ayrıntı: [Sherlock](#sherlock-body-doubling).
+  yoktur ve buton sessizce ölür. Ayrıntı: [Kaldırılan: Sherlock](#kaldırılan-sherlock-body-doubling).
 - **Sınıf adını parça parça üretme:** `'bg-' + renk`, `` `text-${x}-500` `` çalışmaz. Tailwind
   artık derleniyor ve kaynağı **düz metin** olarak tarıyor; oluşturamadığı sınıf CSS'e girmez.
   ⚠️ Bu play CDN'de ÇALIŞIYORDU (JIT, DOM'u çalışma anında izliyordu) — 2026-09-05'teki geçişle

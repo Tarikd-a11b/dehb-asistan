@@ -3,8 +3,9 @@
 
    "Study with me" videolarıyla body doubling: kullanıcı bir odaya girer,
    ekranda gerçek biri (uzun bir çalışma yayını) çalışır, kendi sayacı
-   yanında işler. Sherlock'un animasyonlu arkadaşından farkı, ekranda
-   GERÇEK bir insanın çalışıyor olması.
+   yanında işler. Bir dönem burada animasyonlu bir arkadaş (Sherlock) vardı;
+   kullanıcı kararıyla kaldırıldı — ekranda GERÇEK bir insanın çalışıyor
+   olması aranan şeydi.
 
    Bu dosya DOM'a ve ağa hiç dokunmaz — oda kataloğu, süre biçimlendirme
    ve YouTube kimliği çözümleme burada, hepsi `test/` altında test ediliyor.

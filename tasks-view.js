@@ -256,11 +256,6 @@ function startTaskTimer() {
   getAudioContext();
   updateTimerUI();
 
-  // 👥 Sanal Çalışma Arkadaşını (Body Doubling) aktif et
-  if (typeof showBodyDoubling === 'function') {
-    showBodyDoubling('working');
-  }
-
   // 🔔 Bildirim izni sor (ilk başlatmada)
   if (typeof NotificationManager !== 'undefined' && NotificationManager.isSupported && Notification.permission === 'default') {
     NotificationManager.requestPermission();
@@ -275,11 +270,6 @@ function startTaskTimer() {
         playTimerEndChime();
         fireDopamineConfetti(false);
         showToast('⏰ Odak seansı tamamlandı! Harika iş çıkardın.', 'success');
-        
-        // 👥 Body Doubling Mola Moduna Geçiş
-        if (typeof showBodyDoubling === 'function') {
-          showBodyDoubling('break');
-        }
 
         // 🔔 Arka Plan Bildirimi Gönder
         if (typeof NotificationManager !== 'undefined') {
@@ -295,10 +285,6 @@ function pauseTaskTimer() {
   if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
   TaskTimerState.interval = null;
   updateTimerUI();
-
-  if (typeof hideBodyDoubling === 'function') {
-    hideBodyDoubling();
-  }
 }
 
 function addBonusToTimer(minutes = 5) {
