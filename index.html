@@ -48,6 +48,8 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="focus-audio.js"></script>
 <script src="inat-modu.js"></script>
 <script src="dopamin-carki.js"></script>
+<script src="study-rooms-logic.js"></script>
+<script src="study-rooms.js"></script>
 <script src="dehb-info.js"></script>
 <script src="brain-dump.js"></script>
 <script src="body-doubling.js"></script>
@@ -1019,6 +1021,78 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
 </div>
 </template>
 
+<template id="tpl-study-rooms">
+<div class="animate-slide-in max-w-5xl mx-auto space-y-6 pb-10">
+
+  <div>
+    <h2 class="text-4xl font-extrabold text-slate-900 tracking-tight">📺 Çalışma Odaları</h2>
+    <p class="text-slate-500 italic mt-1">Bir odaya gir, ekranda biri seninle çalışsın.</p>
+  </div>
+
+  <!-- ODA LİSTESİ -->
+  <div id="oda-liste-bolum" class="space-y-6">
+    <div id="oda-listesi" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+
+    <div class="p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 space-y-3">
+      <p class="text-sm font-bold text-slate-700 dark:text-slate-200">📌 Kendi odanı ekle</p>
+      <p class="text-xs text-slate-500">Sevdiğin bir "study with me" videosunun YouTube bağlantısını yapıştır.</p>
+      <div class="flex flex-col sm:flex-row gap-2">
+        <input id="ozel-oda-ad" type="text" maxlength="40" placeholder="Oda adı (isteğe bağlı)"
+               class="sm:w-52 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm outline-none focus:border-indigo-500">
+        <input id="ozel-oda-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..."
+               class="flex-1 min-w-0 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm outline-none focus:border-indigo-500">
+        <button id="ozel-oda-ekle-btn" type="button"
+                class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shrink-0 transition">Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ODA SAHNESİ -->
+  <div id="oda-sahne" class="hidden space-y-4">
+    <div class="flex items-start justify-between gap-3 flex-wrap">
+      <div class="min-w-0">
+        <h3 id="oda-baslik" class="text-2xl font-black text-slate-900 dark:text-slate-100"></h3>
+        <p id="oda-altbaslik" class="text-sm text-slate-500 mt-0.5"></p>
+      </div>
+      <button id="oda-cik-btn" type="button"
+              class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-sm font-bold transition shrink-0">← Odalara dön</button>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2">
+        <div class="relative w-full overflow-hidden rounded-2xl bg-slate-950 shadow-xl" style="aspect-ratio:16/9">
+          <iframe id="oda-oynatici" class="absolute inset-0 w-full h-full" src="" title="Çalışma odası videosu"
+                  frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+        </div>
+      </div>
+
+      <div class="p-5 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 flex flex-col items-center justify-center gap-3">
+        <span id="oda-sayac-etiket" class="text-[11px] font-black tracking-widest text-indigo-500">ODAK</span>
+        <div class="relative w-32 h-32">
+          <svg viewBox="0 0 100 100" class="w-full h-full -rotate-90">
+            <circle cx="50" cy="50" r="40" fill="none" stroke="currentColor" stroke-width="8" class="text-slate-200 dark:text-slate-700"/>
+            <circle id="oda-sayac-halka" cx="50" cy="50" r="40" fill="none" stroke="#6366f1" stroke-width="8"
+                    stroke-linecap="round" stroke-dasharray="251.32" stroke-dashoffset="0"/>
+          </svg>
+          <div class="absolute inset-0 flex items-center justify-center">
+            <span id="oda-sayac" class="text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">50:00</span>
+          </div>
+        </div>
+        <div class="flex gap-2 w-full">
+          <button id="oda-sayac-btn" type="button"
+                  class="flex-1 px-3 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold transition">▶ Başlat</button>
+          <button id="oda-sayac-sifirla" type="button" title="Sıfırla"
+                  class="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-sm font-bold transition">↺</button>
+        </div>
+        <p class="text-[11px] text-slate-400 text-center leading-snug">50 dk odak / 10 dk mola<br>Sayaç bittiğinde kendiliğinden değişir.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+</template>
+
 <template id="tpl-projects">
 <div class="animate-slide-in max-w-5xl mx-auto space-y-8 pb-10">
 
@@ -1075,6 +1149,7 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
         <button onclick="loadPage('projects')" id="nav-projects" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📁</span> <span>Projelerim</span></button>
         <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">👤</span> <span>Profil</span></button>
         <button onclick="loadPage('dehb-info')" id="nav-dehb-info" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">ℹ️</span> <span>DEHB Bilgisi</span></button>
+        <button onclick="loadPage('study-rooms')" id="nav-study-rooms" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📺</span> <span>Çalışma Odaları</span></button>
         <button onclick="openBrainDump()" id="nav-brain-dump" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center justify-between text-sm group">
           <div class="flex items-center gap-3">
             <span class="sidebar-icon">🧠</span> <span>Düşünce Parkı</span>
@@ -2791,6 +2866,8 @@ function loadPage(name) {
   if (!main) return;
   closeMobileSidebar();
   if (typeof stopTodayTimer === 'function') stopTodayTimer();
+  // Odadan cikmadan sayfa degistirilirse video arka planda calmaya devam ederdi.
+  if (typeof odalardanAyril === 'function') odalardanAyril();
   const tpl = document.getElementById(`tpl-${name}`);
   if (!tpl) { main.innerHTML = `<p class="p-8 text-red-500">Şablon bulunamadı: ${name}</p>`; return; }
 
@@ -2802,7 +2879,8 @@ function loadPage(name) {
     calendar:  () => typeof initCalendar       === 'function' && initCalendar(),
     profile:   () => typeof loadProfileToUI    === 'function' && loadProfileToUI(),
     projects:  () => typeof loadProjectsList   === 'function' && loadProjectsList(),
-    'dehb-info': () => typeof restoreDehbSection === 'function' && restoreDehbSection()
+    'dehb-info': () => typeof restoreDehbSection === 'function' && restoreDehbSection(),
+    'study-rooms': () => typeof initStudyRooms === 'function' && initStudyRooms()
   };
   inits[name]?.();
 
