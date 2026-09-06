@@ -69,12 +69,23 @@ after(async () => {
   await new Promise(c => sunucu?.close(c));
 });
 
-/** Uygulamayı misafir modunda açar ve Sherlock'u çalışma durumunda gösterir. */
-async function sherlockli() {
+/**
+ * Uygulamayı misafir modunda açar ve Sherlock'u çalışma durumunda gösterir.
+ *
+ * @param {boolean} otomatikPip Odak seansı başlayınca ayrı pencerenin
+ *   kendiliğinden açılması tercihi. Varsayılan KAPALI: aşağıdaki testlerin
+ *   çoğu kartın sağ alt köşedeki halini doğruluyor, otomatik açılma onu ayrı
+ *   pencereye taşıyıp ana belgeden çıkarırdı. Playwright'ın `evaluate`i de
+ *   user activation ürettiği için tercih açıkken pencere gerçekten açılıyor.
+ */
+async function sherlockli(otomatikPip = false) {
   const sayfa = await tarayici.newPage({ viewport: MASAUSTU });
-  await sayfa.addInitScript(() => {
-    try { localStorage.setItem('focusaid_guest_mode', '1'); } catch (e) {}
-  });
+  await sayfa.addInitScript((otoPip) => {
+    try {
+      localStorage.setItem('focusaid_guest_mode', '1');
+      localStorage.setItem('focusaid_sherlock_ayri_pencere', otoPip ? '1' : '0');
+    } catch (e) {}
+  }, otomatikPip);
   await sayfa.goto(taban + '/index.html', { waitUntil: 'domcontentloaded' });
   await sayfa.waitForFunction(() => typeof window.showBodyDoubling === 'function', null, { timeout: 20000 });
   await sayfa.evaluate(() => window.loadPage('today'));
@@ -266,5 +277,95 @@ test('ayrı pencere açılamazsa kullanıcı sebebini görüyor', async () => {
   assert.equal(d.yerTutucu, false, 'başarısız denemeden yer tutucu kaldı');
   assert.equal(d.pip, false);
 
+  await sayfa.close();
+});
+
+/* ── Odak seansı başlayınca ayrı pencere kendiliğinden açılıyor mu ───────
+   Kullanıcının asıl isteği buydu: "işi için başka bir sayfaya gidince
+   Sherlock bizimle gelsin". Butona basmayı beklemek yetmiyordu — çoğu
+   kullanıcı ⧉ simgesini fark etmiyor.
+
+   ⚠️ Bunun çalışmasının TEK sebebi `requestWindow`un "▶ Başlat" TIKLAMA
+   zincirinden çağrılması. Tarayıcı user activation istiyor; showBodyDoubling
+   bir zamanlayıcıdan veya ağ yanıtından çağrılırsa açılmaz. Aşağıdaki
+   testler bilerek gerçek `click` kullanıyor. */
+
+/** "▶ Başlat" akışının eşdeğeri: tıklama zincirinden startTaskTimer. */
+async function baslatButonuKur(sayfa) {
+  await sayfa.evaluate(() => {
+    const b = document.createElement('button');
+    b.id = 'deneme-baslat';
+    b.textContent = 'Başlat';   // metinsiz buton 0 boyutlu olur, click bekler
+    b.style.cssText = 'position:fixed;top:10px;left:10px;z-index:9999;padding:8px 16px';
+    b.onclick = () => { TaskTimerState.taskId = 'g1'; window.startTaskTimer(); };
+    document.body.appendChild(b);
+  });
+}
+
+test('odak seansı başlayınca Sherlock kendiliğinden ayrı pencereye geçiyor', async () => {
+  const sayfa = await sherlockli(true);
+  if (!await pipVar(sayfa)) { await sayfa.close(); return; }
+  await baslatButonuKur(sayfa);
+
+  await sayfa.click('#deneme-baslat');       // gerçek tıklama = user activation
+  await sayfa.waitForTimeout(1800);
+
+  const d = await sayfa.evaluate(() => ({
+    pipAcik: !!BodyDoublingState.pipPenceresi,
+    kartPipte: BodyDoublingState.pipPenceresi
+      ? !!BodyDoublingState.pipPenceresi.document.querySelector('#bd-companion-card') : false,
+    anaBelgede: !!document.getElementById('body-doubling-widget')
+  }));
+  assert.ok(d.pipAcik, 'seans başladı ama ayrı pencere açılmadı');
+  assert.ok(d.kartPipte, 'kart ayrı pencereye taşınmadı');
+  assert.equal(d.anaBelgede, false, 'widget kopyalanmış');
+  await sayfa.close();
+});
+
+test('seans sürerken sayfa gezmek ayrı pencereyi kapatmıyor', async () => {
+  const sayfa = await sherlockli(true);
+  if (!await pipVar(sayfa)) { await sayfa.close(); return; }
+  await baslatButonuKur(sayfa);
+  await sayfa.click('#deneme-baslat');
+  await sayfa.waitForTimeout(1500);
+
+  for (const sekme of ['calendar', 'projects', 'profile', 'today']) {
+    await sayfa.evaluate(x => window.loadPage(x), sekme);
+    await sayfa.waitForTimeout(400);
+    const acik = await sayfa.evaluate(() =>
+      !!BodyDoublingState.pipPenceresi && !BodyDoublingState.pipPenceresi.closed);
+    assert.ok(acik, `${sekme} sayfasına geçince ayrı pencere kapandı`);
+  }
+  await sayfa.close();
+});
+
+test('kullanıcı pencereyi kapatınca bir daha zorla açılmıyor', async () => {
+  // Otomatik açılma bir kolaylık, dayatma değil: kullanıcı ⇤ ile kapattıysa
+  // tercih kapanır ve sonraki seanslarda kart sağ altta kalır.
+  const sayfa = await sherlockli(true);
+  if (!await pipVar(sayfa)) { await sayfa.close(); return; }
+  await baslatButonuKur(sayfa);
+  await sayfa.click('#deneme-baslat');
+  await sayfa.waitForTimeout(1500);
+
+  await sayfa.evaluate(() => BodyDoublingState.pipPenceresi.document.querySelector('#bd-pip-btn').click());
+  await sayfa.waitForTimeout(700);
+  assert.equal(
+    await sayfa.evaluate(() => localStorage.getItem('focusaid_sherlock_ayri_pencere')), '0',
+    'elle kapatıldı ama tercih kapanmadı'
+  );
+
+  // Yeni seans: pencere açılmamalı, ama Sherlock yine görünmeli.
+  await sayfa.evaluate(() => { window.hideBodyDoubling(); TaskTimerState.isRunning = false; });
+  await sayfa.waitForTimeout(300);
+  await sayfa.click('#deneme-baslat');
+  await sayfa.waitForTimeout(1500);
+
+  const d = await sayfa.evaluate(() => ({
+    pip: !!BodyDoublingState.pipPenceresi,
+    gorunur: !document.getElementById('body-doubling-widget').classList.contains('hidden')
+  }));
+  assert.equal(d.pip, false, 'tercih kapalıyken pencere yine de açıldı');
+  assert.ok(d.gorunur, 'pencere açılmadı ama kart da görünmüyor');
   await sayfa.close();
 });

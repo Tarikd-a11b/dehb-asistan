@@ -69,3 +69,10 @@ test('BodyDoublingState ayri pencere alanlarini tasiyor', () => {
   assert.ok('pipPenceresi' in BodyDoublingState);
   assert.ok('sureTimer' in BodyDoublingState);
 });
+
+test('otomatik ayri pencere tercihi varsayilan olarak KAPALI', () => {
+  // Davetsiz pencere acmak saldirgan; kullanici ⧉ ile bir kez actiginda tercih
+  // aciliyor. localStorage'a erisilemeyen ortamda da patlamamali.
+  const { sherlockOtomatikPipAcikMi } = require('../body-doubling.js');
+  assert.equal(sherlockOtomatikPipAcikMi(), false);
+});

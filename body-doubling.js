@@ -805,6 +805,21 @@ function getSherlockWalkingScene() {
 // Yukseklik icerige gore secildi: 340px genislikte sahne 2:1 oraninda 170px,
 // ustunde baslik, altinda fisilti satiri. Fazlasi sahneyi gereksiz kirpiyordu.
 const PIP_OLCU = { width: 340, height: 300 };
+const PIP_TERCIH_ANAHTARI = 'focusaid_sherlock_ayri_pencere';
+
+/* Odak seansı başlayınca ayrı pencere KENDİLİĞİNDEN açılsın mı?
+   Varsayılan KAPALI: davetsiz bir pencere açmak saldırgan bir davranış,
+   üstelik ayrı pencere herkesin istediği bir şey değil. Kullanıcı ⧉ ile bir
+   kez açtığında tercih AÇILIYOR ve sonraki seanslarda Sherlock kendiliğinden
+   yanına geliyor; ⇤ ile kapattığında tercih yine kapanıyor. Yani karar
+   kullanıcının son davranışı, ayrı bir ayar ekranına gerek yok. */
+function sherlockOtomatikPipAcikMi() {
+  try { return localStorage.getItem(PIP_TERCIH_ANAHTARI) === '1'; }
+  catch (e) { return false; }
+}
+function sherlockOtomatikPipAyarla(acik) {
+  try { localStorage.setItem(PIP_TERCIH_ANAHTARI, acik ? '1' : '0'); } catch (e) {}
+}
 
 /** Widget hangi belgede yaşıyorsa oradaki öğeyi bulur. */
 function bdOge(id) {
@@ -878,8 +893,8 @@ function getCompanionWidget() {
   bdOge('bd-sahne-calis')?.addEventListener('click', () => showBodyDoubling('working'));
   bdOge('bd-sahne-mola')?.addEventListener('click', () => showBodyDoubling('break'));
   bdOge('bd-pip-btn')?.addEventListener('click', () => {
-    if (BodyDoublingState.pipPenceresi) sherlockGeriDon();
-    else sherlockYanimaGel();
+    if (BodyDoublingState.pipPenceresi) sherlockGeriDon(true);
+    else { sherlockOtomatikPipAyarla(true); sherlockYanimaGel(); }
   });
   pipButonunuGuncelle();
 
@@ -937,9 +952,14 @@ function bdBilgiVer(mesaj) {
   else console.warn('[Sherlock]', mesaj);
 }
 
-async function sherlockYanimaGel() {
+/**
+ * @param {boolean} sessiz Otomatik deneme: başarısızlığı kullanıcıya bildirme.
+ *   Butona basıldığında sebep söylenmeli, ama seans başlarken arka planda
+ *   denenen açılış sessizce vazgeçmeli — kullanıcı bir şey istememişti.
+ */
+async function sherlockYanimaGel(sessiz = false) {
   if (!sherlockAyriPencereDestekli()) {
-    bdBilgiVer('Ayrı pencere bu tarayıcıda desteklenmiyor (Chrome 116+ gerekiyor).');
+    if (!sessiz) bdBilgiVer('Ayrı pencere bu tarayıcıda desteklenmiyor (Chrome 116+ gerekiyor).');
     return false;
   }
   if (BodyDoublingState.pipPenceresi) { BodyDoublingState.pipPenceresi.focus(); return true; }
@@ -952,9 +972,11 @@ async function sherlockYanimaGel() {
     // ⚠️ Sessizce vazgeçme: buton hiçbir şey yapmıyormuş gibi görünüyordu.
     // En sık sebep NotAllowedError — tarayıcı bunu yalnızca gerçek bir
     // kullanıcı tıklamasında (user activation) veriyor.
-    bdBilgiVer(e && e.name === 'NotAllowedError'
-      ? 'Sherlock’u ayrı pencereye almak için butona doğrudan tıklaman gerekiyor.'
-      : 'Ayrı pencere açılamadı: ' + ((e && e.message) || 'bilinmeyen hata'));
+    if (!sessiz) {
+      bdBilgiVer(e && e.name === 'NotAllowedError'
+        ? 'Sherlock’u ayrı pencereye almak için butona doğrudan tıklaman gerekiyor.'
+        : 'Ayrı pencere açılamadı: ' + ((e && e.message) || 'bilinmeyen hata'));
+    }
     return false;
   }
   BodyDoublingState.pipPenceresi = pip;
@@ -970,13 +992,19 @@ async function sherlockYanimaGel() {
   widget.classList.remove('fixed', 'bottom-5', 'right-5', 'z-40');
   pip.document.body.appendChild(widget);
 
-  pip.addEventListener('pagehide', () => sherlockGeriDon(), { once: true });
+  pip.addEventListener('pagehide', () => sherlockGeriDon(true), { once: true });
   kalanSureyiIzle(true);
   pipButonunuGuncelle();
   return true;
 }
 
-function sherlockGeriDon() {
+/**
+ * @param {boolean} kullaniciKapatti Kullanıcı ⇤ ile ya da pencereyi kapatarak
+ *   sonlandırdıysa otomatik açılma tercihi de kapanır. Sayaç durduğu için
+ *   kapanmada tercihe DOKUNULMAZ — kullanıcı bir şey reddetmiş değil.
+ */
+function sherlockGeriDon(kullaniciKapatti = false) {
+  if (kullaniciKapatti) sherlockOtomatikPipAyarla(false);
   const widget = BodyDoublingState.widget;
   const yer = document.getElementById('bd-yer-tutucu');
   if (widget) {
@@ -1036,6 +1064,16 @@ function showBodyDoubling(status = 'working') {
   BodyDoublingState.status = status;
   const widget = getCompanionWidget();
   widget.classList.remove('hidden');
+
+  // Seans başlarken Sherlock'u kullanıcının YANINA al: ayrı pencere hep üstte
+  // kaldığı için kullanıcı işi için başka bir siteye geçtiğinde de görünüyor.
+  // ⚠️ requestWindow user activation istiyor; bu yol ancak showBodyDoubling
+  // bir tıklama zincirinden (▶ Başlat) çağrıldığında açılır. Açılmazsa
+  // sessizce vazgeçiyoruz, kart yine sağ altta duruyor.
+  if (status === 'working' && !BodyDoublingState.pipPenceresi
+      && sherlockOtomatikPipAcikMi() && sherlockAyriPencereDestekli()) {
+    sherlockYanimaGel(true);
+  }
 
   const sceneWrap = bdOge('sherlock-scene-wrap');
   const speech = bdOge('companion-speech');
@@ -1109,6 +1147,8 @@ if (typeof window !== 'undefined') {
   window.sherlockYanimaGel = sherlockYanimaGel;
   window.sherlockGeriDon = sherlockGeriDon;
   window.sherlockAyriPencereDestekli = sherlockAyriPencereDestekli;
+  window.sherlockOtomatikPipAcikMi = sherlockOtomatikPipAcikMi;
+  window.sherlockOtomatikPipAyarla = sherlockOtomatikPipAyarla;
 }
 
 // Node.js test
@@ -1120,6 +1160,8 @@ if (typeof module !== 'undefined' && module.exports) {
     hideBodyDoubling,
     toggleBodyDoublingVisibility,
     sherlockAyriPencereDestekli,
+    sherlockOtomatikPipAcikMi,
+    sherlockOtomatikPipAyarla,
     bdSureMetni
   };
 }
