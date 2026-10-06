@@ -1,0 +1,37 @@
+# Her push ve PR'da testleri koşar. main'e push Render'da doğrudan canlıya çıktığı için
+# bu iş kırmızıysa canlıdaki sürüm de testten geçmemiş demektir.
+name: test
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+jobs:
+  birim:
+    name: Birim testleri (node --test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Bağımlılıksız: test/ yalnız saf mantık modüllerini require ediyor.
+      - run: npm test
+
+  arayuz:
+    name: Arayüz testleri (npm run test:ui)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      # Tailwind CLI (tailwind-guncel testi) + playwright-core. Tarayıcı indirilmiyor:
+      # testler channel 'chrome' kullanıyor, ubuntu-latest imajında Google Chrome kurulu.
+      - run: npm ci
+      # config.js gitignored; index.html onu yüklüyor. Şablon yeterli — testler
+      # Supabase/n8n'e gerçek istek atmıyor (misafir-modu bunu ayrıca doğruluyor).
+      - run: cp config.example.js config.js
+      - run: npm run test:ui
