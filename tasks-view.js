@@ -333,6 +333,7 @@ function updateTimerUI() {
 
 function currentCardHTML(task) {
   if (!task) {
+    const odul = typeof bugununCarkOdulunuAl === 'function' ? bugununCarkOdulunuAl() : null;
     return `
       <div class="glass-card p-8 md:p-10 bg-gradient-to-br from-amber-500/10 via-indigo-500/10 to-purple-500/10 dark:from-slate-800/95 dark:to-slate-900/95 text-center shadow-2xl border-2 border-amber-400/50 rounded-3xl animate-slide-in space-y-4">
         <div class="text-6xl mb-2 animate-bounce">🏆 🎡 🏆</div>
@@ -341,10 +342,12 @@ function currentCardHTML(task) {
         </span>
         <h3 class="font-black text-2xl md:text-3xl text-slate-900 dark:text-white tracking-tight">Bugünlük bu kadar, harikasın!</h3>
         <p class="text-slate-600 dark:text-slate-300 text-sm max-w-md mx-auto leading-relaxed">
-          Tüm odak seanslarını başarıyla tamamladın. Vicdan azabı yok, ertelenmiş yığınlar yok! Şimdi hak ettiğin ödülü almak için çarkı çevir.
+          ${odul
+            ? `Bugünün ödülünü kazandın: <b>${escapeHtml(odul)}</b>. Çark yarın yeniden açılacak.`
+            : 'Tüm odak seanslarını başarıyla tamamladın. Vicdan azabı yok, ertelenmiş yığınlar yok! Şimdi hak ettiğin ödülü almak için çarkı çevir.'}
         </p>
-        <button onclick="openDopaminCarki()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-base md:text-lg shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto animate-pulse">
-          <span>🎡</span> Dopamin Şans Çarkını Çevir!
+        <button onclick="openDopaminCarki()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-base md:text-lg shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto${odul ? '' : ' animate-pulse'}">
+          ${odul ? '<span>🎁</span> Ödülümü Göster' : '<span>🎡</span> Dopamin Şans Çarkını Çevir!'}
         </button>
       </div>`;
   }
@@ -609,7 +612,10 @@ async function toggleTask(id) {
     fireDopamineConfetti(isAllDone);
     if (isAllDone) {
       playGrandVictoryChime();
-      if (typeof openDopaminCarki === 'function') {
+      // Bugünün ödülü zaten kazanıldıysa çark kendiliğinden açılmaz
+      // (görevi işaretleyip kaldırarak yeniden açtırma yolu kapansın).
+      const zatenKazanildi = typeof bugununCarkOdulunuAl === 'function' && bugununCarkOdulunuAl();
+      if (typeof openDopaminCarki === 'function' && !zatenKazanildi) {
         setTimeout(openDopaminCarki, 700);
       }
     } else {

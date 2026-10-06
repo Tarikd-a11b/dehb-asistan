@@ -328,3 +328,9 @@ test('profileToRow energy_peak kolonunu yazmaz', () => {
   const row = P.profileToRow(P.DEFAULT_PROFILE, { id: 'u1', email: 'a@b.c' });
   assert.ok(!('energy_peak' in row));
 });
+
+test('profileToRow carkin kolonlarini YAZMAZ (eski sekmeden profil kaydi bugunun carkini silmesin)', () => {
+  const row = P.profileToRow({ cark_tarihi: '2026-10-06', carkTarihi: '2026-10-06' }, { id: 'u1', email: 'a@b.c' });
+  assert.ok(!('cark_tarihi' in row), 'cark_tarihi profil upsertine sizdi');
+  assert.ok(!('cark_odulu' in row), 'cark_odulu profil upsertine sizdi');
+});

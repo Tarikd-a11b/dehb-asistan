@@ -20,15 +20,19 @@ const SON_ODA_ANAHTARI = 'focusaid_son_oda';
 
 const OdaState = {
   aktifOda: null,
-  kalanSaniye: 50 * 60,
-  toplamSaniye: 50 * 60,
+  kalanSaniye: 25 * 60,
+  toplamSaniye: 25 * 60,
   molada: false,
   calisiyor: false,
   sayacId: null
 };
 
-const ODA_ODAK_DK = 50;
-const ODA_MOLA_DK = 10;
+/** Profildeki Odak Süresi + Mola Stili → {odak, mola} dakika (bkz. odaSureleri). */
+function odaProfilSureleri() {
+  const p = (typeof userProfile !== 'undefined' && userProfile) || {};
+  const mola = (typeof BREAK_MAP !== 'undefined' && p.breakStyle in BREAK_MAP) ? BREAK_MAP[p.breakStyle] : undefined;
+  return odaSureleri(p.focusPeriod, mola);
+}
 
 function ozelOdalariOku() {
   try {
@@ -135,7 +139,8 @@ function odadanCik() {
   OdaState.aktifOda = null;
 }
 
-/* ── Odanın kendi 50/10 sayacı ─────────────────────────────────
+/* ── Odanın kendi odak/mola sayacı ───────────────────────────────
+   Süreler profilden (odaProfilSureleri) — sabit 50/10 değil.
    Bugün ekranındaki görev sayacından bilinçli olarak AYRI: oradaki sayaç
    belirli bir göreve bağlı, buradaki odada geçirdiğin süreye. İkisini
    birbirine bağlamak, görev seçmeden odaya giren kullanıcıyı kilitlerdi. */
@@ -186,21 +191,37 @@ function odaSayacDegistir() {
 function odaSayacSifirla() {
   odaSayacDurdur();
   OdaState.molada = false;
-  OdaState.toplamSaniye = ODA_ODAK_DK * 60;
+  OdaState.toplamSaniye = odaProfilSureleri().odak * 60;
   OdaState.kalanSaniye = OdaState.toplamSaniye;
   odaSayacCiz();
+  odaDonguMetniYaz();
 }
 
-/** Odak bitti → mola, mola bitti → odak. Sayaç kendiliğinden devam eder. */
+/** Sayacın altındaki "25 dk odak / 5 dk mola" satırı profilden yazılır. */
+function odaDonguMetniYaz() {
+  const el = document.getElementById('oda-dongu-metni');
+  if (!el) return;
+  const { odak, mola } = odaProfilSureleri();
+  el.textContent = mola > 0 ? `${odak} dk odak / ${mola} dk mola` : `${odak} dk odak / serbest mola`;
+}
+
+/**
+ * Odak bitti → mola, mola bitti → odak. Sayaç kendiliğinden devam eder.
+ * Mola stili "Serbest" (0 dk) ise mola fazı atlanır: yeni odak seansı başlar.
+ */
 function odaFazDegistir() {
-  OdaState.molada = !OdaState.molada;
-  OdaState.toplamSaniye = (OdaState.molada ? ODA_MOLA_DK : ODA_ODAK_DK) * 60;
+  const { odak, mola } = odaProfilSureleri();
+  const odakBitti = !OdaState.molada;
+  OdaState.molada = odakBitti && mola > 0;
+  OdaState.toplamSaniye = (OdaState.molada ? mola : odak) * 60;
   OdaState.kalanSaniye = OdaState.toplamSaniye;
   odaSayacCiz();
   if (typeof showToast === 'function') {
-    showToast(OdaState.molada ? '☕ Mola zamanı — 10 dakika' : '🎯 Odak zamanı — 50 dakika', 'info');
+    showToast(OdaState.molada ? `☕ Mola zamanı — ${mola} dakika`
+            : odakBitti ? `✅ Seans bitti — istersen kısa bir ara ver, yeni ${odak} dakika başladı`
+            : `🎯 Odak zamanı — ${odak} dakika`, 'info');
   }
-  if (typeof NotificationManager !== 'undefined' && NotificationManager.notifySessionComplete && !OdaState.molada) {
+  if (typeof NotificationManager !== 'undefined' && NotificationManager.notifySessionComplete && odakBitti) {
     NotificationManager.notifySessionComplete();
   }
 }
@@ -237,7 +258,8 @@ function initStudyRooms() {
   document.getElementById('ozel-oda-url')?.addEventListener('keydown', e => {
     if (e.key === 'Enter') { e.preventDefault(); ozelOdaEkle(); }
   });
-  odaSayacCiz();
+  // Sayaç yalnızca durmuşken profile göre kurulur; çalışan seansa dokunma.
+  if (!OdaState.calisiyor) odaSayacSifirla(); else odaSayacCiz();
 }
 
 /** Sayfa değişince odadaki video arka planda çalmaya devam etmemeli. */
@@ -255,5 +277,5 @@ if (typeof window !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { OdaState, ODA_ODAK_DK, ODA_MOLA_DK };
+  module.exports = { OdaState };
 }

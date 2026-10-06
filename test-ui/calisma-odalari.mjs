@@ -92,6 +92,9 @@ test('odalar listeleniyor ve sidebar bağlantısı var', async () => {
 
 test('odaya girince oynatıcı doğru YouTube adresini alıyor', async () => {
   const sayfa = await odalar();
+  // Sayaç süresi profilden gelmeli (eskiden sabit 50/10'du). Varsayılandan
+  // farklı bir profil kur ki sabit değere geri dönüş yakalansın.
+  await sayfa.evaluate(() => { userProfile.focusPeriod = 40; userProfile.breakStyle = 'long-break'; });
   await sayfa.click('[data-oda="lofi-kafe"]');
   await sayfa.waitForTimeout(500);
 
@@ -99,13 +102,15 @@ test('odaya girince oynatıcı doğru YouTube adresini alıyor', async () => {
     src: document.getElementById('oda-oynatici').src,
     listeGizli: document.getElementById('oda-liste-bolum').classList.contains('hidden'),
     baslik: document.getElementById('oda-baslik').textContent,
-    sayac: document.getElementById('oda-sayac').textContent
+    sayac: document.getElementById('oda-sayac').textContent,
+    dongu: document.getElementById('oda-dongu-metni').textContent
   }));
   // Gizlilik: izleme çerezi kullanıcı oynatmadan yazılmasın diye nocookie alanı.
   assert.match(d.src, /^https:\/\/www\.youtube-nocookie\.com\/embed\/[A-Za-z0-9_-]{11}\?/, `beklenmeyen src: ${d.src}`);
   assert.ok(d.listeGizli, 'oda açıldı ama liste hâlâ görünüyor');
   assert.match(d.baslik, /Lo-fi Kafe/);
-  assert.equal(d.sayac, '50:00');
+  assert.equal(d.sayac, '40:00', 'oda sayacı profildeki odak süresini kullanmıyor');
+  assert.equal(d.dongu, '40 dk odak / 15 dk mola');
   await sayfa.close();
 });
 
@@ -154,7 +159,7 @@ test('oda sayacı işliyor ve sıfırlanıyor', async () => {
   await sayfa.click('#oda-sayac-btn');
   await sayfa.waitForTimeout(2200);
   const isleyen = await sayfa.evaluate(() => document.getElementById('oda-sayac').textContent);
-  assert.notEqual(isleyen, '50:00', 'sayaç başlatıldı ama ilerlemedi');
+  assert.notEqual(isleyen, '25:00', 'sayaç başlatıldı ama ilerlemedi');
 
   await sayfa.click('#oda-sayac-sifirla');
   await sayfa.waitForTimeout(300);
@@ -162,7 +167,7 @@ test('oda sayacı işliyor ve sıfırlanıyor', async () => {
     metin: document.getElementById('oda-sayac').textContent,
     calisiyor: window.OdaState.calisiyor
   }));
-  assert.equal(d.metin, '50:00');
+  assert.equal(d.metin, '25:00');
   assert.equal(d.calisiyor, false, 'sıfırlama sayacı durdurmadı');
   await sayfa.close();
 });

@@ -153,9 +153,75 @@ function buildTaskRow(alanlar) {
   };
 }
 
+/**
+ * Takvimden eklenen TEK SEFERLİK iş: AI'ya gitmeden, kullanıcının kendi
+ * süre tahminine (Başlangıç → Tahmini Bitiş) göre yerleştirilir.
+ *
+ * Eskiden formdaki "AI ile parçalara böl" kutusu varsayılan AÇIKTI ve n8n en
+ * az 3 görev üretiyordu: "faturayı öde" gibi bir iş bile üç mikro adıma
+ * bölünüyordu. Artık:
+ *   - Süre tek odak seansına sığıyorsa → TEK görev, kullanıcının saatleriyle.
+ *   - Sığmıyorsa → odak süresi kadar seanslara bölünür, araya mola girer,
+ *     günde en fazla `gunlukTavan` seans; kalanlar sonraki günlere yayılır.
+ *
+ * Seans sayısı YUVARLANARAK bulunur (30 dk'lık iş 25 dk odakla 1 seans kalır,
+ * 2'ye bölünmez); seans uzunluğu toplam süre korunacak şekilde 5 dk'ya
+ * yuvarlanır. Bir seans gece yarısını aşacaksa ertesi güne kayar.
+ *
+ * @returns {Array<object>|null} buildTaskRow biçiminde satırlar; geçersiz girdide null.
+ */
+function seanslaraBol(alanlar, ayar) {
+  const { dayISO, start, end, title, summary } = alanlar || {};
+  const tek = buildTaskRow({ dayISO, start, end, title, summary });
+  if (!tek) return null;
+
+  const odakDk = Math.max(10, Math.round(Number(ayar?.odakDk) || 25));
+  const molaDk = Math.max(0, Math.round(Number(ayar?.molaDk) || 0));
+  const gunlukTavan = Math.max(1, Math.round(Number(ayar?.gunlukTavan) || 3));
+
+  const dk = (hhmm) => { const [h, m] = hhmm.split(':').map(Number); return h * 60 + m; };
+  const toplam = dk(end) - dk(start);
+  const n = Math.max(1, Math.round(toplam / odakDk));
+  if (n === 1) return [tek];
+
+  const seansDk = Math.max(5, Math.ceil(toplam / n / 5) * 5);
+  const hhmm = (d) => `${String(Math.floor(d / 60)).padStart(2, '0')}:${String(d % 60).padStart(2, '0')}`;
+  const gunEkle = (iso, k) => {
+    const t = new Date(`${iso}T00:00:00`);
+    t.setDate(t.getDate() + k);
+    return `${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, '0')}-${String(t.getDate()).padStart(2, '0')}`;
+  };
+
+  const ad = (title || '').trim();
+  const satirlar = [];
+  let gun = 0, gundeki = 0, bas = dk(start);
+  for (let i = 0; i < n; i++) {
+    if (gundeki >= gunlukTavan || bas + seansDk > 24 * 60) {
+      gun++; gundeki = 0; bas = dk(start);
+    }
+    const satir = buildTaskRow({
+      dayISO: gunEkle(dayISO, gun), start: hhmm(bas), end: hhmm(bas + seansDk),
+      title: `${ad} (${i + 1}/${n})`, summary
+    });
+    // Seanslar Projelerim'de tek proje olarak toplansın.
+    satirlar.push({ ...satir, project_title: ad });
+    gundeki++;
+    bas += seansDk + molaDk;
+  }
+  return satirlar;
+}
+
+/** Formdaki canlı açıklama: "2 seans · 2 gün" gibi. */
+function seansOzeti(satirlar) {
+  if (!Array.isArray(satirlar) || satirlar.length === 0) return null;
+  const gunler = new Set(satirlar.map(s => s.day)).size;
+  return { seans: satirlar.length, gun: gunler };
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { AY_ADLARI, buildMonthGrid, monthLabel, shiftMonth, weekRangeISO,
                      isPastDay, isBusyDay, YOGUN_GUN_ESIGI,
-                     cardLayout, heightForView, KISA_OLAY_DK, buildTaskRow };
+                     cardLayout, heightForView, KISA_OLAY_DK, buildTaskRow,
+                     seanslaraBol, seansOzeti };
 }

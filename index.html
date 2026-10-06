@@ -32,6 +32,7 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
 <script src="tasks-logic.js"></script>
 <script src="calendar-logic.js"></script>
+<script src="projects-logic.js"></script>
 <!-- Profil verisinin saf mantigi (varsayilanlar, satir<->nesne donusumu,
      birlestirme, n8n planlama ozeti). DEFAULT_PROFILE burada tanimli —
      index.html icinde TEKRAR tanimlama, "already declared" ile tum
@@ -48,8 +49,10 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="focus-audio.js"></script>
 <script src="inat-modu.js"></script>
 <script src="dopamin-carki.js"></script>
-<script src="study-rooms-logic.js"></script>
-<script src="study-rooms.js"></script>
+<script src="study-rooms-logic.js"></script>
+
+<script src="study-rooms.js"></script>
+
 <script src="dehb-info.js"></script>
 <script src="brain-dump.js"></script>
 <script src="notifications.js"></script>
@@ -239,11 +242,11 @@ html.dark .fc-timegrid-slot-label,html.dark .fc-timegrid-axis{color:var(--text-s
 .mood-btn:hover{transform:translateY(-3px) scale(1.04);border-color:#7c3aed;box-shadow:0 8px 20px rgba(124,58,237,.15)}
 .mood-btn:active{transform:scale(0.96)}
 .mood-btn.active{color:#fff!important;border-color:transparent!important;transform:scale(1.05);box-shadow:0 8px 24px -4px rgba(0,0,0,0.3)}
-#mood-hyper.active{background:linear-gradient(135deg,#ec4899,#8b5cf6);box-shadow:0 8px 24px -4px rgba(236,72,153,0.45)}
-#mood-focused.active{background:linear-gradient(135deg,#6366f1,#3b82f6);box-shadow:0 8px 24px -4px rgba(99,102,241,0.45)}
-#mood-foggy.active{background:linear-gradient(135deg,#64748b,#0284c7);box-shadow:0 8px 24px -4px rgba(2,132,199,0.4)}
-#mood-anxious.active{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 24px -4px rgba(245,158,11,0.45)}
-#mood-crash.active{background:linear-gradient(135deg,#6d28d9,#4338ca);box-shadow:0 8px 24px -4px rgba(109,40,217,0.45)}
+#mood-hyper.active,#mod-sor-hyper.active{background:linear-gradient(135deg,#ec4899,#8b5cf6);box-shadow:0 8px 24px -4px rgba(236,72,153,0.45)}
+#mood-focused.active,#mod-sor-focused.active{background:linear-gradient(135deg,#6366f1,#3b82f6);box-shadow:0 8px 24px -4px rgba(99,102,241,0.45)}
+#mood-foggy.active,#mod-sor-foggy.active{background:linear-gradient(135deg,#64748b,#0284c7);box-shadow:0 8px 24px -4px rgba(2,132,199,0.4)}
+#mood-anxious.active,#mod-sor-anxious.active{background:linear-gradient(135deg,#f59e0b,#ef4444);box-shadow:0 8px 24px -4px rgba(245,158,11,0.45)}
+#mood-crash.active,#mod-sor-crash.active{background:linear-gradient(135deg,#6d28d9,#4338ca);box-shadow:0 8px 24px -4px rgba(109,40,217,0.45)}
 .adhd-slider{-webkit-appearance:none;appearance:none;height:8px;background:linear-gradient(90deg,#7c3aed,#6366f1);border-radius:9999px;outline:none;cursor:pointer;border:none!important;padding:0!important;box-shadow:none!important}
 .adhd-slider::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;background:#fff;border:3px solid #7c3aed;border-radius:50%;cursor:pointer;box-shadow:0 4px 12px rgba(124,58,237,.3);transition:all .2s ease}
 .adhd-slider::-webkit-slider-thumb:hover{transform:scale(1.2)}
@@ -365,6 +368,27 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
   .fc .fc-daygrid-body { width: 100% !important; }
   .fc-daygrid-day-frame { min-height: 62px !important; }
 }
+/* Tarih/saat seçici simgesi. Tarayıcının kendi simgesi siyah çiziliyor ve koyu
+   temada koyu zeminde kayboluyordu (Parçalayıcı'daki teslim tarihi bunun en
+   görünür örneğiydi). Kendi simgemizi çiziyoruz: açıkta indigo, koyuda açık
+   indigo. color-scheme:dark, simgeyi değiştiremeyen tarayıcılarda (Firefox)
+   açılan takvim panelini de koyulaştırıyor. */
+input[type=date]::-webkit-calendar-picker-indicator,
+input[type=datetime-local]::-webkit-calendar-picker-indicator{
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4.5' width='18' height='17' rx='3'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3Ccircle cx='8.5' cy='14' r='.6' fill='%234f46e5'/%3E%3Ccircle cx='12' cy='14' r='.6' fill='%234f46e5'/%3E%3Ccircle cx='15.5' cy='14' r='.6' fill='%234f46e5'/%3E%3C/svg%3E") center/1.15rem no-repeat;
+  width:1.25rem;height:1.25rem;opacity:.9;cursor:pointer;border-radius:.35rem}
+input[type=time]::-webkit-calendar-picker-indicator{
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E") center/1.15rem no-repeat;
+  width:1.25rem;height:1.25rem;opacity:.9;cursor:pointer;border-radius:.35rem}
+input::-webkit-calendar-picker-indicator:hover{opacity:1;background-color:var(--indigo-glow)}
+html.dark input[type=date],html.dark input[type=time],html.dark input[type=datetime-local]{color-scheme:dark}
+html.dark input[type=date]::-webkit-calendar-picker-indicator,
+html.dark input[type=datetime-local]::-webkit-calendar-picker-indicator{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4.5' width='18' height='17' rx='3'/%3E%3Cpath d='M3 9.5h18M8 2.5v4M16 2.5v4'/%3E%3Ccircle cx='8.5' cy='14' r='.6' fill='%23a5b4fc'/%3E%3Ccircle cx='12' cy='14' r='.6' fill='%23a5b4fc'/%3E%3Ccircle cx='15.5' cy='14' r='.6' fill='%23a5b4fc'/%3E%3C/svg%3E")}
+html.dark input[type=time]::-webkit-calendar-picker-indicator{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a5b4fc' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+/* Teslim tarihi kutusunun yazısı text-indigo-700: koyu zeminde okunmuyordu. */
+html.dark #task-deadline{color:#c7d2fe!important}
 </style>
 <!-- Tailwind ARTIK CDN'den gelmiyor: play CDN 407 KB ham / 123 KB gzip
      JavaScript indirip CSS'i her acilista TARAYICIDA derliyordu. Bu dosya bir
@@ -546,7 +570,7 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
         <div class="grid grid-cols-1 gap-6">
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Planlanan Tarih</label>
-            <input type="date" id="task-date" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium"
+            <input type="date" id="task-date" onchange="seansNotunuGuncelle()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium"
                    style="background:var(--input-bg);color:var(--text-main)">
           </div>
           <div class="flex gap-4">
@@ -557,10 +581,13 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
             </div>
             <div class="flex-1">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tahmini Bitiş</label>
-              <input type="time" id="task-end" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold"
+              <input type="time" id="task-end" onchange="seansNotunuGuncelle()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold"
                      style="background:var(--input-bg);color:var(--text-soft)">
             </div>
           </div>
+          <!-- Tek seferlik iş: süre odak seansına sığmıyorsa seanslara bölünüp
+               günlere yayılır (seanslaraBol). Kullanıcı ne olacağını Ekle'den ÖNCE görsün. -->
+          <p id="seans-notu" class="text-xs font-semibold -mt-2 px-1" style="color:var(--text-soft)"></p>
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Ek Detaylar</label>
             <textarea id="task-desc" placeholder="Notlarını veya n8n için ipuçlarını buraya yazabilirsin..." class="w-full p-5 rounded-3xl h-32 border border-transparent focus:border-indigo-200 outline-none resize-none text-sm leading-relaxed"
@@ -573,10 +600,10 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
              asıl işi parçalamak. Artık tek karar var ve varsayılanı doğru. -->
         <div class="pt-4">
           <label id="split-toggle" class="flex items-start gap-3 mb-4 cursor-pointer select-none">
-            <input type="checkbox" id="task-split" checked class="mt-0.5 w-5 h-5 rounded accent-indigo-600 cursor-pointer">
+            <input type="checkbox" id="task-split" onchange="seansNotunuGuncelle()" class="mt-0.5 w-5 h-5 rounded accent-indigo-600 cursor-pointer">
             <span>
-              <span class="block text-sm font-bold" style="color:var(--text-main)">🧩 AI ile parçalara böl</span>
-              <span class="block text-xs mt-0.5" style="color:var(--text-soft)">Görevi mikro adımlara ayırıp saatlerine yerleştirir.</span>
+              <span class="block text-sm font-bold" style="color:var(--text-main)">🧩 AI ile mikro adımlara böl</span>
+              <span class="block text-xs mt-0.5" style="color:var(--text-soft)">Büyük, belirsiz işler için. Kapalıyken basit iş tek görev olarak eklenir.</span>
               <span id="split-note" class="hidden text-xs mt-1 font-semibold text-amber-600"></span>
             </span>
           </label>
@@ -1080,7 +1107,7 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
                     stroke-linecap="round" stroke-dasharray="251.32" stroke-dashoffset="0"/>
           </svg>
           <div class="absolute inset-0 flex items-center justify-center">
-            <span id="oda-sayac" class="text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">50:00</span>
+            <span id="oda-sayac" class="text-2xl font-black tabular-nums text-slate-800 dark:text-slate-100">25:00</span>
           </div>
         </div>
         <div class="flex gap-2 w-full">
@@ -1089,7 +1116,7 @@ html.dark .story-progress-segment { background: rgba(255,255,255,0.15); }
           <button id="oda-sayac-sifirla" type="button" title="Sıfırla"
                   class="px-3 py-2 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-sm font-bold transition">↺</button>
         </div>
-        <p class="text-[11px] text-slate-400 text-center leading-snug">50 dk odak / 10 dk mola<br>Sayaç bittiğinde kendiliğinden değişir.</p>
+        <p class="text-[11px] text-slate-400 text-center leading-snug"><span id="oda-dongu-metni">25 dk odak / 5 dk mola</span><br>Süreler profilinden gelir; sayaç bitince kendiliğinden değişir.</p>
       </div>
     </div>
   </div>
@@ -1313,6 +1340,7 @@ async function _onSession(session) {
   // daha ele geçmez, o yüzden hemen profile yazılıyor.
   if (session.provider_refresh_token) saklaYenilemeTokeni(session.provider_refresh_token);
   await loadProfileFromSupabase();
+  gununModunuSor();   // await yok: Bugün ekranı modalın arkasında yüklenmeye devam etsin
   // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
   // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
   // tekrar dene — aksi halde gereksiz ikinci sorgu atılır.
@@ -1536,7 +1564,7 @@ async function loadProjectsList() {
   try {
     const { data, error } = await window.supabaseClient
       .from('tasks')
-      .select('project_title, day, completed')
+      .select('project_title, name, day, completed')
       .eq('user_id', currentUser.id)
       .not('project_title', 'is', null);
     if (error) throw error;
@@ -1545,7 +1573,8 @@ async function loadProjectsList() {
     for (const t of (data || [])) {
       const key = (t.project_title || '').trim();
       if (!key) continue;
-      if (!groups[key]) groups[key] = { total: 0, done: 0, days: new Set() };
+      if (!groups[key]) groups[key] = { total: 0, done: 0, days: new Set(), adlar: [] };
+      if (t.name) groups[key].adlar.push(t.name);
       groups[key].total++;
       if (t.completed) groups[key].done++;
       if (t.day) groups[key].days.add(t.day);
@@ -1595,10 +1624,17 @@ async function loadProjectsList() {
       const aralik = days.length ? (days[0] === days[days.length - 1] ? days[0] : `${days[0]} → ${days[days.length - 1]}`) : '';
       const yuzde = g.total > 0 ? Math.round((g.done / g.total) * 100) : 0;
       const tema = PROJE_TEMALARI[i % PROJE_TEMALARI.length];
+      // İkon içerikten (projects-logic.js): SQL projesine SQL logosu, sunuma 🎤.
+      // Eşleşme yoksa eski dönen tema ikonu. Logo CDN'den yüklenemezse
+      // onerror tema ikonuna geri döner — kart hiçbir zaman boş kutu göstermez.
+      const ikon = projeIkonu(name, g.adlar);
+      const ikonHTML = ikon?.tur === 'logo'
+        ? `<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm" style="background:#fff;border:1px solid #e2e8f0" title="${escapeHtml(ikon.etiket)}"><img src="${ikon.src}" alt="${escapeHtml(ikon.etiket)}" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${tema.icon}'))"></div>`
+        : `<div class="w-12 h-12 rounded-2xl ${tema.bg} ${tema.text} flex items-center justify-center text-2xl">${ikon?.tur === 'emoji' ? ikon.simge : tema.icon}</div>`;
       return `
         <div class="glass-card p-6 bg-white/90 shadow-lg hover:shadow-xl transition-all">
           <div class="flex items-start justify-between mb-4">
-            <div class="w-12 h-12 rounded-2xl ${tema.bg} ${tema.text} flex items-center justify-center text-2xl">${tema.icon}</div>
+            ${ikonHTML}
             <button data-proje="${escapeHtml(name)}" onclick="projeSilTiklandi(this)" class="text-slate-300 hover:text-red-500 transition-colors text-lg leading-none" title="Projeyi sil">🗑️</button>
           </div>
           <h3 class="font-bold text-slate-900 text-lg mb-1 truncate" title="${escapeHtml(name)}">${escapeHtml(name)}</h3>
@@ -1687,6 +1723,11 @@ async function loadProfileFromSupabase() {
   // Supabase satiri → userProfile (donusum profile-logic.js'te, testli).
   userProfile = rowToProfile(data);
   localStorage.setItem('focusaid_profile', JSON.stringify(userProfile));
+  // Günün Zafer Ödülü hesapta (profiles.cark_*): başka cihazda bugün çevrildiyse
+  // bu cihaz da bilsin — Bugün kartı ve çark aynı şeyi göstersin.
+  if (data.cark_tarihi && data.cark_odulu && !isGuestMode) {
+    try { localStorage.setItem(carkAnahtari(currentUser.id), JSON.stringify({ tarih: data.cark_tarihi, odul: data.cark_odulu })); } catch (e) {}
+  }
   if (window.FocusAudio && userProfile.focusTrigger) window.FocusAudio.setMode(userProfile.focusTrigger);
   // Bu tarayıcıda daha önce hiç tema seçilmemişse (yeni cihaz/tarayıcı), hesaba
   // kayıtlı ışık hassasiyetinden varsayılan temayı öner — açıkça seçilmiş bir
@@ -2523,6 +2564,36 @@ function updateEndTime() {
   const [h,m] = s.split(':').map(Number);
   const el = document.getElementById('task-end');
   if (el) el.value = `${String((h+1)%24).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  seansNotunuGuncelle();
+}
+
+/** Profildeki odak süresi + mola stili → seanslaraBol ayarı. */
+function seansAyari() {
+  return {
+    odakDk: userProfile?.focusPeriod || 25,
+    molaDk: (typeof BREAK_MAP !== 'undefined' && BREAK_MAP[userProfile?.breakStyle]) ?? 5,
+    gunlukTavan: 3   // n8n'deki DEHB tavanıyla aynı (Normalize & Calculate: min(slots, 3))
+  };
+}
+
+/** Formdaki tarih/saat değiştikçe "ne olacak" satırını yazar. */
+function seansNotunuGuncelle() {
+  const not = document.getElementById('seans-notu');
+  if (!not) return;
+  const ai = document.getElementById('task-split');
+  if (ai?.checked && !ai.disabled) { not.textContent = ''; return; }
+  const satirlar = seanslaraBol({
+    dayISO: document.getElementById('task-date')?.value,
+    start:  document.getElementById('task-start')?.value,
+    end:    document.getElementById('task-end')?.value,
+    title:  document.getElementById('task-title')?.value || 'görev'
+  }, seansAyari());
+  const oz = seansOzeti(satirlar);
+  if (!oz) { not.textContent = ''; return; }
+  const { odakDk } = seansAyari();
+  not.textContent = oz.seans === 1
+    ? '✅ Tek seansa sığıyor — tek görev olarak eklenecek.'
+    : `⏱ Odak süren ${odakDk} dk: ${oz.seans} seansa bölünüp ${oz.gun === 1 ? 'aynı güne' : oz.gun + ' güne'} yayılacak.`;
 }
 
 // ── GÖREV EKLEME: TEK GİRİŞ ──
@@ -2579,16 +2650,19 @@ async function ayarlaParcalaSecenegi() {
   const kutu = document.getElementById('task-split');
   const not  = document.getElementById('split-note');
   if (!kutu) return;
-  kutu.checked = true;
+  // Varsayılan KAPALI: takvimden eklenen iş çoğunlukla tek seferlik ve basit.
+  // Eskiden açıktı ve n8n her işi en az 3 mikro adıma bölüyordu.
+  kutu.checked = false;
   kutu.disabled = false;
   not?.classList.add('hidden');
+  seansNotunuGuncelle();
 
   if (await n8nUlasilabilirMi()) return;
 
   kutu.checked = false;
   kutu.disabled = true;
   if (not) {
-    not.textContent = 'n8n şu an çalışmıyor — görev bölünmeden tek parça eklenecek.';
+    not.textContent = 'n8n şu an çalışmıyor — AI ile bölme kapalı.';
     not.classList.remove('hidden');
   }
 }
@@ -2643,35 +2717,44 @@ async function saveTask() {
   // çekilebiliyor, o yüzden kontrol openNewTaskForDay'de bırakılamaz.
   if (isPastDay(date, localDayISO())) { showToast('Geçmiş günlere görev ekleyemezsin!', 'error'); return; }
 
-  const satir = buildTaskRow({ dayISO: date, start, end, title, summary: desc });
-  if (!satir) { showToast('Bitiş saati başlangıçtan sonra olmalı!', 'error'); return; }
+  // Tek seansa sığıyorsa tek satır; sığmıyorsa seanslar + günlere yayılım.
+  const satirlar = seanslaraBol({ dayISO: date, start, end, title, summary: desc }, seansAyari());
+  if (!satirlar) { showToast('Bitiş saati başlangıçtan sonra olmalı!', 'error'); return; }
 
   const btn = formGonderButonu();
   if (btn) { btn.disabled = true; btn.textContent = '⏳ Kaydediliyor...'; }
   try {
     const { data, error } = await window.supabaseClient
       .from('tasks')
-      .insert({ ...satir, user_id: currentUser?.id })
-      .select('id')
-      .single();
+      .insert(satirlar.map(s => ({ ...s, user_id: currentUser?.id })))
+      .select('id');
     if (error) throw error;
 
-    const takvim = await takvimeIsle(satir);
-    // Etkinlik id'sini geri yaz: takvim iki kaynağı bu alanla eşleştirip
-    // tekilleştiriyor (bkz. events geri çağrısı), yoksa görev iki kez görünür.
-    if (takvim.id) {
-      const { error: eslemeHatasi } = await window.supabaseClient
-        .from('tasks').update({ calendar_event_id: takvim.id }).eq('id', data.id);
-      if (eslemeHatasi) console.warn('[Görev] calendar_event_id yazılamadı:', eslemeHatasi);
+    // insert sırası korunuyor: data[i] ↔ satirlar[i].
+    const durumlar = [];
+    for (let i = 0; i < satirlar.length; i++) {
+      const takvim = await takvimeIsle(satirlar[i]);
+      durumlar.push(takvim.durum);
+      // Etkinlik id'sini geri yaz: takvim iki kaynağı bu alanla eşleştirip
+      // tekilleştiriyor (bkz. events geri çağrısı), yoksa görev iki kez görünür.
+      if (takvim.id && data?.[i]?.id) {
+        const { error: eslemeHatasi } = await window.supabaseClient
+          .from('tasks').update({ calendar_event_id: takvim.id }).eq('id', data[i].id);
+        if (eslemeHatasi) console.warn('[Görev] calendar_event_id yazılamadı:', eslemeHatasi);
+      }
     }
 
     AppState.calendar?.refetchEvents();
     closeForm();
+    const oz = seansOzeti(satirlar);
+    const ne = oz.seans === 1 ? 'Görev kaydedildi' : `${oz.seans} seans olarak kaydedildi (${oz.gun} gün)`;
+    const durum = durumlar.every(d => d === 'islendi') ? 'islendi'
+                : durumlar.every(d => d === 'baglisiz') ? 'baglisiz' : 'hata';
     showToast(
-      takvim.durum === 'islendi'  ? '✅ Görev kaydedildi ve takvime işlendi!'
-      : takvim.durum === 'baglisiz' ? '✅ Görev kaydedildi. (Google Takvim bağlı değil)'
-      : '✅ Görev kaydedildi, ama Google Takvim etkinliği oluşturulamadı.',
-      takvim.durum === 'islendi' ? 'success' : 'info'
+      durum === 'islendi'  ? `✅ ${ne} ve takvime işlendi!`
+      : durum === 'baglisiz' ? `✅ ${ne}. (Google Takvim bağlı değil)`
+      : `✅ ${ne}, ama Google Takvim etkinliği oluşturulamadı.`,
+      durum === 'islendi' ? 'success' : 'info'
     );
   } catch (e) {
     console.error('[Görev] kaydedilemedi:', e);
@@ -2962,6 +3045,93 @@ function setMood(mood, kullaniciTikladi = true) {
   }
   document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('mood-' + mood)?.classList.add('active');
+}
+
+/* ── Günün modu: girişte kendiliğinden sor ──────────────────────────────
+   Mod eskiden yalnızca Profil sayfasının içindeydi; oraya gitmeyen kullanıcı
+   hiç seçmiyordu ve planlama hep "nötr" kalıyordu. Artık günün ilk açılışında
+   bir kez soruluyor. "Şimdi değil" o gün için susturur (ısrar etmek DEHB'li
+   kullanıcıyı uygulamadan kaçırır). Misafir modunda sorulmaz: demo arayüzü
+   göstermek için var, ayrıca açılışta çıkan bir katman UI testlerinin
+   tıklamalarını keserdi.
+
+   Modun BUGÜNKÜ etkisi (n8n Normalize & Calculate + scheduling-logic dailyCaps):
+   o gün parçalanan YENİ planlarda günlük seans tavanı foggy/anxious/crash'te
+   −1, hyper/focused'da +1; AI'ya da hâl olarak gidiyor. Zaten takvimde duran
+   görevlere dokunmuyor — mesajlar bu yüzden "yeni planların" diyor. */
+const MOD_BILGI = {
+  hyper:   { etiket: '🚀 Hiper Modda',   mesaj: 'Bugün parçalayacağın yeni planlara 1 seans fazla sığar. Hiperfokus alarmın kapalıysa Profil\'den açmayı düşün — enerji yüksekken mola unutuluyor.' },
+  focused: { etiket: '🎯 Odaklıyım',     mesaj: 'Bugünkü yeni planlar 1 seans daha iddialı kurulur. Fırsatı kaçırma: en zor işi ilk sıraya al.' },
+  foggy:   { etiket: '🌫️ Beyin Sisi',    mesaj: 'Bugünkü yeni planlar 1 seans hafifletilir ve ilk adım kasten küçük seçilir. 5 dakikalık bir başlangıç yeter.' },
+  anxious: { etiket: '😰 Kaygılı',       mesaj: 'Bugünkü yeni planlar 1 seans hafifletilir. Sadece sıradaki tek göreve bak; gerisi bekleyebilir.' },
+  crash:   { etiket: '💤 Enerji Düşük',  mesaj: 'Bugünkü yeni planlar 1 seans hafifletilir. Bugün tek bir şeyi bitirmek de bir zafer.' }
+};
+
+function modSormaAnahtari() {
+  return 'focusaid_mod_sorma_' + (currentUser?.id || 'misafir');
+}
+
+function gununModunuSor() {
+  if (isGuestMode || !currentUser) return;
+  const bugun = bugunIstanbul();
+  if (moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugun)) return;   // bugün zaten seçilmiş
+  try { if (localStorage.getItem(modSormaAnahtari()) === bugun) return; } catch (e) {}   // bugün "şimdi değil" dendi
+  if (document.getElementById('mod-sor-modal')) return;
+
+  const modal = document.createElement('div');
+  modal.id = 'mod-sor-modal';
+  modal.className = 'fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-labelledby', 'mod-sor-baslik');
+  modal.innerHTML = `
+    <div class="glass-card w-full max-w-lg p-6 md:p-8 bg-white shadow-2xl animate-slide-in">
+      <p class="text-xs font-black uppercase tracking-widest text-indigo-500 mb-1">Günaydın 👋</p>
+      <h3 id="mod-sor-baslik" class="text-2xl font-extrabold text-slate-900 mb-1">Bugün nasıl hissediyorsun?</h3>
+      <p class="text-sm text-slate-500 mb-5">Cevabına göre bugünkü planlarını hafifletir ya da güçlendiririm.</p>
+      <div id="mod-sor-secenekler" class="flex gap-3 flex-wrap">
+        ${Object.entries(MOD_BILGI).map(([id, m]) =>
+          `<button type="button" data-mod="${id}" id="mod-sor-${id}" class="mood-btn">${m.etiket}</button>`).join('')}
+      </div>
+      <p id="mod-sor-sonuc" class="hidden mt-5 p-4 rounded-2xl bg-indigo-50 text-sm font-medium text-slate-700 leading-relaxed"></p>
+      <div class="flex justify-end mt-6">
+        <button type="button" id="mod-sor-kapat" class="text-sm font-bold text-slate-400 hover:text-slate-600 px-3 py-2">Şimdi değil</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  const kapat = () => modal.remove();
+  modal.querySelector('#mod-sor-kapat').addEventListener('click', () => {
+    if (!modal.dataset.secildi) { try { localStorage.setItem(modSormaAnahtari(), bugun); } catch (e) {} }
+    kapat();
+  });
+  modal.querySelectorAll('[data-mod]').forEach(b => b.addEventListener('click', () => gununModunuKaydet(b.dataset.mod, modal)));
+}
+
+async function gununModunuKaydet(mod, modal) {
+  if (!MOD_BILGI[mod]) return;
+  userProfile.todayMood = mod;
+  userProfile.todayMoodDate = bugunIstanbul();
+  try { localStorage.setItem('focusaid_profile', JSON.stringify(userProfile)); } catch (e) {}
+  // Profil sayfası o an açıksa düğmesi de yansısın (tarihe dokunmadan).
+  if (document.getElementById('mood-' + mod)) setMood(mod, false);
+
+  modal.dataset.secildi = '1';
+  modal.querySelectorAll('[data-mod]').forEach(b => b.classList.toggle('active', b.dataset.mod === mod));
+  const sonuc = modal.querySelector('#mod-sor-sonuc');
+  sonuc.textContent = MOD_BILGI[mod].mesaj;
+  sonuc.classList.remove('hidden');
+  const kapatBtn = modal.querySelector('#mod-sor-kapat');
+  kapatBtn.textContent = 'Tamam, başlayalım →';
+  kapatBtn.className = 'text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 px-5 py-2.5 rounded-xl';
+
+  // Doğrudan kaydediliyor: modal "Kaydet" düğmesi beklemez. Hata yutulmaz
+  // ama mod tarayıcıda kaldığı için Parçalayıcı yine bugünkü modu kullanır.
+  try { await saveProfileToSupabase(userProfile); }
+  catch (e) {
+    console.warn('[Mod] sunucuya yazılamadı:', e);
+    showToast('⚠️ Modun bu cihazda kaydedildi, sunucuya yazılamadı.', 'error');
+  }
 }
 
 /* ── Süper güçler (JSONB `superpowers`) ── */

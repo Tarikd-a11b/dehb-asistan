@@ -184,8 +184,32 @@ function rebalanceSchedule(pendingTasks, now, profile) {
 }
 
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
+/**
+ * 🎡 Günün Zafer Ödülü günde BİR kez kazanılır. Eskiden çark kapatılıp
+ * yeniden açılarak istenen ödül çıkana kadar tekrar tekrar çevrilebiliyordu —
+ * ödül "kazanılan" bir şey olmaktan çıkıp seçilen bir şeye dönüşüyordu.
+ *
+ * Kayıt localStorage'da `{tarih, odul}` olarak durur (anahtar kullanıcıya
+ * özel, bkz. carkAnahtari). `tarih` bugün değilse çark yeniden açıktır.
+ * Bozuk/eksik kayıt → null (çark açık): kullanıcıyı haksız yere kilitleme.
+ */
+function carkAnahtari(kullaniciId) {
+  return 'focusaid_cark_' + (kullaniciId || 'misafir');
+}
+
+function bugununCarkOdulu(kayitMetni, bugun) {
+  if (!kayitMetni || !bugun) return null;
+  try {
+    const k = JSON.parse(kayitMetni);
+    return k && k.tarih === bugun && typeof k.odul === 'string' && k.odul ? k.odul : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
+    carkAnahtari, bugununCarkOdulu,
     BREAK_MAP, CARRY_OVER_DAYS,
     localDayISO, addDaysISO, splitTasks, pickCurrentTask,
     computeProgress, dayLabel, computeSnooze,

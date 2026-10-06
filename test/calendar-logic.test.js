@@ -217,3 +217,52 @@ test('buildTaskRow eksik alanda null doner, patlamaz', () => {
   assert.strictEqual(C.buildTaskRow({ dayISO: '', start: '10:00', end: '11:00', title: 'X' }), null);
   assert.strictEqual(C.buildTaskRow({ dayISO: 'gecersiz', start: '10:00', end: '11:00', title: 'X' }), null);
 });
+
+// ── seanslaraBol: takvimden tek seferlik iş ──
+const AYAR = { odakDk: 25, molaDk: 5, gunlukTavan: 3 };
+const yerel = (iso) => new Date(iso).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+
+test('seanslaraBol odak suresine sigan is TEK gorev kalir (saatler aynen)', () => {
+  const r = C.seanslaraBol({ dayISO: '2026-10-07', start: '10:00', end: '10:20', title: 'Faturayı öde' }, AYAR);
+  assert.strictEqual(r.length, 1);
+  assert.strictEqual(r[0].name, 'Faturayı öde');
+  assert.strictEqual(yerel(r[0].end_time), '10:20');
+  assert.strictEqual(r[0].project_title, undefined);
+});
+
+test('seanslaraBol biraz tasan is bolunmez (30 dk / 25 dk odak = 1 seans)', () => {
+  const r = C.seanslaraBol({ dayISO: '2026-10-07', start: '10:00', end: '10:30', title: 'Mail' }, AYAR);
+  assert.strictEqual(r.length, 1);
+});
+
+test('seanslaraBol uzun isi seanslara boler, araya mola koyar', () => {
+  const r = C.seanslaraBol({ dayISO: '2026-10-07', start: '10:00', end: '11:00', title: 'Rapor' }, AYAR);
+  assert.strictEqual(r.length, 2);
+  assert.deepStrictEqual(r.map(s => s.name), ['Rapor (1/2)', 'Rapor (2/2)']);
+  assert.strictEqual(yerel(r[0].start_time), '10:00');
+  assert.strictEqual(yerel(r[0].end_time), '10:30');
+  assert.strictEqual(yerel(r[1].start_time), '10:35');   // 5 dk mola
+  assert.ok(r.every(s => s.day === '2026-10-07' && s.project_title === 'Rapor'));
+});
+
+test('seanslaraBol gunluk tavani asan seanslar sonraki gunlere yayilir', () => {
+  // 3 saat / 25 dk = 7 seans → 3 + 3 + 1
+  const r = C.seanslaraBol({ dayISO: '2026-10-30', start: '09:00', end: '12:00', title: 'Sunum' }, AYAR);
+  assert.strictEqual(r.length, 7);
+  assert.deepStrictEqual(r.map(s => s.day),
+    ['2026-10-30', '2026-10-30', '2026-10-30', '2026-10-31', '2026-10-31', '2026-10-31', '2026-11-01']);
+  assert.strictEqual(yerel(r[3].start_time), '09:00');   // ertesi gün aynı saatten başlar
+  assert.deepStrictEqual(C.seansOzeti(r), { seans: 7, gun: 3 });
+});
+
+test('seanslaraBol gece yarisini asacak seans ertesi gune kayar', () => {
+  const r = C.seanslaraBol({ dayISO: '2026-10-07', start: '22:30', end: '23:59', title: 'Gece' },
+                           { odakDk: 30, molaDk: 15, gunlukTavan: 3 });
+  // 89 dk / 30 = 3 seans x 30 dk: 22:30-23:00, 23:15-23:45, sonraki 00:00'ı aşar → ertesi gün
+  assert.deepStrictEqual(r.map(s => s.day), ['2026-10-07', '2026-10-07', '2026-10-08']);
+});
+
+test('seanslaraBol gecersiz girdide null', () => {
+  assert.strictEqual(C.seanslaraBol({ dayISO: '2026-10-07', start: '11:00', end: '10:00', title: 'x' }, AYAR), null);
+  assert.strictEqual(C.seanslaraBol({ dayISO: '2026-10-07', start: '10:00', end: '11:00', title: '  ' }, AYAR), null);
+});

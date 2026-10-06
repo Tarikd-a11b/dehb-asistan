@@ -4,6 +4,7 @@ const assert = require('node:assert/strict');
 const {
   CALISMA_ODALARI, odaBul, youtubeVideoIdCikar, odaSuresiMetni, ozelOdalariTemizle
 } = require('../study-rooms-logic.js');
+const L = require('../study-rooms-logic.js');
 
 test('oda katalogu dolu ve her odanin gecerli bir video kimligi var', () => {
   assert.ok(CALISMA_ODALARI.length >= 5);
@@ -96,4 +97,21 @@ test('ozelOdalariTemizle dizi olmayan girdide bos doner', () => {
   assert.deepEqual(ozelOdalariTemizle(null), []);
   assert.deepEqual(ozelOdalariTemizle('abc'), []);
   assert.deepEqual(ozelOdalariTemizle(undefined), []);
+});
+
+// ── odaSureleri: oda sayacı profilden ──
+test('odaSureleri profildeki odak suresini ve mola stilini kullanir', () => {
+  assert.deepStrictEqual(L.odaSureleri(40, 15), { odak: 40, mola: 15 });
+  assert.deepStrictEqual(L.odaSureleri(25, 5), { odak: 25, mola: 5 });
+});
+
+test('odaSureleri serbest mola (0) korunur — mola fazi atlanacak', () => {
+  assert.strictEqual(L.odaSureleri(25, 0).mola, 0);
+});
+
+test('odaSureleri bozuk profilde guvenli varsayilana duser', () => {
+  assert.deepStrictEqual(L.odaSureleri(undefined, undefined), { odak: 25, mola: 5 });
+  assert.deepStrictEqual(L.odaSureleri('abc', -3), { odak: 25, mola: 5 });
+  assert.strictEqual(L.odaSureleri(500, 5).odak, 90);
+  assert.strictEqual(L.odaSureleri(3, 5).odak, 10);
 });

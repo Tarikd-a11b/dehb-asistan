@@ -178,7 +178,27 @@ function ozelOdalariTemizle(liste) {
   return cikti;
 }
 
+/**
+ * Oda sayacının odak/mola süreleri PROFİLDEN gelir (Odak Süresi + Mola Stili).
+ * Eskiden sabit 50/10'du; profilde 25 dk seçen biri odada 50 dk'lık seansa
+ * kilitleniyordu — planlayıcı onu 25'lik seanslarla planlarken.
+ *
+ * `molaDk` mola stilinin dakika karşılığı (BREAK_MAP, tasks-logic.js). 0 =
+ * "Serbest": zorunlu mola yok, seans bitince yeni seans başlar.
+ * Geçersiz odak süresi profil varsayılanına (25) düşer; aralık profil
+ * kaydırıcısıyla aynı (10-90).
+ */
+function odaSureleri(odakDk, molaDk) {
+  const o = Math.round(Number(odakDk));
+  const m = Math.round(Number(molaDk));
+  return {
+    odak: Number.isFinite(o) && o > 0 ? Math.min(90, Math.max(10, o)) : 25,
+    mola: Number.isFinite(m) && m >= 0 ? Math.min(60, m) : 5
+  };
+}
+
 if (typeof window !== 'undefined') {
+  window.odaSureleri = odaSureleri;
   window.CALISMA_ODALARI = CALISMA_ODALARI;
   window.odaBul = odaBul;
   window.youtubeVideoIdCikar = youtubeVideoIdCikar;
@@ -187,5 +207,5 @@ if (typeof window !== 'undefined') {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { CALISMA_ODALARI, odaBul, youtubeVideoIdCikar, odaSuresiMetni, ozelOdalariTemizle };
+  module.exports = { CALISMA_ODALARI, odaBul, youtubeVideoIdCikar, odaSuresiMetni, ozelOdalariTemizle, odaSureleri };
 }

@@ -154,3 +154,25 @@ test('rebalanceSchedule kalan gorevleri araliksiz sirayla yeniden dizer', () => 
   const t2Start = new Date(rebalanced[1].start_time);
   assert.strictEqual(t2Start.getMinutes(), 45); // 14:15 + 25 odak + 5 mola = 14:45
 });
+
+// ── Günün Zafer Ödülü: günde bir kez ──
+test('bugununCarkOdulu bugunun kaydini dondurur', () => {
+  const kayit = JSON.stringify({ tarih: '2026-10-06', odul: '🍫 Tatlı / Kahve Ismarla' });
+  assert.strictEqual(L.bugununCarkOdulu(kayit, '2026-10-06'), '🍫 Tatlı / Kahve Ismarla');
+});
+
+test('bugununCarkOdulu dunku kayitta cark yeniden acik (null)', () => {
+  const kayit = JSON.stringify({ tarih: '2026-10-05', odul: '🎮 45 Dk Oyun' });
+  assert.strictEqual(L.bugununCarkOdulu(kayit, '2026-10-06'), null);
+});
+
+test('bugununCarkOdulu bozuk/eksik kayitta kilitlemez', () => {
+  assert.strictEqual(L.bugununCarkOdulu(null, '2026-10-06'), null);
+  assert.strictEqual(L.bugununCarkOdulu('{bozuk', '2026-10-06'), null);
+  assert.strictEqual(L.bugununCarkOdulu(JSON.stringify({ tarih: '2026-10-06' }), '2026-10-06'), null);
+});
+
+test('carkAnahtari kullaniciya ozel, kimliksizde misafir', () => {
+  assert.strictEqual(L.carkAnahtari('abc'), 'focusaid_cark_abc');
+  assert.strictEqual(L.carkAnahtari(undefined), 'focusaid_cark_misafir');
+});
