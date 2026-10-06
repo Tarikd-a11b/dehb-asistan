@@ -9,8 +9,53 @@ const BrainDumpState = {
   isOpen: false
 };
 
+// localStorage yalnız ÖNBELLEK: park etmek ağı beklemeden anında olsun, misafir
+// modunda ve çevrimdışıyken de çalışsın. Gerçek kaynak Supabase `brain_dump`
+// tablosu (add-brain-dump.sql); girişte syncBrainDump() ikisini eşitler.
 const BRAIN_DUMP_STORAGE_KEY = 'focusaid_brain_dump';
+// Önbelleğin hangi kullanıcıya ait olduğu. Aynı tarayıcıda hesap değişince
+// eski hesabın düşünceleri yeni hesaba YÜKLENMESİN diye.
+const BRAIN_DUMP_SAHIP_KEY = 'focusaid_brain_dump_sahip';
+const BRAIN_DUMP_TABLO = 'brain_dump';
+const BD_UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+// id istemcide üretiliyor: yerel kopya ile tablo satırı aynı kimliği taşısın,
+// yazma dönmeden de işaretleme/silme yapılabilsin.
+function yeniDusunceId() {
+  if (globalThis.crypto && typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+}
+
+// ── Saf dönüşümler (testli) ─────────────────────────────────────────────────
+function dusunceSatiri(item, userId) {
+  return { id: item.id, user_id: userId, text: item.text, completed: !!item.completed, created_at: item.createdAt };
+}
+
+function satirdanDusunce(row) {
+  return { id: row.id, text: row.text, createdAt: row.created_at, completed: !!row.completed };
+}
+
+/**
+ * Buluta gitmesi gerekenleri seçer. Eski sürümün 'bd_…' kimlikli (yalnız yerel)
+ * düşünceleri yeni UUID alıp bekleyen olarak işaretlenir — tek seferlik taşıma.
+ */
+function senkronHazirla(thoughts) {
+  const liste = thoughts.map(t => BD_UUID_RE.test(t.id) ? t : { ...t, id: yeniDusunceId(), bekliyor: true });
+  return { thoughts: liste, gidecek: liste.filter(t => t.bekliyor) };
+}
+
+/** Sunucu listesi esas; buluta hâlâ yazılamamış yerel düşünceler kaybolmasın. */
+function sunucuIleBirlestir(satirlar, bekleyenler) {
+  const sunucu = satirlar.map(satirdanDusunce);
+  const varOlan = new Set(sunucu.map(t => t.id));
+  return [...sunucu, ...bekleyenler.filter(t => !varOlan.has(t.id))]
+    .sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+// ── Önbellek ────────────────────────────────────────────────────────────────
 function loadBrainDump() {
   try {
     const raw = localStorage.getItem(BRAIN_DUMP_STORAGE_KEY);
@@ -28,12 +73,67 @@ function saveBrainDump() {
   updateBrainDumpBadge();
 }
 
+// ── Bulut ───────────────────────────────────────────────────────────────────
+// sb / currentUser / isGuestMode index.html'in globalleri; testte tanımsızlar.
+function brainDumpBulutAktif() {
+  return typeof sb !== 'undefined' && typeof currentUser !== 'undefined' && !!currentUser
+    && !(typeof isGuestMode !== 'undefined' && isGuestMode);
+}
+
+// Yazılamayan düşünce silinmez: `bekliyor` işaretiyle önbellekte kalır, bir
+// sonraki girişte syncBrainDump yeniden dener.
+async function brainDumpBulutaYaz(items) {
+  if (!brainDumpBulutAktif() || !items.length) return;
+  const { error } = await sb.from(BRAIN_DUMP_TABLO)
+    .upsert(items.map(t => dusunceSatiri(t, currentUser.id)), { onConflict: 'id' });
+  if (error) {
+    console.warn('[Düşünce Parkı] buluta yazılamadı, bu cihazda saklandı:', error.code, error.message);
+    items.forEach(t => { t.bekliyor = true; });
+  } else {
+    items.forEach(t => { delete t.bekliyor; });
+  }
+  saveBrainDump();
+}
+
+async function brainDumpBuluttanSil(ids) {
+  if (!brainDumpBulutAktif() || !ids.length) return;
+  const { error } = await sb.from(BRAIN_DUMP_TABLO).delete().in('id', ids);
+  // Silinemeyen düşünce bir sonraki girişte geri gelir — kayıptan iyidir.
+  if (error) console.warn('[Düşünce Parkı] buluttan silinemedi:', error.code, error.message);
+}
+
+async function syncBrainDump() {
+  if (!brainDumpBulutAktif()) return;
+  let sahip = null;
+  try { sahip = localStorage.getItem(BRAIN_DUMP_SAHIP_KEY); } catch (e) {}
+  if (sahip && sahip !== currentUser.id) BrainDumpState.thoughts = [];
+
+  const hazir = senkronHazirla(BrainDumpState.thoughts);
+  BrainDumpState.thoughts = hazir.thoughts;
+  saveBrainDump();
+  await brainDumpBulutaYaz(hazir.gidecek);
+
+  const { data, error } = await sb.from(BRAIN_DUMP_TABLO)
+    .select('id,text,completed,created_at')
+    .eq('user_id', currentUser.id)
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.warn('[Düşünce Parkı] buluttan okunamadı:', error.code, error.message);
+    return;
+  }
+  BrainDumpState.thoughts = sunucuIleBirlestir(data || [], BrainDumpState.thoughts.filter(t => t.bekliyor));
+  try { localStorage.setItem(BRAIN_DUMP_SAHIP_KEY, currentUser.id); } catch (e) {}
+  saveBrainDump();
+  renderBrainDumpList();
+}
+
+// ── İşlemler: önce yerel (anında), sonra bulut (arkada) ─────────────────────
 function addThought(text) {
   const clean = String(text ?? '').trim();
   if (!clean) return null;
 
   const item = {
-    id: 'bd_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+    id: yeniDusunceId(),
     text: clean,
     createdAt: new Date().toISOString(),
     completed: false
@@ -42,6 +142,7 @@ function addThought(text) {
   BrainDumpState.thoughts.unshift(item);
   saveBrainDump();
   renderBrainDumpList();
+  brainDumpBulutaYaz([item]);
   return item;
 }
 
@@ -51,6 +152,7 @@ function toggleThought(id) {
     item.completed = !item.completed;
     saveBrainDump();
     renderBrainDumpList();
+    brainDumpBulutaYaz([item]);
   }
 }
 
@@ -58,12 +160,15 @@ function deleteThought(id) {
   BrainDumpState.thoughts = BrainDumpState.thoughts.filter(t => t.id !== id);
   saveBrainDump();
   renderBrainDumpList();
+  brainDumpBuluttanSil([id]);
 }
 
 function clearCompletedThoughts() {
+  const silinen = BrainDumpState.thoughts.filter(t => t.completed).map(t => t.id);
   BrainDumpState.thoughts = BrainDumpState.thoughts.filter(t => !t.completed);
   saveBrainDump();
   renderBrainDumpList();
+  brainDumpBuluttanSil(silinen);
 }
 
 function updateBrainDumpBadge() {
@@ -164,14 +269,19 @@ function renderBrainDumpList() {
           <span class="text-xs text-slate-800 dark:text-slate-200 font-medium truncate ${t.completed ? 'line-through text-slate-400' : ''}">${_escapeBd(t.text)}</span>
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button type="button" onclick="convertThoughtToTask('${_escapeBd(t.text)}', '${t.id}')" title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1.5 text-xs hover:text-indigo-600 text-slate-400 transition hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg">🧩</button>
+          <button type="button" onclick="convertThoughtToTask('${t.id}')" title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1.5 text-xs hover:text-indigo-600 text-slate-400 transition hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg">🧩</button>
           <button type="button" onclick="deleteThought('${t.id}')" title="Sil" class="p-1.5 text-xs hover:text-red-500 text-slate-400 transition hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg">✕</button>
         </div>
       </div>`;
   }).join('');
 }
 
-function convertThoughtToTask(text, id) {
+function convertThoughtToTask(id) {
+  // Metin onclick dizesine gömülmüyor: kesme işareti ("Ali'yi ara") &#39; olarak
+  // kaçırılsa da HTML onu JS'ten önce geri çözüp dizeyi kırıyordu.
+  const item = BrainDumpState.thoughts.find(t => t.id === id);
+  if (!item) return;
+  const text = item.text;
   deleteThought(id);
   closeBrainDump();
   if (typeof loadPage === 'function') {
@@ -264,6 +374,11 @@ if (typeof module !== 'undefined' && module.exports) {
     addThought,
     toggleThought,
     deleteThought,
-    clearCompletedThoughts
+    clearCompletedThoughts,
+    convertThoughtToTask,
+    syncBrainDump,
+    senkronHazirla,
+    sunucuIleBirlestir,
+    dusunceSatiri
   };
 }

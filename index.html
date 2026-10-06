@@ -1340,7 +1340,8 @@ async function _onSession(session) {
   // daha ele geçmez, o yüzden hemen profile yazılıyor.
   if (session.provider_refresh_token) saklaYenilemeTokeni(session.provider_refresh_token);
   await loadProfileFromSupabase();
-  gununModunuSor();   // await yok: Bugün ekranı modalın arkasında yüklenmeye devam etsin
+  syncBrainDump();    // await yok: Düşünce Parkı önbellekten zaten açık, bulut arkada eşitlensin
+  gununModunuSor();  // await yok: Bugün ekranı modalın arkasında yüklenmeye devam etsin
   // DOMContentLoaded, INITIAL_SESSION'dan önce ateşlenebilir; o durumda Bugün
   // ekranı currentUser yokken yüklenip boş kalır. Yalnızca hiç yüklenememişse
   // tekrar dene — aksi halde gereksiz ikinci sorgu atılır.
