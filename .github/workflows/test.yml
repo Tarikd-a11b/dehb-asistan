@@ -7,13 +7,18 @@ on:
     branches: ['**']
   pull_request:
 
+# Tarih testleri İstanbul saatini varsayıyor (kullanıcılar ve tarayıcıları orada).
+# Runner UTC'de; bu olmadan computeSnooze/tarih testlerinden 4'ü düşüyor.
+env:
+  TZ: Europe/Istanbul
+
 jobs:
   birim:
     name: Birim testleri (node --test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       # Bağımlılıksız: test/ yalnız saf mantık modüllerini require ediyor.
@@ -23,8 +28,8 @@ jobs:
     name: Arayüz testleri (npm run test:ui)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
           cache: npm
