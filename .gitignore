@@ -8,3 +8,6 @@ config.js
 # Gelistirme araclari (playwright-core). Uygulamanin kendisi hala build adimsiz
 # statik dosyalardan olusuyor; bunlar yalnizca `npm run test:ui` icin.
 node_modules/
+
+# Tek basina acilan onizleme kopyalari
+_onizleme-*
