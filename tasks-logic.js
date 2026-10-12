@@ -57,6 +57,16 @@ function pickCurrentTask(tasks, now) {
   return pending[0];
 }
 
+/**
+ * Bugün kartındaki görev: sayacı çalışan (running_since dolu) tamamlanmamış görev
+ * varsa O; yoksa pickCurrentTask. Planlanan süre dolunca kart sıradakine geçerse
+ * ölçüm sessizce sürer ve ikinci bir sayaç başlatılabilirdi (çalışma analizi, 2026-10-12).
+ */
+function pickTimerTask(tasks, now) {
+  const measuring = (tasks || []).find(t => !t.completed && t.running_since);
+  return measuring || pickCurrentTask(tasks, now);
+}
+
 /** İlerleme paydası: bugün + devredenler (spec: Ekran anatomisi). */
 function computeProgress(today, carried) {
   const all = [...(today || []), ...(carried || [])];
@@ -211,7 +221,7 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     carkAnahtari, bugununCarkOdulu,
     BREAK_MAP, CARRY_OVER_DAYS,
-    localDayISO, addDaysISO, splitTasks, pickCurrentTask,
+    localDayISO, addDaysISO, splitTasks, pickCurrentTask, pickTimerTask,
     computeProgress, dayLabel, computeSnooze,
     computeVictories, rebalanceSchedule
   };

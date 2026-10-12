@@ -36,6 +36,9 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   -- Yalnizca satirin sahibi okuyabilir/yazabilir; RLS politikalari asagida.
   google_refresh_token TEXT,
 
+  -- Süre kalibrasyonu: tahmin çarpanı, örnek sayısı vb. (çalışma analizi)
+  calibration       JSONB,
+
   created_at        TIMESTAMPTZ DEFAULT NOW(),
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
@@ -103,6 +106,14 @@ CREATE TABLE IF NOT EXISTS public.tasks (
   end_time          TIMESTAMPTZ,
   calendar_event_id TEXT,
   completed         BOOLEAN     DEFAULT false,
+  started_at          TIMESTAMPTZ,
+  running_since       TIMESTAMPTZ,
+  active_seconds      INT,
+  longest_stretch_sec INT,
+  actual_minutes      INT,
+  duration_feedback   TEXT CHECK (duration_feedback IN ('shorter', 'same', 'longer')),
+  completed_at        TIMESTAMPTZ,
+  planned_factor      NUMERIC,     -- n8n'in bloğa uyguladığı süre çarpanı; NULL = 1
   created_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -125,3 +136,6 @@ CREATE POLICY "Kendi görevlerini sil"
 CREATE POLICY "Service role görev ekleyebilir"
   ON public.tasks FOR INSERT
   WITH CHECK (true);
+
+-- Analiz sorgusu: user_id + completed_at aralığı
+CREATE INDEX IF NOT EXISTS tasks_user_completed_at_idx ON public.tasks (user_id, completed_at);

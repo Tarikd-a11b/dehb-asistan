@@ -38,9 +38,11 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
      index.html icinde TEKRAR tanimlama, "already declared" ile tum
      inline script'i dusurur. -->
 <script src="profile-logic.js"></script>
+<script src="analysis-logic.js"></script>
 <script src="hyperfocus-logic.js"></script>
 <script src="hyperfocus-view.js"></script>
 <script src="tasks-view.js"></script>
+<script src="analysis-view.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="doc-intake-logic.js"></script>
 <script src="doc-intake.js"></script>
@@ -816,6 +818,9 @@ html.dark #task-deadline{color:#c7d2fe!important}
       </div>
     </div>
   </div>
+
+  <!-- Çalışma Analizim (analysis-view.js) -->
+  <div id="analysis-card"></div>
 
   <!-- Kaydet -->
   <div class="flex justify-end">
@@ -2975,7 +2980,8 @@ function loadPage(name) {
   const inits = {
     today:     () => typeof initToday          === 'function' && initToday(),
     calendar:  () => typeof initCalendar       === 'function' && initCalendar(),
-    profile:   () => typeof loadProfileToUI    === 'function' && loadProfileToUI(),
+    profile:   () => { if (typeof loadProfileToUI === 'function') loadProfileToUI();
+                       if (typeof analysisMountCard === 'function') analysisMountCard(); },
     projects:  () => typeof loadProjectsList   === 'function' && loadProjectsList(),
     'dehb-info': () => typeof restoreDehbSection === 'function' && restoreDehbSection(),
     'study-rooms': () => typeof initStudyRooms === 'function' && initStudyRooms()

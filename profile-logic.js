@@ -80,7 +80,10 @@ function rowToProfile(row) {
     todayMoodDate:    r.today_mood_date  ?? DEFAULT_PROFILE.todayMoodDate,
     hyperfocusLimit:  r.hyperfocus_limit ?? DEFAULT_PROFILE.hyperfocusLimit,
     lightSensitivity: clampLevel(r.light_sensitivity, DEFAULT_PROFILE.lightSensitivity),
-    superpowers:      normalizeSuperpowers(r.superpowers)
+    superpowers:      normalizeSuperpowers(r.superpowers),
+    // Çalışma analizi sonucu (profiles.calibration, jsonb). Ham tutulur;
+    // yorumlama analysis-logic.js'te. profileToRow bunu BİLEREK yazmaz.
+    calibration:      r.calibration ?? null
   };
 }
 
@@ -155,6 +158,24 @@ function toggleSuperpower(list, id) {
 }
 
 /**
+ * profiles.calibration → n8n yerleştiricisinin blok çarpanları.
+ * analysis-logic.js'teki analysisParseCalibration'ın küçük kardeşi; burada
+ * ayrı durmasının nedeni profile-logic.js'in testlerde tek başına yüklenmesi.
+ * Sınırlar spec'le aynı: 0.6–2.5, geçersiz → 1.
+ */
+function durationFactorsFromCalibration(cal) {
+  let c = cal;
+  if (typeof c === 'string') { try { c = JSON.parse(c); } catch (e) { c = null; } }
+  const f = (c && typeof c === 'object' && c.factors && typeof c.factors === 'object') ? c.factors : {};
+  const out = {};
+  for (const l of ['low', 'medium', 'high']) {
+    const x = Number(f[l]);
+    out[l] = Number.isFinite(x) && x > 0 ? Math.min(2.5, Math.max(0.6, x)) : 1;
+  }
+  return out;
+}
+
+/**
  * n8n'e gönderilen planlama özeti.
  *
  * Eskiden yalnızca 6 alan gidiyordu; profilde toplanan focusTrigger, social,
@@ -181,7 +202,8 @@ function planningProfile(profile) {
     social:           p.social,
     motivationNote:   p.motivationNote,
     lightSensitivity: clampLevel(p.lightSensitivity, DEFAULT_PROFILE.lightSensitivity),
-    superpowers:      normalizeSuperpowers(p.superpowers)
+    superpowers:      normalizeSuperpowers(p.superpowers),
+    durationFactors:  durationFactorsFromCalibration(p.calibration)
   };
 }
 
@@ -236,6 +258,6 @@ function profileCompleteness(profile) {
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_PROFILE, SUPERPOWERS, SUPERPOWER_IDS, KOYU_TEMA_ESIGI,
                      clampLevel, normalizeSuperpowers, rowToProfile, profileToRow,
-                     mergeProfile, toggleSuperpower, planningProfile,
+                     mergeProfile, toggleSuperpower, planningProfile, durationFactorsFromCalibration,
                      themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness };
 }

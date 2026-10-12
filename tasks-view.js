@@ -217,8 +217,88 @@ const TaskTimerState = {
   totalSeconds: 25 * 60,
   remainingSeconds: 25 * 60,
   isRunning: false,
-  interval: null
+  interval: null,
+  overtimeInterval: null,  // süre doldu ama ölçüm sürüyor: dakikalık güncelleme
+  busy: false              // Başlat/Duraklat DB yazımı sürerken yeni dokunuşları yoksay
 };
+
+// ── ÖLÇÜM (çalışma analizi, 2026-10-12) ──
+// Sayaç artık yalnız geri sayım değil: Başlat/Duraklat görev satırına yazılır
+// (started_at, running_since, active_seconds, longest_stretch_sec) ve sayfa
+// yenilense de kaldığı yerden sürer. Spec: 2026-10-12-calisma-analizi-kalibrasyon-design.md
+
+function timerTask() {
+  return TaskTimerState.taskId ? findTask(TaskTimerState.taskId) : null;
+}
+function timerMeasuring(task) {
+  return !!(task && task.running_since);
+}
+
+/**
+ * Yamayı task'a uygular ve DB'ye yazar. Hata olursa task'ı geri alır, false döner.
+ * BAŞLATMA yaması (running_since dolu) koşullu yazılır: yalnız DB'de sayaç durmuşsa.
+ * Bayat ikinci sekme bellekteki satıra bakıp running_since'i ezerse çalışılan süre
+ * iki kez sayılırdı. 0 satır → başka sekme başlatmış: yerel yama geri alınır, satır
+ * DB'den tazelenir ve sayaç onunla kurulur.
+ */
+async function persistTimerPatch(task, patch) {
+  const keys = Object.keys(patch || {});
+  if (!task || keys.length === 0) return true;
+  const onceki = {};
+  for (const k of keys) onceki[k] = task[k] ?? null;
+  Object.assign(task, patch);
+  if (typeof isGuestMode !== 'undefined' && isGuestMode) return true;
+  const baslatma = patch.running_since != null;
+  let sorgu = sb.from('tasks').update(patch).eq('id', task.id);
+  if (baslatma) sorgu = sorgu.is('running_since', null).select('id');
+  const { data, error } = await sorgu;
+  if (error) {
+    Object.assign(task, onceki);
+    console.warn('[Sayaç] kaydedilemedi:', error.code, error.message);
+    showToast('Sayaç kaydedilemedi.', 'error');
+    return false;
+  }
+  if (baslatma && Array.isArray(data) && data.length === 0) {
+    Object.assign(task, onceki);
+    const { data: guncel, error: okumaHatasi } = await sb.from('tasks').select('*').eq('id', task.id).single();
+    if (!okumaHatasi && guncel) Object.assign(task, guncel);
+    showToast('Sayaç başka bir sekmede çalışıyor.', 'info');
+    if (TaskTimerState.taskId === String(task.id)) {
+      TaskTimerState.taskId = null;   // zorla yeniden kur: kalan süre DB'deki ölçümden
+      initTaskTimerForTask(task);
+    }
+    return false;
+  }
+  return true;
+}
+
+function stopOvertime() {
+  if (TaskTimerState.overtimeInterval) clearInterval(TaskTimerState.overtimeInterval);
+  TaskTimerState.overtimeInterval = null;
+}
+
+/** Süre doldu satırı: sakin, dakikada bir. Ölçüm durmuşsa gizlenir. */
+function updateOvertimeUI() {
+  const el = document.getElementById('timer-overtime');
+  if (!el) return;
+  const task = timerTask();
+  const planned = task ? analysisPlannedMinutes(task) : null;
+  const aktifDk = task ? Math.floor(analysisActiveSeconds(task, Date.now()) / 60) : 0;
+  const fazla = planned === null ? 0 : aktifDk - planned;
+  if (TaskTimerState.remainingSeconds > 0 || fazla <= 0) {
+    el.classList.add('hidden');
+    el.textContent = '';
+    return;
+  }
+  el.textContent = `süre doldu · +${fazla} dk`;
+  el.classList.remove('hidden');
+}
+
+function startOvertime() {
+  stopOvertime();
+  updateOvertimeUI();
+  TaskTimerState.overtimeInterval = setInterval(updateOvertimeUI, 60000);
+}
 
 function initTaskTimerForTask(task) {
   if (!task) {
@@ -226,7 +306,7 @@ function initTaskTimerForTask(task) {
     return;
   }
   if (TaskTimerState.taskId === String(task.id)) return;
-  
+
   const start = new Date(task.start_time).getTime();
   const end = new Date(task.end_time).getTime();
   let durationMins = (!isNaN(start) && !isNaN(end) && end > start)
@@ -234,39 +314,46 @@ function initTaskTimerForTask(task) {
     : 25;
   if (durationMins <= 0 || durationMins > 180) durationMins = 25;
 
+  if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
+  stopOvertime();
+  TaskTimerState.busy = false;
   TaskTimerState.taskId = String(task.id);
   TaskTimerState.totalSeconds = durationMins * 60;
-  TaskTimerState.remainingSeconds = durationMins * 60;
+  // Kayıtlı ölçüm varsa kaldığı yerden: kalan = toplam − çalışılmış.
+  const calisilan = analysisActiveSeconds(task, Date.now());
+  TaskTimerState.remainingSeconds = Math.max(0, durationMins * 60 - calisilan);
   TaskTimerState.isRunning = false;
-  if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
   TaskTimerState.interval = null;
+
+  if (timerMeasuring(task)) {
+    // Başka sekmede / önceki açılışta başlatılmış: DB'ye yazmadan sürdür.
+    if (TaskTimerState.remainingSeconds > 0) runCountdown();
+    else startOvertime();
+  }
 }
 
 function toggleTaskTimer() {
-  if (TaskTimerState.isRunning) {
-    pauseTaskTimer();
-  } else {
-    startTaskTimer();
-  }
+  if (TaskTimerState.busy) return;
+  const olcuyor = TaskTimerState.isRunning || timerMeasuring(timerTask());
+  if (olcuyor) pauseTaskTimer();
+  else startTaskTimer();
 }
 
-function startTaskTimer() {
+/** Geri sayım döngüsü. DB'ye YAZMAZ (yalnız ekran). */
+function runCountdown() {
   if (TaskTimerState.isRunning) return;
   TaskTimerState.isRunning = true;
-  getAudioContext();
+  stopOvertime();
   updateTimerUI();
-
-  // 🔔 Bildirim izni sor (ilk başlatmada)
-  if (typeof NotificationManager !== 'undefined' && NotificationManager.isSupported && Notification.permission === 'default') {
-    NotificationManager.requestPermission();
-  }
-
   TaskTimerState.interval = setInterval(() => {
     if (TaskTimerState.remainingSeconds > 0) {
       TaskTimerState.remainingSeconds--;
       updateTimerUI();
       if (TaskTimerState.remainingSeconds === 0) {
-        pauseTaskTimer();
+        // Geri sayım biter, ÖLÇÜM SÜRER: kullanıcı çalışmaya devam ediyor olabilir.
+        TaskTimerState.isRunning = false;
+        clearInterval(TaskTimerState.interval);
+        TaskTimerState.interval = null;
         playTimerEndChime();
         fireDopamineConfetti(false);
         showToast('⏰ Odak seansı tamamlandı! Harika iş çıkardın.', 'success');
@@ -275,27 +362,74 @@ function startTaskTimer() {
         if (typeof NotificationManager !== 'undefined') {
           NotificationManager.notifySessionComplete();
         }
+        if (timerMeasuring(timerTask())) startOvertime();
+        updateTimerUI();
       }
     }
   }, 1000);
 }
 
-function pauseTaskTimer() {
+async function startTaskTimer() {
+  if (TaskTimerState.isRunning) return;
+  getAudioContext();
+  // 🔔 Bildirim izni sor (ilk başlatmada)
+  if (typeof NotificationManager !== 'undefined' && NotificationManager.isSupported && Notification.permission === 'default') {
+    NotificationManager.requestPermission();
+  }
+  const task = timerTask();
+  if (task) {
+    TaskTimerState.busy = true;
+    try {
+      const ok = await persistTimerPatch(task, analysisTimerStart(task, Date.now()));
+      if (!ok) { updateTimerUI(); return; }
+    } finally {
+      TaskTimerState.busy = false;
+    }
+    // Yazım sürerken görev değiştiyse ya da ölçüm başka yoldan durduysa sayaç başlatma.
+    if (timerTask() !== task || !timerMeasuring(task)) { updateTimerUI(); return; }
+  }
+  if (TaskTimerState.remainingSeconds > 0) runCountdown();
+  else { startOvertime(); updateTimerUI(); }
+}
+
+async function pauseTaskTimer() {
   TaskTimerState.isRunning = false;
   if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
   TaskTimerState.interval = null;
+  stopOvertime();
   updateTimerUI();
+  updateOvertimeUI();
+  const task = timerTask();
+  if (task && timerMeasuring(task)) {
+    TaskTimerState.busy = true;
+    try {
+      const ok = await persistTimerPatch(task, analysisTimerPause(task, Date.now()));
+      if (!ok && timerTask() === task) {
+        // DB'de hâlâ çalışıyor: ekranı da çalışır göster.
+        if (TaskTimerState.remainingSeconds > 0) runCountdown(); else startOvertime();
+      }
+    } finally {
+      TaskTimerState.busy = false;
+    }
+    updateTimerUI();
+  }
 }
 
 function addBonusToTimer(minutes = 5) {
   TaskTimerState.totalSeconds += minutes * 60;
   TaskTimerState.remainingSeconds += minutes * 60;
+  // Süre dolmuş ama ölçüm sürüyorsa saat donmasın: geri sayımı yeniden başlat (DB'ye yazmaz).
+  if (!TaskTimerState.isRunning && timerMeasuring(timerTask()) && TaskTimerState.remainingSeconds > 0) runCountdown();
   updateTimerUI();
   showToast(`+${minutes} dakika eklendi`, 'info');
 }
 
 function resetTaskTimer() {
-  pauseTaskTimer();
+  TaskTimerState.isRunning = false;
+  if (TaskTimerState.interval) clearInterval(TaskTimerState.interval);
+  TaskTimerState.interval = null;
+  stopOvertime();
+  TaskTimerState.busy = false;
   TaskTimerState.taskId = null;
   TaskTimerState.totalSeconds = 25 * 60;
   TaskTimerState.remainingSeconds = 25 * 60;
@@ -322,13 +456,15 @@ function updateTimerUI() {
   circle.style.strokeDashoffset = String(offset);
 
   if (playBtn) {
-    playBtn.innerHTML = TaskTimerState.isRunning
+    const olcuyor = TaskTimerState.isRunning || timerMeasuring(timerTask());
+    playBtn.innerHTML = olcuyor
       ? '<span>⏸️</span> Duraklat'
       : '<span>▶️</span> Başlat';
-    playBtn.className = TaskTimerState.isRunning
+    playBtn.className = olcuyor
       ? 'px-4 py-2 rounded-xl text-xs font-bold bg-amber-500 hover:bg-amber-600 text-white flex items-center gap-1.5 shadow-md shadow-amber-500/20 active:scale-95 transition-all'
       : 'px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 shadow-md shadow-indigo-500/20 active:scale-95 transition-all';
   }
+  updateOvertimeUI();
 }
 
 function currentCardHTML(task) {
@@ -406,6 +542,7 @@ function currentCardHTML(task) {
             <button onclick="addBonusToTimer(5)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-200/80 dark:bg-slate-600/50 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 active:scale-95 transition-all">
               +5 Dk
             </button>
+            <span id="timer-overtime" class="hidden text-[11px] font-medium text-slate-400 dark:text-slate-500"></span>
           </div>
         </div>
 
@@ -533,7 +670,7 @@ function renderToday() {
     }
   }
 
-  const currentTask = pickCurrentTask(hepsi, new Date());
+  const currentTask = pickTimerTask(hepsi, new Date());   // ölçülen görev kartta kalır
   initTaskTimerForTask(currentTask);
   currentEl.innerHTML = currentCardHTML(currentTask);
   updateTimerUI();
@@ -603,7 +740,18 @@ async function toggleTask(id) {
   if (!task) return;
 
   const yeniDurum = !task.completed;
+  // Ölçüm yaması (çalışma analizi): tamamlarken sayaç durur ve gerçek süre yazılır;
+  // geri alırken sonuç alanları temizlenir, sayaç alanları korunur.
+  const nowMs = Date.now();
+  const { patch: olcum, needsFeedback } = yeniDurum
+    ? analysisCompletionPatch(task, nowMs)
+    : { patch: analysisUncompletePatch(), needsFeedback: false };
+  const onceki = {};
+  for (const k of Object.keys(olcum)) onceki[k] = task[k] ?? null;
+
+  if (yeniDurum && TaskTimerState.taskId === String(task.id)) resetTaskTimer();
   task.completed = yeniDurum;   // iyimser: UI hemen güncellenir
+  Object.assign(task, olcum);
   // Devreden görev tamamlanınca listeden düşmesin diye oturum hafızasına al.
   if (yeniDurum) {
     TodayState.sessionCompleted.add(String(task.id));
@@ -626,9 +774,10 @@ async function toggleTask(id) {
   }
   renderToday();
 
-  const { error } = await sb.from('tasks').update({ completed: yeniDurum }).eq('id', task.id);
+  const { error } = await sb.from('tasks').update({ completed: yeniDurum, ...olcum }).eq('id', task.id);
   if (error) {
     task.completed = !yeniDurum;   // geri al
+    Object.assign(task, onceki);
     if (yeniDurum) TodayState.sessionCompleted.delete(String(task.id));
     renderToday();
     showToast('Kaydedilemedi, tekrar dene.', 'error');
@@ -636,6 +785,53 @@ async function toggleTask(id) {
   }
 
   syncCalendarMark(task, yeniDurum);   // await YOK: ana akışı bekletmez
+  if (yeniDurum && needsFeedback) showDurationFeedback(task);
+  if (!yeniDurum) hideDurationFeedback();
+  if (typeof analysisRefresh === 'function') analysisRefresh();   // await YOK
+}
+
+// ── SÜRE SORUSU (zamanlayıcı kullanılmadıysa) ──
+// Tek dokunuş, atlanabilir, 8 sn sonra kendiliğinden kapanır. Cevap yoksa
+// duration_feedback NULL kalır — kullanıcıyı zorlamak veriyi bozmaktan beter.
+const DURATION_FEEDBACK_MS = 8000;
+let _durationFeedbackTimer = null;
+
+function hideDurationFeedback() {
+  if (_durationFeedbackTimer) clearTimeout(_durationFeedbackTimer);
+  _durationFeedbackTimer = null;
+  document.getElementById('duration-feedback')?.remove();
+}
+
+function showDurationFeedback(task) {
+  hideDurationFeedback();
+  if (typeof isGuestMode !== 'undefined' && isGuestMode) return;
+  const el = document.createElement('div');
+  el.id = 'duration-feedback';
+  el.className = 'fixed inset-x-0 bottom-6 mx-auto w-fit max-w-[calc(100%-2rem)] z-50 flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-white/95 dark:bg-slate-800/95 border border-slate-200 dark:border-slate-700 shadow-lg text-sm text-slate-600 dark:text-slate-300';
+  const id = _escape(task.id);
+  el.innerHTML = `
+    <span>Tahminden</span>
+    <button onclick="answerDurationFeedback('${id}','shorter')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">kısa</button>
+    <button onclick="answerDurationFeedback('${id}','same')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">aynı</button>
+    <button onclick="answerDurationFeedback('${id}','longer')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">uzun</button>
+    <span>sürdü</span>
+    <button onclick="hideDurationFeedback()" aria-label="Atla" class="ml-1 text-slate-400 hover:text-slate-600">✕</button>`;
+  document.body.appendChild(el);
+  _durationFeedbackTimer = setTimeout(hideDurationFeedback, DURATION_FEEDBACK_MS);
+}
+
+async function answerDurationFeedback(id, value) {
+  hideDurationFeedback();
+  const task = findTask(id);
+  if (!task || !['shorter', 'same', 'longer'].includes(value)) return;
+  task.duration_feedback = value;
+  const { error } = await sb.from('tasks').update({ duration_feedback: value }).eq('id', task.id);
+  if (error) {
+    task.duration_feedback = null;
+    showToast('Kaydedilemedi.', 'error');
+    return;
+  }
+  if (typeof analysisRefresh === 'function') analysisRefresh();
 }
 
 // ── TAKVİM SENKRONU (best-effort) ────────────────────────────────────────────

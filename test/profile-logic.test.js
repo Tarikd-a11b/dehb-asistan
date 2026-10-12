@@ -38,7 +38,7 @@ test('normalizeSuperpowers bozuk girdide bos dizi doner', () => {
 // ── rowToProfile ──
 test('rowToProfile bos satirda tam varsayilan profil uretir', () => {
   const p = P.rowToProfile({});
-  assert.deepStrictEqual(p, { ...P.DEFAULT_PROFILE });
+  assert.deepStrictEqual(p, { ...P.DEFAULT_PROFILE, calibration: null });
 });
 
 test('rowToProfile null satiri da kaldirir', () => {
@@ -87,7 +87,7 @@ test('profileToRow gidis-donus profili korur', () => {
     superpowers: ['humor', 'energy']
   });
   const geri = P.rowToProfile(P.profileToRow(orijinal, { id: 'u1', email: 'a@b.c' }));
-  assert.deepStrictEqual(geri, orijinal);
+  assert.deepStrictEqual(geri, { ...orijinal, calibration: null });
 });
 
 // ── mergeProfile: veri kaybi hatasinin testi ──
@@ -333,4 +333,26 @@ test('profileToRow carkin kolonlarini YAZMAZ (eski sekmeden profil kaydi bugunun
   const row = P.profileToRow({ cark_tarihi: '2026-10-06', carkTarihi: '2026-10-06' }, { id: 'u1', email: 'a@b.c' });
   assert.ok(!('cark_tarihi' in row), 'cark_tarihi profil upsertine sizdi');
   assert.ok(!('cark_odulu' in row), 'cark_odulu profil upsertine sizdi');
+});
+
+// ── calisma analizi: calibration / durationFactors ──
+test('rowToProfile calibration alanini tasir, yoksa null', () => {
+  assert.strictEqual(P.rowToProfile({}).calibration, null);
+  const cal = { factors: { high: 1.6 } };
+  assert.deepStrictEqual(P.rowToProfile({ calibration: cal }).calibration, cal);
+});
+test('durationFactorsFromCalibration gecersizde 1, sinirlar 0.6-2.5', () => {
+  assert.deepStrictEqual(P.durationFactorsFromCalibration(null), { low: 1, medium: 1, high: 1 });
+  assert.deepStrictEqual(P.durationFactorsFromCalibration({ factors: { low: 0.1, medium: 'x', high: 9 } }),
+    { low: 0.6, medium: 1, high: 2.5 });
+  assert.deepStrictEqual(P.durationFactorsFromCalibration('{"factors":{"high":1.6}}'),
+    { low: 1, medium: 1, high: 1.6 });
+});
+test('planningProfile durationFactors gonderir', () => {
+  assert.deepStrictEqual(P.planningProfile({}).durationFactors, { low: 1, medium: 1, high: 1 });
+  assert.strictEqual(P.planningProfile({ calibration: { factors: { high: 1.6 } } }).durationFactors.high, 1.6);
+});
+test('profileToRow calibration GONDERMEZ (upsert eski degeri ezmesin)', () => {
+  const row = P.profileToRow({ calibration: { factors: { high: 2 } } }, { id: 'u', email: 'e' });
+  assert.strictEqual('calibration' in row, false);
 });

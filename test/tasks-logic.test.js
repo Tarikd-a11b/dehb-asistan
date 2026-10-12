@@ -66,6 +66,33 @@ test('pickCurrentTask hepsi tamamlanmissa null doner', () => {
   assert.strictEqual(L.pickCurrentTask(hepsiBitti, now), null);
 });
 
+// ── pickTimerTask: olcum suren gorev kart olarak kalir (calisma analizi C1) ──
+const olcumListesi = [
+  // 09:00-09:25 planli, sayaci calisiyor; saat 09:40 -> plan suresi gecti
+  { id: 'olcen', completed: false, running_since: '2026-07-26T09:00:00+03:00',
+    start_time: '2026-07-26T09:00:00+03:00', end_time: '2026-07-26T09:25:00+03:00' },
+  { id: 'aktif', completed: false, start_time: '2026-07-26T09:30:00+03:00', end_time: '2026-07-26T09:55:00+03:00' },
+  { id: 'gelecek', completed: false, start_time: '2026-07-26T10:00:00+03:00', end_time: '2026-07-26T10:25:00+03:00' }
+];
+test('pickTimerTask olcum suren gorevi aktif/gelecek gorevin onune koyar', () => {
+  const now = new Date('2026-07-26T09:40:00+03:00');
+  assert.strictEqual(L.pickTimerTask(olcumListesi, now).id, 'olcen');
+  assert.strictEqual(L.pickTimerTask(olcumListesi.filter(t => t.id !== 'aktif'), now).id, 'olcen');
+});
+test('pickTimerTask tamamlanmis olcum gorevini secmez', () => {
+  const now = new Date('2026-07-26T09:40:00+03:00');
+  const liste = olcumListesi.map(t => t.id === 'olcen' ? { ...t, completed: true } : t);
+  assert.strictEqual(L.pickTimerTask(liste, now).id, 'aktif');
+});
+test('pickTimerTask olcum yoksa pickCurrentTask ile ayni', () => {
+  const liste = olcumListesi.map(t => ({ ...t, running_since: null }));
+  for (const saat of ['08:00', '09:10', '09:40', '23:00']) {
+    const now = new Date(`2026-07-26T${saat}:00+03:00`);
+    assert.strictEqual(L.pickTimerTask(liste, now), L.pickCurrentTask(liste, now), saat);
+  }
+  assert.strictEqual(L.pickTimerTask([], new Date()), null);
+});
+
 // ── computeProgress ──
 test('computeProgress paydaya devredenleri de katar', () => {
   const { today, carried } = L.splitTasks(rows, '2026-07-26');
