@@ -1,5 +1,5 @@
 {
-  "name": "FocusAid Processor",
+  "name": "FocusAid Weekly Processor",
   "nodes": [
     {
       "id": "sticky-1",
