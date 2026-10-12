@@ -2,7 +2,7 @@
    FocusAid — "Çalışma Analizim" kartı (Profil)
    Hesap analysis-logic.js'te (saf). Bu dosya: Supabase okuma/yazma + çizim.
    Sakinlik ilkesi (kullanıcı kararı 2026-10-12): animasyon yok, soluk renk,
-   kütüphane yok — satır içi SVG.
+   kütüphane yok — düz HTML/CSS çubuklar.
    Spec: docs/superpowers/specs/2026-10-12-calisma-analizi-kalibrasyon-design.md
    ══════════════════════════════════════════════════════════════ */
 
@@ -10,9 +10,9 @@ const ANALYSIS_DISMISS_KEY = 'focusaid_analysis_dismiss';
 const ANALYSIS_DISMISS_DAYS = 7;
 // Tam sınıf adları (Tailwind kaynağı düz metin tarar; parça parça üretme).
 const ANALYSIS_BAR_CLASS = {
-  low: 'fill-emerald-300 dark:fill-emerald-700',
-  medium: 'fill-amber-300 dark:fill-amber-700',
-  high: 'fill-rose-300 dark:fill-rose-700'
+  low: 'bg-emerald-300 dark:bg-emerald-400/80',
+  medium: 'bg-amber-300 dark:bg-amber-400/80',
+  high: 'bg-rose-300 dark:bg-rose-400/80'
 };
 
 let _analysisLast = null;   // son çizilen veri (Uygula/Şimdilik değil sonrası yeniden çizim)
@@ -26,44 +26,53 @@ function _analysisDismissed(value) {
   } catch (e) { return false; }
 }
 
-function _analysisBarsSVG(c) {
-  const W = 300, rowH = 26, max = 2.5, x0 = 52, w = W - x0 - 44;
-  const xOf = (f) => x0 + (Math.min(f, max) / max) * w;
-  const rows = ANALYSIS_LOADS.map((l, i) => {
-    const y = i * rowH + 4;
+// Grafikler düz HTML/CSS: SVG viewBox'u geniş kartta orantılı büyüyüp yazıları
+// devleştiriyordu (2026-10-12). Yazı boyutu artık kart genişliğinden bağımsız.
+const ANALYSIS_BAR_MAX = 2.5;
+
+function _analysisBarsHTML(c) {
+  const yuzde = (f) => (Math.min(f, ANALYSIS_BAR_MAX) / ANALYSIS_BAR_MAX) * 100;
+  const x1 = yuzde(1);
+  const rows = ANALYSIS_LOADS.map(l => {
+    const veriYok = !c.samples[l];
+    const dolgu = veriYok ? 'bg-slate-300 dark:bg-slate-600' : ANALYSIS_BAR_CLASS[l];
+    const deger = veriYok
+      ? '<span class="text-slate-400">veri yok</span>'
+      : `${_analysisKat(c.factors[l])} <span class="text-slate-400">· ${c.samples[l]} oturum</span>`;
     return `
-      <g data-analysis-bar="${l}">
-        <text x="0" y="${y + 13}" class="fill-slate-500 dark:fill-slate-400" font-size="11">${ANALYSIS_LOAD_LABELS[l]}</text>
-        <rect x="${x0}" y="${y + 3}" width="${Math.max(2, xOf(c.factors[l]) - x0)}" height="12" rx="3" class="${ANALYSIS_BAR_CLASS[l]}"></rect>
-        <text x="${xOf(c.factors[l]) + 6}" y="${y + 13}" class="fill-slate-600 dark:fill-slate-300" font-size="11">${_analysisKat(c.factors[l])} <tspan class="fill-slate-400" font-size="9">(${c.samples[l]})</tspan></text>
-      </g>`;
+      <div data-analysis-bar="${l}" class="grid grid-cols-[3.5rem_1fr_5.5rem] items-center gap-3">
+        <span class="text-xs text-slate-500 dark:text-slate-400">${ANALYSIS_LOAD_LABELS[l]}</span>
+        <div class="relative h-2.5 rounded-full bg-slate-100 dark:bg-slate-700/50">
+          <div class="h-full rounded-full ${dolgu}" style="width:${veriYok ? 0 : Math.max(1, yuzde(c.factors[l]))}%"></div>
+          <div class="absolute -top-1 -bottom-1 border-l border-dashed border-slate-400 dark:border-slate-500" style="left:${x1}%"></div>
+        </div>
+        <span class="text-xs tabular-nums text-slate-600 dark:text-slate-300">${deger}</span>
+      </div>`;
   }).join('');
-  const x1 = xOf(1);
   return `
-    <svg viewBox="0 0 ${W} ${ANALYSIS_LOADS.length * rowH + 14}" class="w-full h-auto" role="img" aria-label="Tahmin ve gerçek süre oranı">
+    <div class="space-y-3" role="img" aria-label="Tahmin ve gerçek süre oranı">
       ${rows}
-      <line x1="${x1}" x2="${x1}" y1="0" y2="${ANALYSIS_LOADS.length * rowH + 4}" class="stroke-slate-300 dark:stroke-slate-600" stroke-dasharray="3 3"></line>
-      <text x="${x1}" y="${ANALYSIS_LOADS.length * rowH + 13}" text-anchor="middle" class="fill-slate-400" font-size="9">1,0 = tam isabet</text>
-    </svg>`;
+      <p class="text-[11px] text-slate-400">Kesikli çizgi ×1,0 = tahminin tuttu · sağında kalan = tahmininden uzun sürdü</p>
+    </div>`;
 }
 
-function _analysisColsSVG(daily, focusPeriod) {
-  const W = 300, H = 90, pad = 4, colW = (W - pad * 2) / 14;
+function _analysisColsHTML(daily, focusPeriod) {
   const max = Math.max(60, focusPeriod, ...daily.map(d => d.minutes));
-  const yOf = (m) => H - 14 - (m / max) * (H - 24);
-  const cols = daily.map((d, i) => {
-    const h = Math.max(0, (H - 14) - yOf(d.minutes));
-    return `<rect data-analysis-col="${d.day}" x="${pad + i * colW + 2}" y="${yOf(d.minutes)}" width="${colW - 4}" height="${h}" rx="2" class="fill-indigo-200 dark:fill-indigo-800"><title>${d.day}: ${d.minutes} dk</title></rect>`;
-  }).join('');
-  const yf = yOf(focusPeriod);
+  const yuzde = (m) => (m / max) * 100;
+  const bos = daily.every(d => !d.minutes);
+  const cols = daily.map(d => `
+      <div data-analysis-col="${d.day}" title="${d.day}: ${d.minutes} dk" class="flex-1 rounded-t bg-indigo-300 dark:bg-indigo-400/70" style="height:${d.minutes ? Math.max(3, yuzde(d.minutes)) : 0}%"></div>`).join('');
   return `
-    <svg viewBox="0 0 ${W} ${H}" class="w-full h-auto" role="img" aria-label="Son 14 günün en uzun kesintisiz odak süresi">
-      ${cols}
-      <line x1="0" x2="${W}" y1="${yf}" y2="${yf}" class="stroke-slate-400 dark:stroke-slate-500" stroke-dasharray="4 3"></line>
-      <text x="${W - 2}" y="${yf - 3}" text-anchor="end" class="fill-slate-400" font-size="9">odak süren ${focusPeriod} dk</text>
-      <text x="0" y="${H - 2}" class="fill-slate-400" font-size="9">14 gün önce</text>
-      <text x="${W}" y="${H - 2}" text-anchor="end" class="fill-slate-400" font-size="9">bugün</text>
-    </svg>`;
+    <div role="img" aria-label="Son 14 günün en uzun kesintisiz odak süresi">
+      <div class="relative h-28 flex items-end gap-1.5 border-b border-slate-200 dark:border-slate-700">
+        ${cols}
+        <div class="absolute inset-x-0 border-t border-dashed border-slate-400 dark:border-slate-500" style="bottom:${yuzde(focusPeriod)}%">
+          <span class="absolute right-0 -top-4 text-[11px] text-slate-400">odak süren ${focusPeriod} dk</span>
+        </div>
+        ${bos ? '<p class="absolute inset-0 flex items-center justify-center text-xs text-slate-400">Son 14 günde sayaçlı oturum yok</p>' : ''}
+      </div>
+      <div class="flex justify-between mt-1 text-[11px] text-slate-400"><span>14 gün önce</span><span>bugün</span></div>
+    </div>`;
 }
 
 /** Ağsız çizim. UI testi doğrudan çağırır. */
@@ -94,13 +103,15 @@ function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest 
        </div>`
     : '';
   const sutunlar = Array.isArray(daily) && daily.length === 14
-    ? `<div class="space-y-1"><p class="text-xs font-semibold text-slate-500 dark:text-slate-400">En uzun kesintisiz odak (gün başına)</p>${_analysisColsSVG(daily, fp)}</div>`
+    ? `<div class="space-y-3"><p class="text-xs font-semibold text-slate-500 dark:text-slate-400">En uzun kesintisiz odak (gün başına)</p>${_analysisColsHTML(daily, fp)}</div>`
     : '';
   container.innerHTML = `
     <div class="glass-card p-6 bg-white shadow-sm space-y-5">
       ${baslik}
-      <div class="space-y-1"><p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Tahmin ve gerçek süre (son 30 gün)</p>${_analysisBarsSVG(c)}</div>
-      ${sutunlar}
+      <div class="grid gap-8 lg:grid-cols-2">
+        <div class="space-y-3"><p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Tahmin ve gerçek süre (son 30 gün)</p>${_analysisBarsHTML(c)}</div>
+        ${sutunlar}
+      </div>
       ${oneri}
     </div>`;
 }

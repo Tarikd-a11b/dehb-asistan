@@ -1,5 +1,5 @@
 /**
- * Profil "Çalışma Analizim" kartı: sakin (animasyonsuz) satır içi SVG.
+ * Profil "Çalışma Analizim" kartı: sakin (animasyonsuz) HTML/CSS çubuklar.
  *
  *   node test-ui/calisma-analizi.mjs        (npm run test:ui bunu da koşar)
  *
