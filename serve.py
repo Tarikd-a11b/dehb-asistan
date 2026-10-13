@@ -18,6 +18,10 @@ import json
 import urllib.request
 import urllib.error
 import urllib.parse
+import datetime
+import re
+import threading
+import time
 
 PORT = int(os.environ.get('PORT', 3000))
 
@@ -51,13 +55,8 @@ N8N_SPLIT_PATH = '/api/n8n/split'
 N8N_ANALYZE_PATH = '/api/n8n/analyze'
 
 
-def dogrula_supabase_kullanicisi(token):
-    """Supabase access token'ini dogrular; gecerliyse kullanici id'sini doner.
-
-    Bu kontrol olmadan uca ulasan herkes payload'a istedigi userId'yi yazip
-    BASKA bir kullanicinin takvimine gorev ekletebilirdi. Kimlik burada,
-    sunucuda dogrulaniyor ve govdedeki userId bununla EZILIYOR.
-    """
+def supabase_kullanicisi(token):
+    """Supabase access token'ini dogrular; gecerliyse kullanici nesnesini doner."""
     base = os.environ.get('SUPABASE_URL')
     anon = os.environ.get('SUPABASE_ANON_KEY')
     if not base or not anon or not token or not isinstance(token, str):
@@ -67,10 +66,22 @@ def dogrula_supabase_kullanicisi(token):
         headers={'apikey': anon, 'Authorization': 'Bearer ' + token})
     try:
         with urllib.request.urlopen(istek, timeout=10) as yanit:
-            return (json.loads(yanit.read().decode('utf-8')) or {}).get('id')
+            kullanici = json.loads(yanit.read().decode('utf-8')) or {}
+            return kullanici if kullanici.get('id') else None
     except Exception as e:
-        print('[n8n-vekil] token dogrulanamadi:', type(e).__name__)
+        print('[vekil] token dogrulanamadi:', type(e).__name__)
         return None
+
+
+def dogrula_supabase_kullanicisi(token):
+    """Supabase access token'ini dogrular; gecerliyse kullanici id'sini doner.
+
+    Bu kontrol olmadan uca ulasan herkes payload'a istedigi userId'yi yazip
+    BASKA bir kullanicinin takvimine gorev ekletebilirdi. Kimlik burada,
+    sunucuda dogrulaniyor ve govdedeki userId bununla EZILIYOR.
+    """
+    kullanici = supabase_kullanicisi(token)
+    return kullanici.get('id') if kullanici else None
 
 
 def n8n_ilet(hedef, govde):
@@ -144,6 +155,128 @@ def refresh_google_access_token(refresh_token):
         print('[refresh] istek basarisiz:', type(e).__name__)
         return 502, {'error': 'upstream_failure'}
 
+# ── Canli calisma odalari (Daily.co) ─────────────────────────────
+# Spec: docs/superpowers/specs/2026-10-13-canli-calisma-odalari-design.md
+# DAILY_API_KEY tarayiciya HIC inmez; oda girisi icin kisa omurlu bir
+# meeting token'i burada uretilir. Kotayi (ucretsiz dakika) SUNUCU korur:
+# kisi basi gunluk ust sinir + token'daki eject_after_elapsed.
+
+DAILY_API = 'https://api.daily.co/v1'
+CANLI_ODALAR = ('canli-kutuphane', 'canli-sabah', 'canli-gece')
+ODA_TOKEN_PATH = '/api/rooms/token'
+ODA_PRESENCE_PATH = '/api/rooms/presence'
+CANLI_MAKS_KISI = 6
+PRESENCE_ONBELLEK_SN = 15
+# Turkiye 2016'dan beri yaz saati uygulamiyor: sabit +03. zoneinfo Windows'ta
+# tzdata paketi istiyor; bagimliliksiz kalmak icin sabit ofset.
+_ISTANBUL = datetime.timezone(datetime.timedelta(hours=3))
+_presence_onbellek = {'zaman': 0.0, 'veri': None}
+_presence_kilit = threading.Lock()
+
+
+def daily_istek(yontem, yol, govde=None):
+    """Daily REST cagrisi. Donus: (http_durumu, sozluk). Anahtar loglanmaz."""
+    anahtar = os.environ.get('DAILY_API_KEY')
+    if not anahtar:
+        return 503, {'error': 'not_configured'}
+    veri = json.dumps(govde).encode('utf-8') if govde is not None else None
+    istek = urllib.request.Request(DAILY_API + yol, data=veri, method=yontem, headers={
+        'Authorization': 'Bearer ' + anahtar, 'Content-Type': 'application/json'})
+    try:
+        with urllib.request.urlopen(istek, timeout=10) as yanit:
+            return yanit.status, json.loads(yanit.read().decode('utf-8') or '{}')
+    except urllib.error.HTTPError as e:
+        print('[daily] reddetti:', e.code, yol.split('?')[0])
+        return e.code, {'error': 'daily_error'}
+    except Exception as e:
+        print('[daily] ulasilamadi:', type(e).__name__)
+        return 502, {'error': 'daily_unreachable'}
+
+
+def daily_oda_url(oda):
+    """DAILY_DOMAIN 'ornek', 'ornek.daily.co' ya da 'https://ornek.daily.co' olabilir."""
+    alan = (os.environ.get('DAILY_DOMAIN') or '').strip().lower()
+    alan = re.sub(r'^https?://', '', alan).strip('/')
+    if alan.endswith('.daily.co'):
+        alan = alan[:-len('.daily.co')]
+    if not re.fullmatch(r'[a-z0-9-]+', alan) or oda not in CANLI_ODALAR:
+        return None
+    return 'https://%s.daily.co/%s' % (alan, oda)
+
+
+def gunluk_limit_sn():
+    try:
+        dk = int(os.environ.get('GUNLUK_LIMIT_DK', '240'))
+    except ValueError:
+        dk = 240
+    return max(1, min(1440, dk)) * 60
+
+
+def bugun_baslangici_iso(simdi=None):
+    simdi = simdi or datetime.datetime.now(_ISTANBUL)
+    return simdi.astimezone(_ISTANBUL).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+
+
+def bugunku_oda_saniyesi(token):
+    """Bugun (Istanbul) odada gecen saniye — kullanicinin KENDI token'iyla; RLS
+    yalniz kendi satirlarini verir. Okunamazsa None (cagiran karar verir)."""
+    base = os.environ.get('SUPABASE_URL')
+    anon = os.environ.get('SUPABASE_ANON_KEY')
+    if not base or not anon:
+        return None
+    sorgu = urllib.parse.urlencode({'select': 'active_seconds,break_seconds',
+                                    'joined_at': 'gte.' + bugun_baslangici_iso()})
+    istek = urllib.request.Request(base.rstrip('/') + '/rest/v1/room_sessions?' + sorgu,
+                                   headers={'apikey': anon, 'Authorization': 'Bearer ' + token})
+    try:
+        with urllib.request.urlopen(istek, timeout=10) as yanit:
+            satirlar = json.loads(yanit.read().decode('utf-8')) or []
+        return sum(int(r.get('active_seconds') or 0) + int(r.get('break_seconds') or 0) for r in satirlar)
+    except Exception as e:
+        print('[odalar] gunluk kullanim okunamadi:', type(e).__name__)
+        return None
+
+
+def gorunen_ad(kullanici):
+    """Odadakilere gorunen ad: yalniz ilk ad. E-posta Daily'ye GITMEZ."""
+    meta = (kullanici or {}).get('user_metadata') or {}
+    ad = str(meta.get('full_name') or meta.get('name') or '').strip().split(' ')[0]
+    ad = re.sub(r'[\x00-\x1f\x7f]', '', ad)[:40]
+    return ad or 'FocusAid'
+
+
+def oda_token_uret(kullanici, oda, kalan_sn):
+    durum, yanit = daily_istek('POST', '/meeting-tokens', {'properties': {
+        'room_name': oda,
+        'user_name': gorunen_ad(kullanici),
+        'user_id': kullanici['id'],
+        # exp yalniz KATILMA suresi: eject_at_token_exp verilmedigi icin
+        # odadaki kisi bu sure dolunca atilmaz.
+        'exp': int(time.time()) + 600,
+        'eject_after_elapsed': int(kalan_sn),
+        'start_audio_off': True,
+    }})
+    if durum != 200 or not isinstance(yanit, dict) or not yanit.get('token'):
+        return None
+    return yanit['token']
+
+
+def oda_doluluklari():
+    """{oda: kisi_sayisi}; Daily /presence 15 sn onbellekli. Okunamazsa None."""
+    with _presence_kilit:
+        if _presence_onbellek['veri'] is not None and time.time() - _presence_onbellek['zaman'] < PRESENCE_ONBELLEK_SN:
+            return _presence_onbellek['veri']
+    durum, yanit = daily_istek('GET', '/presence')
+    if durum != 200 or not isinstance(yanit, dict):
+        return None
+    veri = {}
+    for oda in CANLI_ODALAR:
+        kisiler = yanit.get(oda)
+        veri[oda] = min(CANLI_MAKS_KISI, len(kisiler)) if isinstance(kisiler, list) else 0
+    with _presence_kilit:
+        _presence_onbellek.update(zaman=time.time(), veri=veri)
+    return veri
+
 
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
     def _json_yanit(self, durum, govde):
@@ -162,6 +295,9 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.wfile.write(govde)
 
     def do_POST(self):
+        if self.path == ODA_TOKEN_PATH:
+            self._oda_token()
+            return
         if self.path in (N8N_SPLIT_PATH, N8N_ANALYZE_PATH):
             self._n8n_vekil()
             return
@@ -226,9 +362,68 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         durum, ctype, ham = n8n_ilet(hedef, govde)
         self._ham_yanit(durum, ctype, ham)
 
+    def _oda_token(self):
+        """Canli odaya giris: kimlik -> oda beyaz listesi -> gunluk sinir -> Daily token."""
+        try:
+            uzunluk = int(self.headers.get('Content-Length') or 0)
+            if uzunluk <= 0 or uzunluk > 8192:
+                self._json_yanit(400, {'error': 'bad_request'})
+                return
+            govde = json.loads(self.rfile.read(uzunluk).decode('utf-8')) or {}
+        except Exception:
+            self._json_yanit(400, {'error': 'bad_request'})
+            return
+
+        token = govde.get('supabaseToken')
+        kullanici = supabase_kullanicisi(token)
+        if not kullanici:
+            self._json_yanit(401, {'error': 'unauthorized'})
+            return
+        oda = govde.get('room')
+        if oda not in CANLI_ODALAR:            # serbest metin Daily'ye gitmez
+            self._json_yanit(400, {'error': 'unknown_room'})
+            return
+        url = daily_oda_url(oda)
+        if not url or not os.environ.get('DAILY_API_KEY'):
+            self._json_yanit(503, {'error': 'not_configured'})
+            return
+
+        # Okunamazsa acik birak: token'daki eject_after_elapsed yine tam
+        # gunluk sinirla keser. Tablo yokken odalarin tamamen kapanmasindansa bu.
+        kullanilan = bugunku_oda_saniyesi(token) or 0
+        kalan = gunluk_limit_sn() - kullanilan
+        if kalan < 60:
+            self._json_yanit(429, {'error': 'daily_limit', 'kalanDk': 0})
+            return
+
+        oda_token = oda_token_uret(kullanici, oda, kalan)
+        if not oda_token:
+            self._json_yanit(502, {'error': 'daily_error'})
+            return
+        self._json_yanit(200, {'url': url, 'token': oda_token, 'kalanDk': kalan // 60})
+
+    def _oda_presence(self):
+        """Lobi icin oda doluluklari. Kimliksiz isteğe 401 (Daily anahtari kullaniliyor)."""
+        baslik = self.headers.get('Authorization') or ''
+        token = baslik[7:] if baslik.startswith('Bearer ') else None
+        if not dogrula_supabase_kullanicisi(token):
+            self._json_yanit(401, {'error': 'unauthorized'})
+            return
+        if not os.environ.get('DAILY_API_KEY'):
+            self._json_yanit(503, {'error': 'not_configured'})
+            return
+        veri = oda_doluluklari()
+        if veri is None:
+            self._json_yanit(502, {'error': 'daily_error'})
+            return
+        self._json_yanit(200, {'rooms': veri})
+
     def do_GET(self):
         # 1. Güvenlik: Hassas dosyalara (kod, ortam değişkenleri, veritabanı şemaları) erişimi engelle
         clean_path = self.path.split('?')[0].split('#')[0]
+        if clean_path == ODA_PRESENCE_PATH:
+            self._oda_presence()
+            return
         blocked_exts = ('.py', '.sql', '.env', '.md', '.bak')
         if clean_path.startswith('/.') or clean_path.endswith(blocked_exts) or (clean_path.endswith('.json') and clean_path != '/manifest.json'):
             self.send_error(403, "Forbidden")

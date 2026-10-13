@@ -271,6 +271,36 @@ function analysisMailLine(calibration) {
   return `${ANALYSIS_LOAD_LABELS[best]} görevlerin ortalama ${kat} kat sürdü — planlarını buna göre ayarlıyorum.`;
 }
 
+/**
+ * Canlı çalışma odaları — son 7 gün özeti (Profil > Çalışma Analizim satırı).
+ * Hedef oranı yalnız cevaplanan oturumlardan: "Kısmen" yarım sayılır.
+ * Oturum yoksa null (satır çizilmez).
+ */
+function analysisRoomWeek(sessions, nowMs) {
+  const since = nowMs - 7 * _ANALYSIS_DAY_MS;
+  const list = (Array.isArray(sessions) ? sessions : [])
+    .filter(r => r && Number.isFinite(_analysisMs(r.joined_at)) && _analysisMs(r.joined_at) >= since);
+  if (!list.length) return null;
+  const seconds = list.reduce((t, r) => t + Math.max(0, Number(r.focus_seconds) || 0), 0);
+  const answered = list.filter(r => ['yes', 'partly', 'no'].includes(r.goal_met));
+  const score = answered.reduce((t, r) => t + (r.goal_met === 'yes' ? 1 : r.goal_met === 'partly' ? 0.5 : 0), 0);
+  return {
+    sessions: list.length,
+    seconds,
+    answered: answered.length,
+    goalRate: answered.length ? Math.round((score / answered.length) * 100) : null
+  };
+}
+
+/** 15600 → "4 sa 20 dk" */
+function analysisRoomLine(week) {
+  if (!week || !week.seconds) return '';
+  const dk = Math.floor(week.seconds / 60);
+  const sure = dk < 60 ? `${dk} dk` : (dk % 60 ? `${Math.floor(dk / 60)} sa ${dk % 60} dk` : `${Math.floor(dk / 60)} sa`);
+  const hedef = week.goalRate === null ? '' : `, hedeflerinin %${week.goalRate}'ine ulaştın`;
+  return `Bu hafta canlı odalarda ${sure} odaklandın${hedef}.`;
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
@@ -280,6 +310,7 @@ if (typeof module !== 'undefined' && module.exports) {
     analysisTimerStart, analysisTimerPause,
     analysisCompletionPatch, analysisUncompletePatch,
     analysisSample, analysisFactors, analysisFocusSuggestion, analysisDailyStretches,
-    analysisCalibration, analysisParseCalibration, analysisSameCalibration, analysisMailLine
+    analysisCalibration, analysisParseCalibration, analysisSameCalibration, analysisMailLine,
+    analysisRoomWeek, analysisRoomLine
   };
 }

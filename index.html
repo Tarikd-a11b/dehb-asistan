@@ -54,6 +54,8 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="study-rooms-logic.js"></script>
 
 <script src="study-rooms.js"></script>
+<script src="live-rooms-logic.js"></script>
+<script src="live-rooms.js"></script>
 
 <script src="dehb-info.js"></script>
 <script src="brain-dump.js"></script>
@@ -1062,6 +1064,17 @@ html.dark #task-deadline{color:#c7d2fe!important}
 
   <!-- ODA LİSTESİ -->
   <div id="oda-liste-bolum" class="space-y-6">
+    <!-- CANLI ODALAR: kartlar live-rooms.js'ten. Oda katmanı body seviyesinde (#canli-oda-katman). -->
+    <section class="space-y-3">
+      <div>
+        <h3 class="text-lg font-black text-slate-800 dark:text-slate-100">🟢 Canlı Odalar</h3>
+        <p class="text-xs text-slate-500">Gerçek kişilerle kameralı. Herkes kendi süresini seçer; süre bitince kimse atılmaz.</p>
+      </div>
+      <div id="canli-oda-listesi" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+      <p id="canli-oda-not" class="text-xs text-slate-400"></p>
+    </section>
+
+    <h3 class="text-lg font-black text-slate-800 dark:text-slate-100 pt-2">📺 Video Odaları</h3>
     <div id="oda-listesi" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
 
     <div class="p-4 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 space-y-3">

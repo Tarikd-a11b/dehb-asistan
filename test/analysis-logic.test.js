@@ -267,3 +267,19 @@ test('kosul yoksa mail satiri bos', () => {
   assert.strictEqual(A.analysisMailLine({ factors: { low: 1.1, medium: 1.1, high: 1.15 },
     samples: { low: 9, medium: 9, high: 9 } }), '');
 });
+
+// ── analysisRoomWeek / analysisRoomLine (canlı odalar) ──
+test('analysisRoomWeek: son 7 gün, Kısmen yarım sayılır, eskiler düşer', () => {
+  const simdi = Date.UTC(2026, 9, 13, 12);
+  const g = (gun, saniye, goal_met) => ({ joined_at: new Date(simdi - gun * 86400000).toISOString(), focus_seconds: saniye, goal_met });
+  const w = A.analysisRoomWeek([g(1, 3600, 'yes'), g(2, 1800, 'partly'), g(3, 600, null), g(9, 9999, 'no')], simdi);
+  assert.deepStrictEqual(w, { sessions: 3, seconds: 6000, answered: 2, goalRate: 75 });
+  assert.strictEqual(A.analysisRoomWeek([], simdi), null);
+  assert.strictEqual(A.analysisRoomWeek(null, simdi), null);
+});
+
+test('analysisRoomLine', () => {
+  assert.strictEqual(A.analysisRoomLine({ seconds: 15600, goalRate: 70 }), "Bu hafta canlı odalarda 4 sa 20 dk odaklandın, hedeflerinin %70'ine ulaştın.");
+  assert.strictEqual(A.analysisRoomLine({ seconds: 1500, goalRate: null }), 'Bu hafta canlı odalarda 25 dk odaklandın.');
+  assert.strictEqual(A.analysisRoomLine(null), '');
+});

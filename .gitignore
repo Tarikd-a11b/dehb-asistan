@@ -11,3 +11,4 @@ node_modules/
 
 # Tek basina acilan onizleme kopyalari
 _onizleme-*
+__pycache__/

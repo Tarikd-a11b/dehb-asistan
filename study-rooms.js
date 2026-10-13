@@ -251,6 +251,7 @@ function ozelOdaEkle() {
 /** `loadPage('study-rooms')` bunu çağırıyor. */
 function initStudyRooms() {
   odalariCiz();
+  if (typeof initCanliOdalar === 'function') initCanliOdalar();
   document.getElementById('oda-cik-btn')?.addEventListener('click', odadanCik);
   document.getElementById('oda-sayac-btn')?.addEventListener('click', odaSayacDegistir);
   document.getElementById('oda-sayac-sifirla')?.addEventListener('click', odaSayacSifirla);
@@ -266,6 +267,8 @@ function initStudyRooms() {
 function odalardanAyril() {
   if (OdaState.aktifOda) odadanCik();
   else odaSayacDurdur();
+  // Canlı oda bağlantısı sayfa değişince KOPMAZ; katman mini görünüme iner.
+  if (typeof canliSayfaDegisti === 'function') canliSayfaDegisti();
 }
 
 if (typeof window !== 'undefined') {

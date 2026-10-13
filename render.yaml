@@ -57,5 +57,15 @@ services:
       - key: N8N_SECRET
         sync: false
 
+      # Canlı çalışma odaları (Daily.co). Anahtar yoksa canlı odalar "kapalı"
+      # görünür, uygulamanın geri kalanı etkilenmez. DAILY_DOMAIN: 'ornek' ya da 'ornek.daily.co'.
+      - key: DAILY_API_KEY
+        sync: false
+      - key: DAILY_DOMAIN
+        sync: false
+      # Kişi başı günlük oda dakikası (varsayılan 240). Ücretsiz kotayı korur.
+      - key: GUNLUK_LIMIT_DK
+        value: "240"
+
       - key: TIMEZONE
         value: Europe/Istanbul

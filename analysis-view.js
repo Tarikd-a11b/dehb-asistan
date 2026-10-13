@@ -76,9 +76,13 @@ function _analysisColsHTML(daily, focusPeriod) {
 }
 
 /** Ağsız çizim. UI testi doğrudan çağırır. */
-function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest }) {
+function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest, rooms }) {
   if (!container) return;
-  _analysisLast = { calibration, daily, focusPeriod, guest };
+  _analysisLast = { calibration, daily, focusPeriod, guest, rooms };
+  // Canlı oda satırı: görev verisi az olsa da görünür (ayrı veri kaynağı).
+  const odaMetni = typeof analysisRoomLine === 'function' ? analysisRoomLine(rooms) : '';
+  const odaSatiri = odaMetni
+    ? `<p data-analysis-rooms class="text-sm text-slate-600 dark:text-slate-300">🟢 ${odaMetni}</p>` : '';
   const baslik = `<h3 class="font-bold text-slate-800 dark:text-slate-100">📈 Çalışma Analizim</h3>`;
   if (guest) {
     container.innerHTML = `<div class="glass-card p-6 bg-white shadow-sm space-y-2">${baslik}
@@ -89,7 +93,7 @@ function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest 
   const toplamOrnek = ANALYSIS_LOADS.reduce((s, l) => s + c.samples[l], 0);
   if (c.timedSessions < 8 && toplamOrnek === 0) {
     container.innerHTML = `<div class="glass-card p-6 bg-white shadow-sm space-y-2">${baslik}
-      <p class="text-sm text-slate-500 dark:text-slate-400">Analiz için ${c.timedSessions}/8 oturum — görev sayacını kullandıkça dolacak.</p></div>`;
+      <p class="text-sm text-slate-500 dark:text-slate-400">Analiz için ${c.timedSessions}/8 oturum — görev sayacını kullandıkça dolacak.</p>${odaSatiri}</div>`;
     return;
   }
   const fp = Number(focusPeriod) || 25;
@@ -112,6 +116,7 @@ function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest 
         <div class="space-y-3"><p class="text-xs font-semibold text-slate-500 dark:text-slate-400">Tahmin ve gerçek süre (son 30 gün)</p>${_analysisBarsHTML(c)}</div>
         ${sutunlar}
       </div>
+      ${odaSatiri}
       ${oneri}
     </div>`;
 }
@@ -128,6 +133,14 @@ async function analysisRefresh() {
   const fp = Number(userProfile?.focusPeriod) || 25;
   const calibration = analysisCalibration(data || [], nowMs, fp);
   const daily = analysisDailyStretches(data || [], nowMs);
+  // Tablo henüz kurulmamışsa (SQL çalıştırılmadı) satır sessizce çizilmez.
+  let rooms = null;
+  try {
+    const { data: oturumlar, error: odaHata } = await sb.from('room_sessions')
+      .select('joined_at,focus_seconds,goal_met')
+      .gte('joined_at', new Date(nowMs - 7 * 86400000).toISOString());
+    if (!odaHata && typeof analysisRoomWeek === 'function') rooms = analysisRoomWeek(oturumlar || [], nowMs);
+  } catch (e) { /* oda satırı isteğe bağlı */ }
   if (!analysisSameCalibration(calibration, userProfile?.calibration)) {
     const { error: yazHata } = await sb.from('profiles').update({ calibration }).eq('id', currentUser.id);
     if (yazHata) console.warn('[Analiz] calibration yazılamadı:', yazHata.code, yazHata.message);
@@ -137,8 +150,8 @@ async function analysisRefresh() {
     }
   }
   const kart = document.getElementById('analysis-card');
-  if (kart) renderAnalysisCard(kart, { calibration, daily, focusPeriod: fp, guest: false });
-  return { calibration, daily };
+  if (kart) renderAnalysisCard(kart, { calibration, daily, focusPeriod: fp, guest: false, rooms });
+  return { calibration, daily, rooms };
 }
 
 async function analysisMountCard() {
