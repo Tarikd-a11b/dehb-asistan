@@ -13,6 +13,10 @@
  *   - Boşta kalma: 90 dk etkileşimsizlik → soru, 5 dk cevapsız → çıkış + dönüş kartı.
  *   - Başkasının hedef metni HTML olarak işlenmez.
  *   - Misafir: canlı odalar kapalı, /api/rooms'a istek yok.
+ *   - Jitsi (varsayılan sağlayıcı): sekme tıklamada açılır, doluluk/token isteği yok,
+ *     boşta kontrolü kapalı (kullanıcı Jitsi sekmesinde).
+ *
+ * Daily testleri window.FOCUSAID_CANLI_SAGLAYICI = 'daily' ile koşar.
  */
 import { test, before, after } from 'node:test';
 import assert from 'node:assert';
@@ -116,7 +120,7 @@ function sahteSupabase() {
 }
 
 /** Girişli kullanıcı gibi odalar sayfasını açar. */
-async function odalar({ ekran = MASAUSTU, misafirKal = false, onay = false } = {}) {
+async function odalar({ ekran = MASAUSTU, misafirKal = false, onay = false, saglayici = 'daily' } = {}) {
   const sayfa = await tarayici.newPage({ viewport: ekran });
   const istekler = [];
   await sayfa.clock.install();
@@ -127,6 +131,11 @@ async function odalar({ ekran = MASAUSTU, misafirKal = false, onay = false } = {
     r.fulfill({ json: { url: 'https://ornek.daily.co/canli-gece', token: 'daily-tok', kalanDk: 200 } });
   });
   await sayfa.addInitScript(sahteOrtam);
+  await sayfa.addInitScript(s => {
+    window.FOCUSAID_CANLI_SAGLAYICI = s;
+    window.__acilan = [];
+    window.open = (url, hedef, ozellik) => { window.__acilan.push({ url, hedef, ozellik }); return null; };
+  }, saglayici);
   await sayfa.addInitScript(() => {
     try { localStorage.setItem('focusaid_guest_mode', '1'); localStorage.removeItem('focusaid_son_canli_oda'); } catch (e) {}
   });
@@ -136,7 +145,7 @@ async function odalar({ ekran = MASAUSTU, misafirKal = false, onay = false } = {
     await sayfa.evaluate(sahteSupabase);
     await sayfa.evaluate(o => { window.__onay = o ? '2026-10-13T00:00:00Z' : null; }, onay);
     // index.html'deki üst düzey let'ler: global kodla atanır.
-    await sayfa.evaluate("isGuestMode = false; currentUser = { id: '11111111-1111-1111-1111-111111111111' }; 1");
+    await sayfa.evaluate("isGuestMode = false; currentUser = { id: '11111111-1111-1111-1111-111111111111', email: 'gizli@ornek.com', user_metadata: { full_name: 'Ayşe Nur' } }; 1");
   }
   await sayfa.evaluate(() => window.loadPage('study-rooms'));
   await sayfa.clock.runFor(500);
@@ -294,5 +303,51 @@ test('günlük sınır: Daily atınca (ejected) dönüş kartı değil bilgi ver
   assert.strictEqual(await sayfa.$('#canli-donus'), null);
   const sb = await sayfa.evaluate(() => window.__sb.filter(k => k.tablo === 'room_sessions' && k.islem === 'update').map(k => k.veri));
   assert.ok(sb.some(v => v.left_at), 'çıkış yine kaydedilmeli');
+  await sayfa.close();
+});
+
+test('jitsi: kartlar Jitsi der, doluluk/token isteği yok; giriş sekmeyi açar ve oturumu kaydeder', async () => {
+  const { sayfa, istekler } = await odalar({ saglayici: 'jitsi' });
+  assert.match(await sayfa.textContent('[data-canli-oda="canli-gece"]'), /Jitsi/);
+  await odayaGir(sayfa);
+  const acilan = await sayfa.evaluate(() => window.__acilan);
+  assert.strictEqual(acilan.length, 1, 'tek sekme açılmalı');
+  assert.match(acilan[0].url, /^https:\/\/meet\.jit\.si\/FocusAid-GeceKuslari-[a-z0-9]{6}#/);
+  assert.match(acilan[0].url, /startWithAudioMuted=true/);
+  assert.match(acilan[0].url, /displayName=%22Ay%C5%9Fe%22/, 'yalnız ilk ad');
+  assert.ok(!acilan[0].url.includes('gizli'), "e-posta Jitsi'ye gitmez");
+  assert.strictEqual(acilan[0].ozellik, 'noopener');
+  assert.deepStrictEqual(istekler, [], "Jitsi'de /api/rooms isteği olmamalı");
+  assert.strictEqual(await sayfa.getAttribute('[data-co="jitsi-ac"]', 'href'), acilan[0].url);
+  assert.strictEqual(await sayfa.isVisible('[data-co="kamera"]'), false);
+  const sb = await sayfa.evaluate(() => window.__sb);
+  assert.ok(sb.some(k => k.tablo === 'room_sessions' && k.islem === 'insert' && k.veri.room === 'canli-gece'));
+  assert.ok(sb.some(k => k.tablo === 'profiles' && k.islem === 'update' && k.veri.room_consent_at), 'onay yazılmalı');
+  await sayfa.close();
+});
+
+test('jitsi: sayaç işler, boşta kontrolü yok; çıkışta hedef sorusu', async () => {
+  const { sayfa } = await odalar({ saglayici: 'jitsi', onay: true });
+  await odayaGir(sayfa, { onayIste: false });
+  await sayfa.clock.runFor(25 * 60 * 1000);
+  assert.strictEqual(await sayfa.textContent('[data-co="etiket"]'), 'SÜRE DOLDU');
+  await sayfa.clock.runFor(100 * 60 * 1000);
+  assert.strictEqual(await sayfa.$('.co-bosta'), null, 'Jitsi sekmesindeki kullanıcı boşta sayılmamalı');
+  assert.ok(await sayfa.$('#canli-oda-katman'));
+  await sayfa.evaluate(() => window.loadPage('today'));
+  assert.strictEqual(await sayfa.getAttribute('#canli-oda-katman', 'data-gorunum'), 'mini');
+  await sayfa.click('[data-co="cik"]');
+  await sayfa.waitForSelector('#canli-hedef-sorusu');
+  const g = await sayfa.evaluate(() => window.__sb.filter(k => k.tablo === 'room_sessions' && k.islem === 'update').map(k => k.veri));
+  assert.ok(g.some(v => v.left_at && v.focus_seconds >= 25 * 60), 'odak süresi yazılmalı');
+  await sayfa.close();
+});
+
+test('jitsi mobil: katman taşmıyor', async () => {
+  const { sayfa } = await odalar({ saglayici: 'jitsi', ekran: MOBIL, onay: true });
+  await odayaGir(sayfa, { onayIste: false });
+  const t = await sayfa.evaluate(() => ({ doc: document.documentElement.scrollWidth, vw: window.innerWidth,
+    kw: document.getElementById('canli-oda-katman').scrollWidth, cw: document.getElementById('canli-oda-katman').clientWidth }));
+  assert.ok(t.kw <= t.cw + 1 && t.doc <= t.vw + 1, JSON.stringify(t));
   await sayfa.close();
 });

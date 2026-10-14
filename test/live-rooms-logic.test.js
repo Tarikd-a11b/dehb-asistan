@@ -146,3 +146,29 @@ test('canliOdaSirala: dolu odalar başa, sayı 0-6 aralığında', () => {
   assert.strictEqual(L.canliOdaSirala({ 'canli-sabah': 99 }).find(o => o.id === 'canli-sabah').sayi, 6);
   assert.strictEqual(L.canliOdaSirala(null).length, 3);
 });
+
+test('canliIlkAd: yalnız ilk ad, kontrol karakteri yok, e-posta kullanılmaz', () => {
+  assert.strictEqual(L.canliIlkAd({ user_metadata: { full_name: 'Ayşe Nur Yılmaz' } }), 'Ayşe');
+  assert.strictEqual(L.canliIlkAd({ user_metadata: { name: 'Bora\u0007' } }), 'Bora');
+  assert.strictEqual(L.canliIlkAd({ email: 'gizli@ornek.com', user_metadata: {} }), '');
+  assert.strictEqual(L.canliIlkAd(null), '');
+});
+
+test('canliJitsiUrl: meet.jit.si, mikrofon kapalı, ad JSON olarak kodlu', () => {
+  const oda = L.canliOdaBul('canli-gece');
+  const url = L.canliJitsiUrl(oda, 'Ayşe "x" Yılmaz');
+  assert.ok(url.startsWith('https://meet.jit.si/' + oda.jitsi + '#'));
+  assert.match(url, /config\.startWithAudioMuted=true/);
+  assert.match(url, /config\.disableDeepLinking=true/);
+  const baslik = url.split('config.localSubject=')[1].split('&')[0];
+  assert.strictEqual(JSON.parse(decodeURIComponent(baslik)), '🌙 Gece Kuşları · FocusAid');
+  const ad = url.split('userInfo.displayName=')[1];
+  assert.strictEqual(JSON.parse(decodeURIComponent(ad)), 'Ayşe');
+  assert.ok(!L.canliJitsiUrl(oda, '').includes('displayName'), 'ad yoksa Jitsi kendisi sorar');
+  assert.strictEqual(L.canliJitsiUrl({ jitsi: 'x/../y' }, 'A'), null);
+  assert.strictEqual(L.canliJitsiUrl(null, 'A'), null);
+  // Her odanın adresi farklı ve tahmin edilmesi zor bir son ek taşıyor.
+  const adlar = L.CANLI_ODALAR.map(o => o.jitsi);
+  assert.strictEqual(new Set(adlar).size, 3);
+  adlar.forEach(a => assert.match(a, /^FocusAid-[A-Za-z]+-[a-z0-9]{6}$/));
+});

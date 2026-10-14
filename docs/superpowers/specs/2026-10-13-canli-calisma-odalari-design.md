@@ -1,7 +1,7 @@
 # Canlı çalışma odaları (kameralı body doubling)
 
 **Tarih:** 2026-10-13
-**Durum:** Uygulandı (dal `canli-odalar`, commit'siz) — plan `docs/superpowers/plans/2026-10-13-canli-calisma-odalari.md`; canlıya çıkış Daily anahtarı + SQL bekliyor
+**Durum:** Canlıda (`dcdec99`, Daily ile); 2026-10-14 sağlayıcı Jitsi Meet'e çevrildi — bkz. en alttaki Ek
 
 ## Sorun
 
@@ -214,3 +214,34 @@ güncellenir (sekme kapanırsa en fazla 1 dk kayıp), çıkışta `left_at` + `g
 
 Oda sayısı 3 · oda başı 6 kişi · günlük limit 240 dk · boşta uyarısı 90 dk etkileşimsizlik,
 5 dk cevap süresi · süre seçenekleri 25/50/60/90/Serbest · görüntü ~360p.
+
+---
+
+## Ek (2026-10-14): Sağlayıcı Jitsi Meet'e çevrildi
+
+**Neden:** Daily ücretsiz planda bile odaya katılım için hesapta ödeme yöntemi istiyor
+(gerçek denemede `account-missing-payment-method`). Kullanıcı kart riskini istemedi;
+Discord Türkiye'de erişime kapalı. Karar: ücretsiz, hesapsız katılınan **Jitsi Meet** bağlantısı.
+
+**Nasıl çalışıyor:**
+- `CANLI_SAGLAYICI_VARSAYILAN = 'jitsi'` (`live-rooms-logic.js`). Her odanın sabit, tahmini zor
+  bir Jitsi adı var (`FocusAid-GeceKuslari-xxxxxx`).
+- "Odaya gir" → `meet.jit.si/<oda>` **yeni sekmede** (`noopener`), tıklamayla senkron açılır
+  (await'ten önce; yoksa açılır pencere engeli). Ayarlar hash'te: mikrofon kapalı, kamera açık,
+  ön-katılım ekranı, deep-link kapalı (telefonda tarayıcıda kalsın), yalnız ilk ad, oda başlığı.
+- FocusAid sekmesinde kişisel sayaç, mola, oturum kaydı (`room_sessions`), çıkıştaki hedef
+  sorusu ve analiz satırı **aynen** çalışır. Izgara yerine "Görüşmen Jitsi sekmesinde" kartı.
+- **Boşta kontrolü Jitsi'de kapalı:** kullanıcı haklı olarak Jitsi sekmesinde; günlük sınır da
+  anlamsız (kota yok).
+- Jitsi gömülemez: ücretsiz meet.jit.si gömülü kullanımda görüşmeyi 5 dk'da kesiyor.
+
+**Kaybedilenler:** odadaki kişi sayısı, başkalarının hedef kartı / mola rozeti, gizle/bildir
+(moderasyon Jitsi'nin kendi araçlarıyla), odada geçen sürenin otomatik ölçümü (süre kullanıcının
+Gir/Çık'ına göre).
+
+**Jitsi kuralı:** boş odaya ilk giren "Toplantı sahibiyim" ile bir kez Google/GitHub girişi yapar;
+diğerleri doğrudan katılır (2026-10-14 headless Chrome'da doğrulandı).
+
+**Daily yolu kodda duruyor** (`window.FOCUSAID_CANLI_SAGLAYICI = 'daily'` ile testlerde koşuyor):
+ileride Oracle'da LiveKit/kendi Jitsi'miz kurulursa ızgara, presence ve günlük sınır oradan devam eder.
+`/api/rooms/*` uçları duruyor; DAILY_API_KEY tanımlı değilken 503 döner, Jitsi modunda çağrılmaz.

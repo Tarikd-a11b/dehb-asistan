@@ -1,7 +1,9 @@
 /* ══════════════════════════════════════════════════════════════
    FocusAid — 🟢 Canlı Çalışma Odaları (saf mantık)
 
-   Kameralı body doubling: kalıcı odalar (Daily.co), herkesin KENDİ sayacı.
+   Kameralı body doubling: kalıcı odalar, herkesin KENDİ sayacı.
+   Görüntü sağlayıcısı varsayılan olarak Jitsi Meet (ücretsiz, yeni sekmede);
+   Daily yolu kodda duruyor (kart istediği için kapalı), bkz. CANLI_SAGLAYICI_VARSAYILAN.
    Spec: docs/superpowers/specs/2026-10-13-canli-calisma-odalari-design.md
 
    Kullanıcı kararları bu dosyanın şeklini belirliyor:
@@ -19,10 +21,18 @@
    ══════════════════════════════════════════════════════════════ */
 
 const CANLI_ODALAR = [
-  { id: 'canli-kutuphane', ad: 'Sessiz Kütüphane', simge: '📚', aciklama: 'Herkes kendi işinde. Kamera açık, mikrofon kapalı.' },
-  { id: 'canli-sabah', ad: 'Sabah Kulübü', simge: '☀️', aciklama: 'Güne birlikte başlamak isteyenler için.' },
-  { id: 'canli-gece', ad: 'Gece Kuşları', simge: '🌙', aciklama: 'Akşam ve gece çalışanların odası.' }
+  { id: 'canli-kutuphane', ad: 'Sessiz Kütüphane', simge: '📚', aciklama: 'Herkes kendi işinde. Kamera açık, mikrofon kapalı.', jitsi: 'FocusAid-SessizKutuphane-h4tfy4' },
+  { id: 'canli-sabah', ad: 'Sabah Kulübü', simge: '☀️', aciklama: 'Güne birlikte başlamak isteyenler için.', jitsi: 'FocusAid-SabahKulubu-8cndjj' },
+  { id: 'canli-gece', ad: 'Gece Kuşları', simge: '🌙', aciklama: 'Akşam ve gece çalışanların odası.', jitsi: 'FocusAid-GeceKuslari-da6ytv' }
 ];
+
+/**
+ * 'jitsi': oda meet.jit.si'de yeni sekmede açılır, FocusAid yalnız kişisel sayacı
+ *          ve oturum kaydını tutar. Ücretsiz, kart/kota yok (kullanıcı kararı 2026-10-13).
+ * 'daily': kendi ızgaramız + sunucu token'ı. Daily ücretsiz planda bile kart istiyor.
+ */
+const CANLI_SAGLAYICI_VARSAYILAN = 'jitsi';
+const CANLI_JITSI_TABAN = 'https://meet.jit.si/';
 
 const CANLI_MAKS_KISI = 6;
 /** 0 = Serbest (sayaç ileri sayar, süre bitimi yok). */
@@ -234,6 +244,37 @@ function canliOdaSirala(presence) {
     .map(({ _i, ...o }) => o);
 }
 
+/**
+ * Odadakilere görünen ad: yalnız ilk ad (serve.py gorunen_ad ile aynı kural).
+ * E-posta HİÇ kullanılmaz. Ad yoksa '' (sağlayıcı kendisi sorar).
+ */
+function canliIlkAd(kullanici) {
+  const meta = (kullanici && kullanici.user_metadata) || {};
+  const ad = String(meta.full_name || meta.name || '').trim().split(' ')[0];
+  // eslint-disable-next-line no-control-regex
+  return ad.replace(/[\u0000-\u001f\u007f]/g, '').slice(0, 40);
+}
+
+/**
+ * Jitsi oda adresi. Ayarlar hash'te (sunucuya gitmez); değerler JSON olarak
+ * okunduğu için ad JSON.stringify + encodeURIComponent ile geçer.
+ * disableDeepLinking: telefonda "uygulamayı indir" sayfası yerine tarayıcıda açılsın.
+ */
+function canliJitsiUrl(oda, ad) {
+  if (!oda || !/^[A-Za-z0-9-]{8,80}$/.test(String(oda.jitsi || ''))) return null;
+  const ayar = [
+    'config.startWithAudioMuted=true',
+    'config.startWithVideoMuted=false',
+    'config.disableDeepLinking=true',
+    'config.prejoinConfig.enabled=true',
+    // Başlık: yoksa Jitsi oda adını "Focus Aid Gece Kuslari Da 6 Ytv" diye böler.
+    'config.localSubject=' + encodeURIComponent(JSON.stringify(`${oda.simge || ''} ${oda.ad || ''} · FocusAid`.trim()))
+  ];
+  const temiz = canliIlkAd({ user_metadata: { full_name: ad } });
+  if (temiz) ayar.push('userInfo.displayName=' + encodeURIComponent(JSON.stringify(temiz)));
+  return CANLI_JITSI_TABAN + oda.jitsi + '#' + ayar.join('&');
+}
+
 /** Görünen ad → baş harf(ler) (kamerasız kart). */
 function canliBasHarf(ad) {
   const parcalar = String(ad || '').trim().split(/\s+/).filter(Boolean);
@@ -247,7 +288,8 @@ if (typeof window !== 'undefined') {
     canliOdaBul, canliHedefTemizle, canliUserDataTemizle, canliVarsayilanSure, canliMolaDk,
     canliSayacBaslat, canliKalanSn, canliSayacTik, canliSayacCevap, canliOdakSn, canliMolaSn,
     canliYayinDurumu, canliSureMetni, canliSayacMetni, canliDurumRozeti, canliBostaDurumu,
-    canliSeansGuncellemesi, canliOdaSirala, canliBasHarf
+    canliSeansGuncellemesi, canliOdaSirala, canliBasHarf,
+    CANLI_SAGLAYICI_VARSAYILAN, canliIlkAd, canliJitsiUrl
   });
 }
 
@@ -258,6 +300,7 @@ if (typeof module !== 'undefined' && module.exports) {
     canliOdaBul, canliHedefTemizle, canliUserDataTemizle, canliVarsayilanSure, canliMolaDk,
     canliSayacBaslat, canliKalanSn, canliSayacTik, canliSayacCevap, canliOdakSn, canliMolaSn,
     canliYayinDurumu, canliSureMetni, canliSayacMetni, canliDurumRozeti, canliBostaDurumu,
-    canliSeansGuncellemesi, canliOdaSirala, canliBasHarf
+    canliSeansGuncellemesi, canliOdaSirala, canliBasHarf,
+    CANLI_SAGLAYICI_VARSAYILAN, canliIlkAd, canliJitsiUrl
   };
 }
