@@ -254,10 +254,38 @@ function profileCompleteness(profile) {
   return Math.round(checks.filter(Boolean).length / checks.length * 100);
 }
 
+/**
+ * Çalışma Modu önerisi (profil "Çalışma Modu" alanının tek etkisi).
+ * Görev sayacında Başlat'a basılıp ölçüm gerçekten başladığında gösterilir.
+ *   body-doubling → çalışma odalarına yönlendir
+ *   cafe          → Lo-fi Kafe odası; işitsel destek seçilmemişse (sessizlik)
+ *                   ve hiçbir ses çalmıyorsa lo-fi otomatik açılır (lofiAc)
+ *   solo          → oda yok; Düşünce Parkı hatırlatması
+ * Bilinmeyen mod → solo gibi davranır (varsayılan).
+ */
+function calismaModuOnerisi(profile, { sesCaliyor = false } = {}) {
+  const p = { ...DEFAULT_PROFILE, ...(profile || {}) };
+  if (p.social === 'body-doubling') {
+    return { mod: 'body-doubling', lofiAc: false,
+             metin: '👥 Birlikte çalışmak daha kolay mı? Bir çalışma odasına gir.',
+             eylemler: [{ id: 'odalar', etiket: 'Çalışma odalarına git' }] };
+  }
+  if (p.social === 'cafe') {
+    const lofiAc = p.focusTrigger === 'silence' && !sesCaliyor;
+    return { mod: 'cafe', lofiAc,
+             metin: lofiAc ? '☕ Kafe havası için lo-fi açıldı.' : '☕ Kafe havasında çalışmak ister misin?',
+             eylemler: [{ id: 'kafe', etiket: 'Lo-fi Kafe odası' }].concat(lofiAc ? [{ id: 'sesi-kapat', etiket: 'Sesi kapat' }] : []) };
+  }
+  return { mod: 'solo', lofiAc: false,
+           metin: "🧘 Aklına başka bir şey gelirse Düşünce Parkı'na at, odağın bozulmasın.",
+           eylemler: [{ id: 'park', etiket: 'Düşünce Parkı (Alt+D)' }] };
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_PROFILE, SUPERPOWERS, SUPERPOWER_IDS, KOYU_TEMA_ESIGI,
                      clampLevel, normalizeSuperpowers, rowToProfile, profileToRow,
                      mergeProfile, toggleSuperpower, planningProfile, durationFactorsFromCalibration,
-                     themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness };
+                     themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness,
+                     calismaModuOnerisi };
 }

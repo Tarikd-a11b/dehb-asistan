@@ -390,6 +390,75 @@ async function startTaskTimer() {
   }
   if (TaskTimerState.remainingSeconds > 0) runCountdown();
   else { startOvertime(); updateTimerUI(); }
+  if (task) calismaModuOnerisiGoster(task);
+}
+
+// ── Çalışma Modu önerisi (profil "Çalışma Modu") ──
+// Karar profile-logic.js'teki calismaModuOnerisi'nde (testli); burada yalnız DOM.
+// Aynı görev için oturumda bir kez; "Bugün gösterme" o gün susturur.
+const _modOnerisiGosterilen = new Set();
+
+function _modOnerisiAnahtari() {
+  return `focusaid_mod_onerisi_${(typeof currentUser !== 'undefined' && currentUser?.id) || 'misafir'}`;
+}
+
+function calismaModuOnerisiGoster(task) {
+  const id = String(task.id);
+  if (_modOnerisiGosterilen.has(id)) return;
+  const bugun = localDayISO();
+  try { if (localStorage.getItem(_modOnerisiAnahtari()) === bugun) return; } catch (e) {}
+  _modOnerisiGosterilen.add(id);
+
+  const ses = window.FocusAudio;
+  const oneri = calismaModuOnerisi(typeof userProfile !== 'undefined' ? userProfile : null,
+                                   { sesCaliyor: !!(ses && ses.isPlaying) });
+  let oncekiSesModu = null;
+  if (oneri.lofiAc && ses) { oncekiSesModu = ses.currentMode; ses.setMode('lofi', true); }
+
+  document.getElementById('mod-onerisi')?.remove();
+  const kart = document.createElement('div');
+  kart.id = 'mod-onerisi';
+  kart.setAttribute('role', 'status');
+  kart.className = 'fixed bottom-6 inset-x-0 mx-auto z-50 w-[calc(100%-2rem)] max-w-md p-4 rounded-2xl shadow-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 animate-slide-in';
+  const metin = document.createElement('p');
+  metin.className = 'text-sm font-semibold text-slate-700 dark:text-slate-100 mb-3';
+  metin.textContent = oneri.metin;
+  const satir = document.createElement('div');
+  satir.className = 'flex flex-wrap items-center gap-2';
+  kart.append(metin, satir);
+
+  let zamanlayici = null;
+  const kapat = () => { clearTimeout(zamanlayici); kart.remove(); };
+  const dugme = (etiket, sinif, is) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = sinif;
+    b.textContent = etiket;
+    b.addEventListener('click', () => { kapat(); is(); });
+    satir.appendChild(b);
+  };
+  const ANA = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 transition-all';
+  const IKINCIL = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-200 active:scale-95 transition-all';
+  const eylemler = {
+    odalar: () => loadPage('study-rooms'),
+    kafe: () => { loadPage('study-rooms'); if (typeof odayaGir === 'function') odayaGir('lofi-kafe'); },
+    'sesi-kapat': () => { if (ses) { ses.stop(); if (oncekiSesModu) ses.setMode(oncekiSesModu); } },
+    park: () => { if (typeof openBrainDump === 'function') openBrainDump(); }
+  };
+  oneri.eylemler.forEach((e, i) => dugme(e.etiket, i === 0 ? ANA : IKINCIL, eylemler[e.id] || (() => {})));
+  dugme('Kapat', IKINCIL, () => {});
+  const sustur = document.createElement('button');
+  sustur.type = 'button';
+  sustur.className = 'ml-auto text-[11px] font-medium text-slate-400 hover:text-slate-600 underline';
+  sustur.textContent = 'Bugün gösterme';
+  sustur.addEventListener('click', () => {
+    try { localStorage.setItem(_modOnerisiAnahtari(), bugun); } catch (e) {}
+    kapat();
+  });
+  satir.appendChild(sustur);
+
+  document.body.appendChild(kart);
+  zamanlayici = setTimeout(kapat, 15000);
 }
 
 async function pauseTaskTimer() {

@@ -356,3 +356,33 @@ test('profileToRow calibration GONDERMEZ (upsert eski degeri ezmesin)', () => {
   const row = P.profileToRow({ calibration: { factors: { high: 2 } } }, { id: 'u', email: 'e' });
   assert.strictEqual('calibration' in row, false);
 });
+
+// ── calismaModuOnerisi ──
+test('calismaModuOnerisi: body-doubling odalara yonlendirir', () => {
+  const o = P.calismaModuOnerisi({ social: 'body-doubling' });
+  assert.strictEqual(o.mod, 'body-doubling');
+  assert.deepStrictEqual(o.eylemler.map(e => e.id), ['odalar']);
+  assert.strictEqual(o.lofiAc, false);
+});
+
+test('calismaModuOnerisi: cafe + sessizlik + ses yok → lo-fi acilir, kapatma secenegi var', () => {
+  const o = P.calismaModuOnerisi({ social: 'cafe', focusTrigger: 'silence' });
+  assert.strictEqual(o.lofiAc, true);
+  assert.deepStrictEqual(o.eylemler.map(e => e.id), ['kafe', 'sesi-kapat']);
+});
+
+test('calismaModuOnerisi: cafe ama isitsel destek secilmis ya da ses caliyor → lo-fi acilmaz', () => {
+  assert.strictEqual(P.calismaModuOnerisi({ social: 'cafe', focusTrigger: 'brown-noise' }).lofiAc, false);
+  const o = P.calismaModuOnerisi({ social: 'cafe', focusTrigger: 'silence' }, { sesCaliyor: true });
+  assert.strictEqual(o.lofiAc, false);
+  assert.deepStrictEqual(o.eylemler.map(e => e.id), ['kafe']);
+});
+
+test('calismaModuOnerisi: solo ve bilinmeyen mod Dusunce Parkini hatirlatir', () => {
+  for (const social of ['solo', 'garip', undefined]) {
+    const o = P.calismaModuOnerisi({ social });
+    assert.strictEqual(o.mod, 'solo');
+    assert.deepStrictEqual(o.eylemler.map(e => e.id), ['park']);
+  }
+  assert.strictEqual(P.calismaModuOnerisi(null).mod, 'solo');
+});
