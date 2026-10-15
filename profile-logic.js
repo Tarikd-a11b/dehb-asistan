@@ -281,11 +281,21 @@ function calismaModuOnerisi(profile, { sesCaliyor = false } = {}) {
            eylemler: [{ id: 'park', etiket: 'Düşünce Parkı (Alt+D)' }] };
 }
 
+/**
+ * İnat Modu düğmesi öne çıksın mı? Yalnız "Seni en çok ne durdurur?" cevabı
+ * Başlama Felci (paralysis, varsayılan) olanlarda yanıp söner; diğerlerinde
+ * sakin durur — her ekranda yanıp sönen düğme başka engeli olanı yorar.
+ */
+function inatModuOneCikar(profile) {
+  const p = { ...DEFAULT_PROFILE, ...(profile || {}) };
+  return p.mainObstacle === 'paralysis';
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_PROFILE, SUPERPOWERS, SUPERPOWER_IDS, KOYU_TEMA_ESIGI,
                      clampLevel, normalizeSuperpowers, rowToProfile, profileToRow,
                      mergeProfile, toggleSuperpower, planningProfile, durationFactorsFromCalibration,
                      themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness,
-                     calismaModuOnerisi };
+                     calismaModuOnerisi, inatModuOneCikar };
 }

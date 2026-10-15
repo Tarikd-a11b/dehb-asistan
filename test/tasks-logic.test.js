@@ -203,3 +203,28 @@ test('carkAnahtari kullaniciya ozel, kimliksizde misafir', () => {
   assert.strictEqual(L.carkAnahtari('abc'), 'focusaid_cark_abc');
   assert.strictEqual(L.carkAnahtari(undefined), 'focusaid_cark_misafir');
 });
+
+// ── Bitirme Stratejin: ödül notu ──
+test('odulSatiri: kalan gorev sayisini ve odulu yazar', () => {
+  assert.strictEqual(L.odulSatiri('  1 saat oyun ', 2, 5), '🎁 Ödülüne 3 görev kaldı: 1 saat oyun');
+});
+
+test('odulSatiri: bos not, gorevsiz gun ya da hepsi bitmis → null', () => {
+  assert.strictEqual(L.odulSatiri('', 1, 3), null);
+  assert.strictEqual(L.odulSatiri('   ', 1, 3), null);
+  assert.strictEqual(L.odulSatiri('oyun', 0, 0), null);
+  assert.strictEqual(L.odulSatiri('oyun', 3, 3), null);
+});
+
+test('odulEtiketi 30 karaktere kirpar (cark dilimine sigsin)', () => {
+  assert.strictEqual(L.odulEtiketi('x'.repeat(50)).length, 30);
+});
+
+test('carkDilimMetinleri: odul notu varsa iki karsilikli dilim, yoksa eski 6 dilim', () => {
+  const ile = L.carkDilimMetinleri('Sinema');
+  assert.strictEqual(ile.length, 7);
+  assert.deepStrictEqual(ile.map((d, i) => d === '🎁 Sinema' ? i : -1).filter(i => i >= 0), [0, 3]);
+  const yok = L.carkDilimMetinleri('');
+  assert.strictEqual(yok.length, 6);
+  assert.strictEqual(yok[0], '🎯 Özel Profil Ödülün');
+});

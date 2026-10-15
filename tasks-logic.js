@@ -217,12 +217,45 @@ function bugununCarkOdulu(kayitMetni, bugun) {
   }
 }
 
+/* ── Bitirme Stratejin: ödül notu ────────────────────────────────
+   Profildeki ödül notu (motivationNote) eskiden yalnız çarkta tek dilimdi;
+   yazıldıktan sonra bir daha görünmüyordu. Artık Bugün ekranında hedef
+   olarak duruyor ve çarkta iki dilim (karşılıklı) alıyor. */
+const ODUL_ETIKET_MAX = 30;
+
+/** Ödül etiketi: boş not → null. */
+function odulEtiketi(not) {
+  const t = String(not || '').trim();
+  return t ? t.slice(0, ODUL_ETIKET_MAX) : null;
+}
+
+/** Bugün ekranındaki ödül satırı; gösterilecek bir şey yoksa null. */
+function odulSatiri(not, done, total) {
+  const odul = odulEtiketi(not);
+  if (!odul || !(total > 0)) return null;
+  const kalan = total - done;
+  if (kalan <= 0) return null;   // hepsi bitti: çark kartı devralıyor
+  return `🎁 Ödülüne ${kalan} görev kaldı: ${odul}`;
+}
+
+/** Çark dilim metinleri. Ödül notu varsa iki dilim, karşılıklı (0 ve 3). */
+function carkDilimMetinleri(not) {
+  const odul = odulEtiketi(not);
+  const sabit = ['🛋️ Sıfır Vicdan Azabıyla Tembellik', '🍫 Tatlı / Kahve Ismarla',
+                 '🎬 Favori Dizinden 2 Bölüm', '🎮 45 Dk Oyun / Sosyal Medya',
+                 '🚶 Müzikle Yürüyüş / Rahatlama'];
+  if (!odul) return ['🎯 Özel Profil Ödülün', ...sabit];
+  const o = '🎁 ' + odul;
+  return [o, sabit[0], sabit[1], o, sabit[2], sabit[3], sabit[4]];
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     carkAnahtari, bugununCarkOdulu,
     BREAK_MAP, CARRY_OVER_DAYS,
     localDayISO, addDaysISO, splitTasks, pickCurrentTask, pickTimerTask,
     computeProgress, dayLabel, computeSnooze,
-    computeVictories, rebalanceSchedule
+    computeVictories, rebalanceSchedule,
+    odulEtiketi, odulSatiri, carkDilimMetinleri
   };
 }

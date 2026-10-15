@@ -104,21 +104,16 @@
   }
 
   function getSlices() {
-    let customReward = '🎯 Özel Profil Ödülün';
-    try {
-      if (window.userProfile && window.userProfile.motivationNote && window.userProfile.motivationNote.trim()) {
-        customReward = '🎁 ' + window.userProfile.motivationNote.trim().slice(0, 30);
-      }
-    } catch (e) {}
-
-    return [
-      { text: customReward, bg: '#f59e0b', color: '#ffffff' },
-      { text: '🛋️ Sıfır Vicdan Azabıyla Tembellik', bg: '#6366f1', color: '#ffffff' },
-      { text: '🍫 Tatlı / Kahve Ismarla', bg: '#ec4899', color: '#ffffff' },
-      { text: '🎬 Favori Dizinden 2 Bölüm', bg: '#8b5cf6', color: '#ffffff' },
-      { text: '🎮 45 Dk Oyun / Sosyal Medya', bg: '#10b981', color: '#ffffff' },
-      { text: '🚶 Müzikle Yürüyüş / Rahatlama', bg: '#06b6d4', color: '#ffffff' }
-    ];
+    // Metinler tasks-logic.js'te (testli); ödül notu varsa iki karşılıklı dilim.
+    let not = '';
+    // userProfile index.html'de `let`: window'a bağlanmaz, window.userProfile hep
+    // undefined'dı ve çark ödül notunu hiç göstermiyordu. Global sözlükten oku.
+    try { not = (typeof userProfile !== 'undefined' && userProfile && userProfile.motivationNote) || ''; } catch (e) {}
+    const RENK = [['🛋', '#6366f1'], ['🍫', '#ec4899'], ['🎬', '#8b5cf6'], ['🎮', '#10b981'], ['🚶', '#06b6d4']];
+    return carkDilimMetinleri(not).map(text => ({
+      text, color: '#ffffff',
+      bg: (RENK.find(([on]) => text.startsWith(on)) || [, '#f59e0b'])[1]
+    }));
   }
 
   function playTickSound() {

@@ -558,6 +558,10 @@ function currentCardHTML(task) {
   }
   const yuk = YUK_ETIKET[task.cognitive_load] || '⚡ Odak';
   const rozetStil = YUK_ROZET[task.cognitive_load] || 'background:rgba(99,102,241,0.12);color:#4f46e5;border-color:rgba(99,102,241,0.25)';
+  // Başlama Felci seçenlerde öne çıkar, diğerlerinde sakin (karar profile-logic.js'te).
+  const inatStil = inatModuOneCikar(typeof userProfile !== 'undefined' ? userProfile : null)
+    ? 'bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white shadow-md shadow-rose-500/20 animate-pulse'
+    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-200';
   const yukRozet = `<span class="adhd-badge text-xs px-3 py-1 font-bold" style="${rozetStil}">${yuk}</span>`;
 
   return `
@@ -572,7 +576,7 @@ function currentCardHTML(task) {
             <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span></span>
             <p class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Şu Anda Odaklan</p>
             <div class="ml-2">${yukRozet}</div>
-            <button onclick="startInatModu('${task.id}', '${(task.name || 'Görevin').replace(/'/g, "\\'")}')" class="ml-auto px-3 py-1 rounded-xl bg-gradient-to-r from-rose-500 via-orange-500 to-amber-500 hover:from-rose-600 hover:to-amber-600 text-white font-black text-xs shadow-md shadow-rose-500/20 active:scale-95 transition-all flex items-center gap-1.5 animate-pulse" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
+            <button onclick="startInatModu('${task.id}', '${(task.name || 'Görevin').replace(/'/g, "\\'")}')" class="ml-auto px-3 py-1 rounded-xl font-black text-xs active:scale-95 transition-all flex items-center gap-1.5 ${inatStil}" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
               <span>🥊</span> İnat Modu (3 Dk)
             </button>
             <button onclick="openBrainDump()" class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all flex items-center gap-1.5 shadow-sm" title="Aklına gelen rastgele bir düşünceyi park et (Kısayol: Alt + D)">
@@ -705,6 +709,16 @@ function fireDopamineConfetti(isGrandCelebration = false) {
   }
 }
 
+/** Profildeki ödül notunu Bugün'de hedef olarak gösterir (metin tasks-logic.js'te). */
+function odulSatiriniYaz(done, total) {
+  const el = document.getElementById('today-odul');
+  if (!el) return;
+  const not = typeof userProfile !== 'undefined' && userProfile ? userProfile.motivationNote : '';
+  const satir = odulSatiri(not, done, total);
+  el.textContent = satir || '';
+  el.classList.toggle('hidden', !satir);
+}
+
 function renderToday() {
   const emptyEl = document.getElementById('today-empty');
   const listEl = document.getElementById('today-list');
@@ -723,10 +737,11 @@ function renderToday() {
   currentEl.classList.toggle('hidden', bos);
   if (victoriesEl) victoriesEl.innerHTML = victoriesCardHTML(hepsi);
 
-  if (bos) { if (textEl) textEl.textContent = '0/0'; if (barEl) barEl.style.width = '0%'; return; }
+  if (bos) { if (textEl) textEl.textContent = '0/0'; if (barEl) barEl.style.width = '0%'; odulSatiriniYaz(0, 0); return; }
 
   const { done, total } = computeProgress(TodayState.today, TodayState.carried);
   if (textEl) textEl.textContent = `${done}/${total}`;
+  odulSatiriniYaz(done, total);
   if (barEl) {
     const pct = total ? Math.round((done / total) * 100) : 0;
     barEl.style.width = `${pct}%`;

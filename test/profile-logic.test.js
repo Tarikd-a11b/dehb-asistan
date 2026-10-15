@@ -386,3 +386,12 @@ test('calismaModuOnerisi: solo ve bilinmeyen mod Dusunce Parkini hatirlatir', ()
   }
   assert.strictEqual(P.calismaModuOnerisi(null).mod, 'solo');
 });
+
+// ── inatModuOneCikar ──
+test('inatModuOneCikar: yalniz Baslama Felci (varsayilan) one cikar', () => {
+  assert.strictEqual(P.inatModuOneCikar({ mainObstacle: 'paralysis' }), true);
+  assert.strictEqual(P.inatModuOneCikar(null), true);
+  for (const o of ['distraction', 'perfectionism', 'time-blindness', 'overwhelm', 'rejection']) {
+    assert.strictEqual(P.inatModuOneCikar({ mainObstacle: o }), false, o);
+  }
+});
