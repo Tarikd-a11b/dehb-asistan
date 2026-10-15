@@ -395,3 +395,37 @@ test('inatModuOneCikar: yalniz Baslama Felci (varsayilan) one cikar', () => {
     assert.strictEqual(P.inatModuOneCikar({ mainObstacle: o }), false, o);
   }
 });
+
+// ── engelAyarlari ──
+test('engelAyarlari: her engel yalniz kendi davranisini acar', () => {
+  const beklenen = {
+    overwhelm: 'sadeceSiradaki', perfectionism: 'yeterinceIyi',
+    rejection: 'yumusakDil', distraction: 'parkHatirlat'
+  };
+  for (const [engel, alan] of Object.entries(beklenen)) {
+    const a = P.engelAyarlari({ mainObstacle: engel });
+    for (const k of ['sadeceSiradaki', 'yeterinceIyi', 'yumusakDil', 'parkHatirlat']) {
+      assert.strictEqual(a[k], k === alan, `${engel}.${k}`);
+    }
+    assert.strictEqual(a.hiperfokusVarsayilanDk, 0, engel);
+  }
+  assert.strictEqual(P.engelAyarlari({ mainObstacle: 'time-blindness' }).hiperfokusVarsayilanDk, 90);
+  const varsayilan = P.engelAyarlari(null);
+  assert.ok(!varsayilan.sadeceSiradaki && !varsayilan.yeterinceIyi && !varsayilan.yumusakDil && !varsayilan.parkHatirlat);
+});
+
+test('calismaModuOnerisi: dikkat daginikliginda her modda Dusunce Parki eklenir, cift eklenmez', () => {
+  const bd = P.calismaModuOnerisi({ social: 'body-doubling', mainObstacle: 'distraction' });
+  assert.deepStrictEqual(bd.eylemler.map(e => e.id), ['odalar', 'park']);
+  const solo = P.calismaModuOnerisi({ social: 'solo', mainObstacle: 'distraction' });
+  assert.deepStrictEqual(solo.eylemler.map(e => e.id), ['park']);
+  const baska = P.calismaModuOnerisi({ social: 'body-doubling', mainObstacle: 'overwhelm' });
+  assert.deepStrictEqual(baska.eylemler.map(e => e.id), ['odalar']);
+});
+
+test('engelAciklamasi: her secenegin aciklamasi var, bilinmeyen varsayilana duser', () => {
+  for (const e of ['paralysis', 'distraction', 'perfectionism', 'time-blindness', 'overwhelm', 'rejection']) {
+    assert.ok(P.engelAciklamasi(e).length > 10, e);
+  }
+  assert.strictEqual(P.engelAciklamasi('garip'), P.engelAciklamasi('paralysis'));
+});

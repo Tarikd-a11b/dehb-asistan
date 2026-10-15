@@ -263,7 +263,16 @@ function profileCompleteness(profile) {
  *   solo          → oda yok; Düşünce Parkı hatırlatması
  * Bilinmeyen mod → solo gibi davranır (varsayılan).
  */
-function calismaModuOnerisi(profile, { sesCaliyor = false } = {}) {
+function calismaModuOnerisi(profile, secenek = {}) {
+  const o = _calismaModuTemel(profile, secenek);
+  // Engel "Dikkat Dağınıklığı" ise her modda Düşünce Parkı da önerilir.
+  if (engelAyarlari(profile).parkHatirlat && !o.eylemler.some(e => e.id === 'park')) {
+    o.eylemler.push({ id: 'park', etiket: 'Düşünce Parkı (Alt+D)' });
+  }
+  return o;
+}
+
+function _calismaModuTemel(profile, { sesCaliyor = false } = {}) {
   const p = { ...DEFAULT_PROFILE, ...(profile || {}) };
   if (p.social === 'body-doubling') {
     return { mod: 'body-doubling', lofiAc: false,
@@ -291,11 +300,47 @@ function inatModuOneCikar(profile) {
   return p.mainObstacle === 'paralysis';
 }
 
+/**
+ * "Seni en çok ne durdurur?" (mainObstacle) cevabının arayüzdeki karşılığı.
+ * Eskiden yalnız AI prompt'una giriyordu. Her engel tek bir davranış açar:
+ *   overwhelm      → Bugün'de yalnız sıradaki görev, liste düğmenin arkasında
+ *   time-blindness → hiperfokus alarmı seçilmemişse 90 dk varsayılan
+ *   perfectionism  → süre dolunca "yeterince iyi, bitir" kartı
+ *   rejection      → devreden görev / süre aşımında yumuşak dil
+ *   distraction    → Başlat önerisine Düşünce Parkı
+ *   paralysis      → İnat Modu öne çıkar (inatModuOneCikar)
+ */
+function engelAyarlari(profile) {
+  const e = { ...DEFAULT_PROFILE, ...(profile || {}) }.mainObstacle;
+  return {
+    sadeceSiradaki: e === 'overwhelm',
+    hiperfokusVarsayilanDk: e === 'time-blindness' ? 90 : 0,
+    yeterinceIyi: e === 'perfectionism',
+    yumusakDil: e === 'rejection',
+    parkHatirlat: e === 'distraction'
+  };
+}
+
+/** Profilde engel seçiminin altında: bu seçim arayüzde neyi değiştirir. */
+const ENGEL_ACIKLAMA = {
+  paralysis: '🥊 İnat Modu düğmesi öne çıkar: 3 dakikalık başlangıçla sayacı başlatır.',
+  distraction: "💭 Başlat'a basınca Düşünce Parkı hatırlatılır (Alt+D).",
+  perfectionism: '💎 Süre dolunca "yeterince iyi, bitir" kartı çıkar.',
+  'time-blindness': '⏰ Hiperfokus alarmı "Alarm Yok"taysa 90 dakikada bir uyarır.',
+  overwhelm: '😌 Bugün ekranında yalnız sıradaki görev görünür, liste bir düğmenin arkasında.',
+  rejection: '🌱 Devreden görevlerde tarih yerine "devam ediyor", süre aşımında yumuşak dil.'
+};
+
+function engelAciklamasi(engel) {
+  return ENGEL_ACIKLAMA[engel] || ENGEL_ACIKLAMA[DEFAULT_PROFILE.mainObstacle];
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_PROFILE, SUPERPOWERS, SUPERPOWER_IDS, KOYU_TEMA_ESIGI,
                      clampLevel, normalizeSuperpowers, rowToProfile, profileToRow,
                      mergeProfile, toggleSuperpower, planningProfile, durationFactorsFromCalibration,
                      themeIsDark, lightSensitivityForTheme, moodForToday, profileCompleteness,
-                     calismaModuOnerisi, inatModuOneCikar };
+                     calismaModuOnerisi, inatModuOneCikar, engelAyarlari,
+                     ENGEL_ACIKLAMA, engelAciklamasi };
 }

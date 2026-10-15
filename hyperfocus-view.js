@@ -23,6 +23,14 @@ function hyperfocusLimitiOku() {
   } catch (e) { return 'none'; }
 }
 
+/** Zaman Körlüğü seçenlerde alarm seçilmemişse varsayılan dk (profile-logic.js). */
+function hyperfocusEngelVarsayilani() {
+  let p = null;
+  try { if (typeof userProfile === 'object' && userProfile) p = userProfile; } catch (e) { /* TDZ */ }
+  if (!p) { try { p = JSON.parse(localStorage.getItem('focusaid_profile') || '{}'); } catch (e) { p = {}; } }
+  return typeof engelAyarlari === 'function' ? engelAyarlari(p).hiperfokusVarsayilanDk : 0;
+}
+
 function hyperfocusDurumOku() {
   try { return JSON.parse(localStorage.getItem(HYPERFOCUS_KEY) || 'null'); }
   catch (e) { return null; }
@@ -108,7 +116,7 @@ function hyperfocusIzniIste() {
 function hyperfocusTikAt() {
   const { state, alarm } = hyperfocusTick(hyperfocusDurumOku(), {
     nowMs: Date.now(),
-    limitMinutes: parseHyperfocusLimit(hyperfocusLimitiOku())
+    limitMinutes: etkinHiperfokusLimiti(hyperfocusLimitiOku(), hyperfocusEngelVarsayilani())
   });
   hyperfocusDurumYaz(state);
   if (!state) hyperfocusSeridiKapat();   // kullanıcı alarmı kapattı

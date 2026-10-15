@@ -115,11 +115,19 @@ function hyperfocusMessage(minutes) {
   return `${sure}dır aralıksız çalışıyorsun. Beş dakika kalk, su iç, gözlerini dinlendir.`;
 }
 
+/**
+ * Gerçekte kullanılacak limit: profilde seçilen varsa o; "Alarm Yok" ise engelin
+ * varsayılanı (Zaman Körlüğü → 90 dk, diğerleri 0 = kapalı).
+ */
+function etkinHiperfokusLimiti(value, varsayilanDk = 0) {
+  return parseHyperfocusLimit(value) || parseHyperfocusLimit(varsayilanDk);
+}
+
 // Node testleri için dışa aktarım; tarayıcıda `module` tanımsız olduğu için atlanır.
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     HYPERFOCUS_BREAK_MINUTES,
-    parseHyperfocusLimit, hyperfocusTick,
+    parseHyperfocusLimit, etkinHiperfokusLimiti, hyperfocusTick,
     resetHyperfocus, snoozeHyperfocus, hyperfocusMessage
   };
 }

@@ -249,6 +249,18 @@ function carkDilimMetinleri(not) {
   return [o, sabit[0], sabit[1], o, sabit[2], sabit[3], sabit[4]];
 }
 
+/* ── Eleştiri korkusu (RSD) için yumuşak dil ─────────────────────── */
+/** Devreden görev rozeti: yumuşak dilde tarih yok. */
+function devredenEtiketi(etiket, yumusak) {
+  if (!etiket) return '';
+  return yumusak ? '🌱 devam ediyor' : `⏳ ${etiket}`;
+}
+
+/** Süre aşımı metni (dk > 0). */
+function fazlaSureMetni(fazlaDk, yumusak) {
+  return yumusak ? `+${fazlaDk} dk fazladan emek` : `süre doldu · +${fazlaDk} dk`;
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     carkAnahtari, bugununCarkOdulu,
@@ -256,6 +268,6 @@ if (typeof module !== 'undefined' && module.exports) {
     localDayISO, addDaysISO, splitTasks, pickCurrentTask, pickTimerTask,
     computeProgress, dayLabel, computeSnooze,
     computeVictories, rebalanceSchedule,
-    odulEtiketi, odulSatiri, carkDilimMetinleri
+    odulEtiketi, odulSatiri, carkDilimMetinleri, devredenEtiketi, fazlaSureMetni
   };
 }

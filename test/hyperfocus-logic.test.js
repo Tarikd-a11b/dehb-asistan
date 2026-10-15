@@ -183,3 +183,10 @@ test('hyperfocusMessage sureyi icerir ve suclayici dil kullanmaz', () => {
 test('hyperfocusMessage saat esiginde saat dilini kullanir', () => {
   assert.match(H.hyperfocusMessage(120), /2 saat/);
 });
+
+test('etkinHiperfokusLimiti: secilen limit oncelikli, yoksa engel varsayilani', () => {
+  assert.strictEqual(H.etkinHiperfokusLimiti('60', 90), 60);
+  assert.strictEqual(H.etkinHiperfokusLimiti('none', 90), 90);
+  assert.strictEqual(H.etkinHiperfokusLimiti('none', 0), 0);
+  assert.strictEqual(H.etkinHiperfokusLimiti('none'), 0);
+});

@@ -7,7 +7,8 @@ const TodayState = {
   rows: [], today: [], carried: [], timer: null, loaded: false,
   // Bu oturumda tamamlanan görev id'leri. Devreden bir görev tamamlandığında
   // filtreden düşüp listeden yok olmasın diye tutulur (bkz. splitTasks).
-  sessionCompleted: new Set()
+  sessionCompleted: new Set(),
+  tumListe: false          // Bunalma: kullanıcı "Tüm listeyi göster" dedi mi
 };
 
 /** rows'u bugün/devreden olarak böler ve state'e yazar. */
@@ -84,11 +85,18 @@ function _escape(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/** Profildeki engelin arayüz ayarları (karar profile-logic.js'te). */
+function _engel() {
+  return engelAyarlari(typeof userProfile !== 'undefined' ? userProfile : null);
+}
+
 function taskRowHTML(task, todayISO) {
-  const etiket = dayLabel(task.day, todayISO);
-  // DEHB dostu no-guilt etiketleme: Suçluluk hissettirmeyen nötr rozet
+  // DEHB dostu no-guilt etiketleme: Suçluluk hissettirmeyen nötr rozet;
+  // Eleştiri korkusu seçenlerde tarih de yok (devredenEtiketi).
+  const yumusak = _engel().yumusakDil;
+  const etiket = devredenEtiketi(dayLabel(task.day, todayISO), yumusak);
   const rozet = etiket
-    ? `<span class="text-[10px] font-bold text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-900/30 px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1"><span>⏳</span> ${etiket}</span>`
+    ? `<span class="text-[10px] font-bold ${yumusak ? 'text-emerald-700 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-900/30' : 'text-amber-700 dark:text-amber-300 bg-amber-100/80 dark:bg-amber-900/30'} px-2 py-0.5 rounded-full shrink-0 flex items-center gap-1">${_escape(etiket)}</span>`
     : '';
   const kenar = YUK_KENAR[task.cognitive_load] || 'border-indigo-400 shadow-indigo-500/5';
   return `
@@ -290,7 +298,7 @@ function updateOvertimeUI() {
     el.textContent = '';
     return;
   }
-  el.textContent = `süre doldu · +${fazla} dk`;
+  el.textContent = fazlaSureMetni(fazla, _engel().yumusakDil);
   el.classList.remove('hidden');
 }
 
@@ -364,6 +372,7 @@ function runCountdown() {
         }
         if (timerMeasuring(timerTask())) startOvertime();
         updateTimerUI();
+        yeterinceIyiKartiGoster(timerTask());
       }
     }
   }, 1000);
@@ -415,50 +424,71 @@ function calismaModuOnerisiGoster(task) {
   let oncekiSesModu = null;
   if (oneri.lofiAc && ses) { oncekiSesModu = ses.currentMode; ses.setMode('lofi', true); }
 
-  document.getElementById('mod-onerisi')?.remove();
-  const kart = document.createElement('div');
-  kart.id = 'mod-onerisi';
-  kart.setAttribute('role', 'status');
-  kart.className = 'fixed bottom-6 inset-x-0 mx-auto z-50 w-[calc(100%-2rem)] max-w-md p-4 rounded-2xl shadow-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 animate-slide-in';
-  const metin = document.createElement('p');
-  metin.className = 'text-sm font-semibold text-slate-700 dark:text-slate-100 mb-3';
-  metin.textContent = oneri.metin;
-  const satir = document.createElement('div');
-  satir.className = 'flex flex-wrap items-center gap-2';
-  kart.append(metin, satir);
-
-  let zamanlayici = null;
-  const kapat = () => { clearTimeout(zamanlayici); kart.remove(); };
-  const dugme = (etiket, sinif, is) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = sinif;
-    b.textContent = etiket;
-    b.addEventListener('click', () => { kapat(); is(); });
-    satir.appendChild(b);
-  };
-  const ANA = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 transition-all';
-  const IKINCIL = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-200 active:scale-95 transition-all';
   const eylemler = {
     odalar: () => loadPage('study-rooms'),
     kafe: () => { loadPage('study-rooms'); if (typeof odayaGir === 'function') odayaGir('lofi-kafe'); },
     'sesi-kapat': () => { if (ses) { ses.stop(); if (oncekiSesModu) ses.setMode(oncekiSesModu); } },
     park: () => { if (typeof openBrainDump === 'function') openBrainDump(); }
   };
-  oneri.eylemler.forEach((e, i) => dugme(e.etiket, i === 0 ? ANA : IKINCIL, eylemler[e.id] || (() => {})));
-  dugme('Kapat', IKINCIL, () => {});
-  const sustur = document.createElement('button');
-  sustur.type = 'button';
-  sustur.className = 'ml-auto text-[11px] font-medium text-slate-400 hover:text-slate-600 underline';
-  sustur.textContent = 'Bugün gösterme';
-  sustur.addEventListener('click', () => {
-    try { localStorage.setItem(_modOnerisiAnahtari(), bugun); } catch (e) {}
-    kapat();
+  altKartGoster('mod-onerisi', oneri.metin,
+    oneri.eylemler.map(e => ({ etiket: e.etiket, is: eylemler[e.id] || (() => {}) })),
+    { sustur: () => { try { localStorage.setItem(_modOnerisiAnahtari(), bugun); } catch (e) {} } });
+}
+
+/**
+ * Ekranın altında kısa süreli öneri kartı (body seviyesinde: şablon içine
+ * fixed öğe koyma kuralı). İlk düğme ana renkte; sona hep "Kapat" eklenir.
+ * `sustur` verilirse sağda "Bugün gösterme" bağlantısı çıkar.
+ */
+function altKartGoster(id, metinYazi, dugmeler, { sustur = null, sureMs = 15000 } = {}) {
+  document.getElementById(id)?.remove();
+  const kart = document.createElement('div');
+  kart.id = id;
+  kart.setAttribute('role', 'status');
+  kart.className = 'fixed bottom-6 inset-x-0 mx-auto z-50 w-[calc(100%-2rem)] max-w-md p-4 rounded-2xl shadow-xl bg-white dark:bg-slate-800 border border-indigo-100 dark:border-slate-700 animate-slide-in';
+  const metin = document.createElement('p');
+  metin.className = 'text-sm font-semibold text-slate-700 dark:text-slate-100 mb-3';
+  metin.textContent = metinYazi;
+  const satir = document.createElement('div');
+  satir.className = 'flex flex-wrap items-center gap-2';
+  kart.append(metin, satir);
+
+  let zamanlayici = null;
+  const kapat = () => { clearTimeout(zamanlayici); kart.remove(); };
+  const ANA = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white active:scale-95 transition-all';
+  const IKINCIL = 'px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-200 hover:bg-slate-200 active:scale-95 transition-all';
+  [...dugmeler, { etiket: 'Kapat', is: () => {} }].forEach((d, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = i === 0 && dugmeler.length ? ANA : IKINCIL;
+    b.textContent = d.etiket;
+    b.addEventListener('click', () => { kapat(); d.is(); });
+    satir.appendChild(b);
   });
-  satir.appendChild(sustur);
+  if (sustur) {
+    const sb = document.createElement('button');
+    sb.type = 'button';
+    sb.className = 'ml-auto text-[11px] font-medium text-slate-400 hover:text-slate-600 underline';
+    sb.textContent = 'Bugün gösterme';
+    sb.addEventListener('click', () => { sustur(); kapat(); });
+    satir.appendChild(sb);
+  }
 
   document.body.appendChild(kart);
-  zamanlayici = setTimeout(kapat, 15000);
+  zamanlayici = setTimeout(kapat, sureMs);
+}
+
+/** Mükemmeliyetçilik: süre dolunca "yeterince iyi, bitir" (görev başına bir kez). */
+const _yeterinceIyiGosterilen = new Set();
+function yeterinceIyiKartiGoster(task) {
+  if (!task || task.completed || !_engel().yeterinceIyi) return;
+  const id = String(task.id);
+  if (_yeterinceIyiGosterilen.has(id)) return;
+  _yeterinceIyiGosterilen.add(id);
+  altKartGoster('yeterince-iyi', '💎 Süre doldu. Şu hâli yeterince iyi — bitirmek de bir beceri.', [
+    { etiket: '✓ Bitir ve işaretle', is: () => toggleTask(id) },
+    { etiket: '+5 dk', is: () => addBonusToTimer(5) }
+  ], { sureMs: 60000 });
 }
 
 async function pauseTaskTimer() {
@@ -759,7 +789,21 @@ function renderToday() {
   currentEl.innerHTML = currentCardHTML(currentTask);
   updateTimerUI();
 
+  // Bunalma seçenlerde liste düğmenin arkasında: yalnız sıradaki görev görünür.
+  if (_engel().sadeceSiradaki && !TodayState.tumListe) {
+    const kalan = hepsi.filter(t => !t.completed).length;
+    listEl.innerHTML = `
+      <button id="tum-liste-btn" onclick="tumListeyiGoster()" class="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-300 bg-white/70 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-400 transition-all">
+        📋 Tüm listeyi göster (${kalan} görev kaldı)
+      </button>`;
+    return;
+  }
   listEl.innerHTML = hepsi.map(t => taskRowHTML(t, todayISO)).join('');
+}
+
+function tumListeyiGoster() {
+  TodayState.tumListe = true;
+  renderToday();
 }
 
 // ── TEK TIKLA GÜNÜ YENİDEN DENGELE ───────────────────────────────────────────

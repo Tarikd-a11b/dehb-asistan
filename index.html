@@ -810,7 +810,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
       </div>
       <div class="space-y-4">
         <label class="block text-xs font-black uppercase text-orange-400 tracking-[0.2em]">Seni En Çok Ne Durdurur?</label>
-        <select id="main-obstacle" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
+        <select id="main-obstacle" onchange="engelAciklamasiniYaz()" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
           <option value="paralysis">🧊 Başlama Felci</option>
           <option value="distraction">📱 Dikkat Dağınıklığı</option>
           <option value="perfectionism">💎 Mükemmeliyetçilik</option>
@@ -818,6 +818,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
           <option value="overwhelm">😤 Bunalma & Overwhelm</option>
           <option value="rejection">💔 RSD / Eleştiri Korkusu</option>
         </select>
+        <p id="engel-aciklama" class="text-sm text-slate-400 px-2"></p>
       </div>
     </div>
   </div>
@@ -3018,6 +3019,13 @@ function loadPage(name) {
 }
 
 // ── TOAST ──
+/** Profilde engel seçiminin arayüzdeki karşılığını gösterir (metin profile-logic.js'te). */
+function engelAciklamasiniYaz() {
+  const el = document.getElementById('engel-aciklama');
+  const sec = document.getElementById('main-obstacle');
+  if (el && sec) el.textContent = engelAciklamasi(sec.value);
+}
+
 function showToast(msg, type = 'success') {
   document.getElementById('focusaid-toast')?.remove();
   const c = { success:'bg-emerald-600', error:'bg-red-600', info:'bg-indigo-600' };
@@ -3236,6 +3244,7 @@ function loadProfileToUI() {
   ss('social-mode', userProfile.social); ss('focus-trigger', userProfile.focusTrigger);
   ss('break-style', userProfile.breakStyle); ss('motivation-note', userProfile.motivationNote);
   ss('main-obstacle', userProfile.mainObstacle); ss('hyperfocus-limit', userProfile.hyperfocusLimit);
+  engelAciklamasiniYaz();
   cizSuperpowerRozetleri();
   // Bayat modu ele: dunden kalma "Beyin Sisi" bugunku plani kucultmemeli.
   const taze = moodForToday(userProfile.todayMood, userProfile.todayMoodDate, bugunIstanbul());

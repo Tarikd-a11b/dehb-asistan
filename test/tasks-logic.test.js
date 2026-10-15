@@ -228,3 +228,15 @@ test('carkDilimMetinleri: odul notu varsa iki karsilikli dilim, yoksa eski 6 dil
   assert.strictEqual(yok.length, 6);
   assert.strictEqual(yok[0], '🎯 Özel Profil Ödülün');
 });
+
+// ── yumuşak dil ──
+test('devredenEtiketi: normalde tarih, yumusak dilde tarihsiz; bos etiket bos kalir', () => {
+  assert.strictEqual(L.devredenEtiketi('dün', false), '⏳ dün');
+  assert.strictEqual(L.devredenEtiketi('3 gün önce', true), '🌱 devam ediyor');
+  assert.strictEqual(L.devredenEtiketi('', true), '');
+});
+
+test('fazlaSureMetni: yumusak dilde "suresi doldu" demez', () => {
+  assert.strictEqual(L.fazlaSureMetni(12, false), 'süre doldu · +12 dk');
+  assert.strictEqual(L.fazlaSureMetni(12, true), '+12 dk fazladan emek');
+});
