@@ -18,7 +18,7 @@ servis eder, `config.js`'i ortam değişkenlerinden üretir, Google token'ını 
 giden istekleri vekiller.
 
 Bu dosya elle güncellenir; kullanıcı "CLAUDE.md'yi güncelle" dediğinde yenilenir, her değişiklikte değil.
-Son güncelleme: 2026-09-06.
+Son güncelleme: 2026-10-16.
 
 ---
 
@@ -116,9 +116,13 @@ yalnızca yapılandırmayı ve gereken ortam değişkenlerini belgeliyor.
 İki ayrı takım var. **Karıştırma:** hızlı olan hiçbir şey kurmadan çalışır, yavaş olan tarayıcı açar.
 
 ```bash
-node --test          # 196 test, ~490 ms — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
-npm run test:ui      # 24 test, ~110 sn — Chrome'da yerleşim, misafir modu, odalar, CSS
+node --test          # 337 test, ~1 sn — kök dizinden, ARGÜMANSIZ, node_modules gerekmez
+npm run test:ui      # 64 test, ~5-6 dk — Chrome'da yerleşim, misafir modu, odalar, canlı odalar, analiz, profil davranışları, CSS
+python -m unittest discover -s test -p "test_*.py"   # 12 test — serve.py canlı oda uçları
 ```
+
+Üçü de CI'da koşuyor (`.github/workflows/test.yml`, `TZ=Europe/Istanbul` şart — tarih testleri
+UTC'de düşüyor).
 
 `node --test test/` Windows'ta MODULE_NOT_FOUND verir. Dizin yerine ya argümansız çalıştır ya da
 dosyaları tek tek ver.
@@ -141,6 +145,11 @@ CDN'den çekiyor).
 | `test-ui/layout-check.mjs` | 390×844 ve 1280×800'de 9 yerleşim iddiası: sayfalar yatay kaydırmıyor **ve ana sütun ekranı kullanıyor**, Parçala butonu input yazısına binmiyor, takvim mobilde liste / masaüstünde ay açılıyor, gün modalı ekran içinde, çekmece açılıp kapanıyor, masaüstüne mobil kabuk sızmıyor, landing hero'su çakışmıyor |
 | `test-ui/misafir-modu.mjs` | Demo modunda kullanıcıya ham hata sızmıyor: 6 sayfada iz taraması, gün modalı boş durum gösteriyor, Parçalayıcı demo modunu açıklıyor, Supabase/n8n'e **hiç istek gitmiyor** |
 | `test-ui/calisma-odalari.mjs` | Odalar listeleniyor mu, oynatıcı doğru `youtube-nocookie` adresini alıyor mu, odadan çıkınca ve sayfa değişince **video susuyor mu**, sayaç işliyor mu, kötü bağlantı özel oda olarak eklenmiyor mu, mobilde taşma var mı |
+| `test-ui/canli-odalar.mjs` | Canlı odalar: sahte Daily + sahte Supabase + `page.clock`. Süre bitince **atılmama**, sayfa değişince mini görünüm, boşta kontrolü, başkasının hedefinin metin olarak basılması, Jitsi sekmesinin doğru adresle açılması ve Jitsi'de boşta kontrolünün **kapalı** olması |
+| `test-ui/calisma-analizi.mjs` | Profildeki Çalışma Analizim kartı: grafikler düz HTML/CSS çubuk, geniş kartta yazılar devleşmiyor, boş veri mesajları |
+| `test-ui/calisma-modu.mjs` | Başlat'taki Çalışma Modu öneri kartı: üç modun düğmeleri doğru yere götürüyor, lo-fi açılıp "Sesi kapat" eski ses moduna dönüyor, görev başına bir kez, "Bugün gösterme" |
+| `test-ui/bitirme-stratejisi.mjs` | Ödül notu: Bugün'deki "Ödülüne N görev kaldı" satırı, çarkta iki dilim (kanvas `fillText` yakalanarak), kart başlığı hatırlatıcı vaat etmiyor, İnat Modu yalnız Başlama Felci'nde yanıp sönüyor |
+| `test-ui/engel-davranislari.mjs` | "Seni en çok ne durdurur?" cevabının beş ekran karşılığı (aşağıda [Profil](#profil)) + profildeki açıklama satırı |
 | `test-ui/tailwind-guncel.mjs` | `tailwind.css` kaynaklarla güncel mi (`npm run build:css` unutulmuş mu), hiçbir sayfa play CDN yüklüyor mu |
 
 ⚠️ **Dizin adı `test-ui/`, dosya adları `*.test.js` değil** — argümansız `node --test` bunları
@@ -192,18 +201,40 @@ kuralından (0,1,0) daha özgül olduğu için hero telefonda da iki sütunlu ka
 
 ## Profil
 
-2026-08-29'da 18 alandan 11'e indirildi. Planlamaya **gerçekten etki eden** alanlar:
+2026-08-29'da 18 alandan 11'e indirildi. Planlamaya ya da arayüze **gerçekten etki eden** alanlar:
 
 | alan | etkisi |
 |---|---|
 | `focusPeriod`, `workHours`, `breakStyle` | günde kaç odak seansı sığdığı (n8n `Normalize & Calculate`) |
 | `todayMood` | `foggy`/`crash`/`anxious` → **bugünün** görev tavanı −1; `hyper`/`focused` → +1 (bkz. aşağıda) |
 | `hyperfocusLimit` | tarayıcıdaki hiperfokus alarmının periyodu (`hyperfocus-view.js`) |
-| `mainObstacle` | AI prompt'una girer |
+| `mainObstacle` | AI prompt'una girer **ve arayüzü değiştirir** (aşağıdaki tablo) |
+| `social` | Başlat'ta öneri kartı: body-doubling → çalışma odaları, cafe → Lo-fi Kafe odası (+ işitsel destek "sessizlik"se lo-fi açılır), solo → Düşünce Parkı (`calismaModuOnerisi`) |
+| `motivationNote` | Bugün'de "🎁 Ödülüne N görev kaldı" satırı (`odulSatiri`) + çarkta iki karşılıklı dilim (`carkDilimMetinleri`) |
 | `lightSensitivity` | **koyu tema hafızası** — arayüzde kartı yok ama alan duruyor; silersen tema tercihi cihazlar arası kaybolur |
 
-`social`, `focusTrigger`, `motivationNote`, `superpowers` toplanıp n8n'e gidiyor
-ama henüz bir karşılığı yok.
+`focusTrigger` ses motorunun modunu kurar; `superpowers` toplanıp n8n'e gidiyor ama henüz bir
+karşılığı yok.
+
+**`mainObstacle` → arayüz (2026-10-15).** Karar tek yerde, `profile-logic.js` `engelAyarlari()`;
+profilde seçimin altındaki açıklama satırı `ENGEL_ACIKLAMA`'dan gelir. Yeni engel davranışı
+eklerken üçünü birlikte güncelle (ayar + açıklama + `test-ui/engel-davranislari.mjs`).
+
+| engel | davranış | nerede |
+|---|---|---|
+| `paralysis` (varsayılan) | 🥊 İnat Modu düğmesi yanıp söner; diğer engellerde sakin gri | `inatModuOneCikar`, `currentCardHTML` |
+| `overwhelm` | Bugün'de yalnız sıradaki görev; liste "📋 Tüm listeyi göster" düğmesinin arkasında | `renderToday`, `TodayState.tumListe` |
+| `time-blindness` | hiperfokus alarmı "Alarm Yok"taysa 90 dk | `etkinHiperfokusLimiti`, `hyperfocusEngelVarsayilani` |
+| `perfectionism` | geri sayım bitince "yeterince iyi, bitir" kartı (görev başına bir kez) | `yeterinceIyiKartiGoster` (`runCountdown` sonunda) |
+| `rejection` | devreden görevde tarih yerine "🌱 devam ediyor", süre aşımında "+N dk fazladan emek" | `devredenEtiketi`, `fazlaSureMetni` |
+| `distraction` | Başlat öneri kartına her modda Düşünce Parkı | `calismaModuOnerisi` |
+
+⚠️ "Alarm Yok" bilinçli seçim mi yoksa hiç dokunulmamış varsayılan mı, ayırt edilemiyor
+(ikisi de `'none'`). Bu yüzden `time-blindness`'ta alarm **kapatılamaz**, en seyreği 120 dk.
+Kapatma istenirse profile ayrı bir "kapalı" değeri eklemek gerekir.
+
+Başlat'ta ve süre dolunca çıkan kartların ikisi de `altKartGoster()` (body seviyesinde, şablon
+içinde değil — bkz. Tuzaklar'daki `position:fixed` kuralı).
 
 `todayMood`'un görev **sayısına** etkisi 2026-08-30'da yerleştirmeye taşındı: AI'ya verilen
 `minTasks`–`maxTasks` aralığı bir tavsiyeydi ve AI onu umursamıyordu (ölçüldü: `anxious` ve `hyper`
@@ -273,6 +304,9 @@ sıralayan bir şey eklersen görevler yanlış takvim etkinliğine bağlanır.
 | `scheduling-logic.js` | Gün ataması, gün içi bilişsel yük sıralaması, `dailyCaps` — **tarayıcıda yüklenmez**, gövdesi n8n `Code in JavaScript` node'una kopyalanır |
 | `hyperfocus-logic.js` / `hyperfocus-view.js` | Hiperfokus alarmı: saf sayaç / şerit + bildirim. Tamamen istemci tarafı, n8n'e hiç uğramaz |
 | `study-rooms-logic.js` / `study-rooms.js` | 📺 Çalışma Odaları: oda kataloğu + YouTube kimliği çözümleme (saf) / oynatıcı, oda sayacı (DOM) |
+| `live-rooms-logic.js` / `live-rooms.js` | 🟢 Canlı Odalar: saf sayaç/Jitsi adresi / lobi, giriş paneli, oda katmanı (bkz. [Canlı Odalar](#canlı-odalar)) |
+| `add-room-sessions.sql` | `room_sessions` + `room_reports` tabloları ve `profiles.room_consent_at` (canlıda çalıştırıldı) |
+| `scripts/daily-odalar.mjs` | Daily odalarını kurar — Daily yolu kapalıyken kullanılmıyor |
 | `brain-dump.js` | 🧠 Düşünce Parkı çekmecesi (Alt+D) |
 | `notifications.js` | 🔔 Arka plan web bildirimleri (izin isteme + seans sonu bildirimi) |
 | `inat-modu.js` / `dopamin-carki.js` | 🥊 İnat Modu (kademeli yorulan boss) / 🎡 Dopamin Şans Çarkı |
@@ -408,6 +442,55 @@ doğrulanıyor). Riski düşük tutan şey şu üç kural:
 
 Not: bu bir hukuki görüş değil, uygulamanın hangi varsayımlarla yazıldığının kaydı.
 
+## Canlı Odalar
+
+Video odalarının (YouTube) üstünde **gerçek kişilerle kameralı** body doubling: 3 kalıcı oda
+(📚 Sessiz Kütüphane, ☀️ Sabah Kulübü, 🌙 Gece Kuşları). Spec:
+`docs/superpowers/specs/2026-10-13-canli-calisma-odalari-design.md` (sondaki "Ek" Jitsi geçişini anlatır).
+
+**Sağlayıcı Jitsi Meet** (`CANLI_SAGLAYICI_VARSAYILAN = 'jitsi'`, 2026-10-14'ten beri). Oda
+`meet.jit.si/FocusAid-<Oda>-<6 karakter>` adresinde **yeni sekmede** açılır; FocusAid sekmesinde
+yalnız kişisel sayaç, mola, `room_sessions` kaydı, çıkıştaki "Hedefine ulaştın mı?" sorusu ve
+analiz kartındaki oda satırı çalışır. Kullanıcı bilgisayar + telefonda denedi, çalışıyor.
+
+Neden Jitsi: Daily.co ile kendi ızgaramız kodlanıp canlıya çıkmıştı (`dcdec99`), ama Daily
+ücretsiz planda bile katılım için **hesapta kart istiyor** (`account-missing-payment-method`) ve
+kullanıcı aşım riskini istemedi. Discord Türkiye'de erişime kapalı. **Daily yolu kodda duruyor**
+(`window.FOCUSAID_CANLI_SAGLAYICI = 'daily'`); ileride Oracle'da LiveKit/kendi Jitsi'miz
+kurulursa ızgara, doluluk ve günlük sınır oradan devam eder.
+
+Kilitli kullanıcı kararları:
+- **Sabit seans yok.** Herkes kendi süresini seçer (25/50/60/90/Serbest). Süre bitince kimse
+  atılmaz: "Mola / Devam / Bitir" sorulur, 2 dk cevapsız kalırsa sayaç serbest modda sürer.
+- **Sayfa değişince oda kopmaz**, katman mini görünüme iner (`canliSayfaDegisti`).
+- Mikrofon kapalı başlar; kayıt yok; ilk girişte KVKK onayı (`profiles.room_consent_at`).
+
+⚠️ **Jitsi'yi GÖMME.** Ücretsiz meet.jit.si iframe içinde görüşmeyi 5 dakikada kesiyor; bu
+yüzden yeni sekme.
+
+⚠️ **`window.open` tıklamayla SENKRON çağrılmalı**, önünde `await` olmamalı — yoksa tarayıcı
+açılır pencere engeline takar. KVKK onayı bu yüzden girişten SONRA yazılıyor. Engellenirse
+katmandaki "↗ Jitsi'yi aç" bağlantısı yedek. `noopener` şart (Jitsi sayfası `window.opener` ile
+uygulamayı yönlendiremesin).
+
+⚠️ **Jitsi'de boşta kontrolü KAPALI.** Kullanıcı haklı olarak Jitsi sekmesinde; FocusAid
+sekmesindeki etkileşimsizliği "boşta" saymak onu odadan atardı. Nöbetçisi `test-ui/canli-odalar.mjs`
+(mutasyonla kırmızıya döndüğü gösterildi).
+
+Jitsi ayarları adresin **hash**'inde (sunucuya gitmez; değerler JSON olarak okunur, bu yüzden
+`JSON.stringify` + `encodeURIComponent`): mikrofon kapalı, ön-katılım ekranı, deep-link kapalı
+(telefonda "uygulamayı indir" yerine tarayıcı), yalnız **ilk ad** (e-posta asla), ve
+`config.localSubject` — verilmezse Jitsi oda adını "Focus Aid Gece Kuslari Da 6 Ytv" diye böler.
+Hepsinin gerçekten uygulandığı canlı meet.jit.si'de `APP.store` okunarak doğrulandı.
+
+**Jitsi kuralı:** boş odaya ilk giren "Toplantı sahibiyim"e basıp bir kez Google/GitHub ile
+giriş yapar; diğerleri doğrudan katılır. Lobideki not bunu söylüyor.
+
+Daily'ye özgü (Jitsi modunda çalışmayanlar): `serve.py`'deki `/api/rooms/token` (token +
+`eject_after_elapsed` ile kişi başı günlük 240 dk) ve `/api/rooms/presence` (doluluk, 15 sn
+önbellek). İkisi de Supabase kimliği istiyor; `DAILY_API_KEY` tanımsızken 503 dönüyor. Render'da
+Daily değişkenleri **tanımlı değil** — bilinçli.
+
 ## Ön yüze inen anahtarlar
 
 `config.js` tarayıcıya iniyor: **içindeki hiçbir şey sır değildir.** `SUPABASE_URL`,
@@ -437,8 +520,8 @@ referrer → `403 API_KEY_HTTP_REFERRER_BLOCKED`, canlı ve localhost → `200`.
 
 **Sunucu tarafındaki sırlar ön yüze hiç inmiyor:** `GOOGLE_CLIENT_SECRET`, `N8N_SECRET`,
 `SUPABASE_SERVICE_ROLE`. `serve.py` bunları ortam değişkeninden okuyup istekleri vekilliyor.
-Bu yüzden `/api/n8n/split`, `/api/n8n/analyze` ve `/api/google/refresh` uçlarının **üçü de**
-Supabase token'ı doğruluyor (`dogrula_supabase_kullanicisi`) ve kimliksiz isteğe `401` dönüyor.
+Bu yüzden `/api/n8n/split`, `/api/n8n/analyze`, `/api/google/refresh` ve `/api/rooms/*` uçlarının
+**hepsi** Supabase token'ı doğruluyor (`dogrula_supabase_kullanicisi`) ve kimliksiz isteğe `401` dönüyor.
 ⚠️ Yeni bir vekil uç eklersen aynı kontrolü koy: aksi halde uç, sırrı kullanan **herkese açık
 bir servis** olur. `_n8n_vekil` ayrıca gövdedeki `userId`'yi doğrulanan kimlikle **eziyor** —
 istemcinin yolladığı kimliğe asla güvenme.
@@ -510,6 +593,10 @@ görevlerin aynı saate yığılması) 2026-08-30'da bitti: 8064 senaryoda 3174 
 - **`iframe.src = ''` içeriği boşaltmaz.** Boş dize göreli adres sayılır ve iframe içinde
   bulunduğu sayfayı yükler; `X-Frame-Options: SAMEORIGIN` olduğu için uygulama kendi içinde
   açılır. `about:blank` yaz. Ayrıntı: [Çalışma Odaları](#çalışma-odaları).
+- **`index.html`'deki `let`/`const` globaller `window`'da YOK.** `userProfile` `let` ile
+  tanımlı; `window.userProfile` her zaman `undefined`. Diğer dosyalardan çıplak adla oku
+  (`typeof userProfile !== 'undefined' && userProfile`). Dopamin Çarkı bu yüzden ödül notunu
+  **hiç göstermiyordu** (2026-10-15'te düzeltildi, nöbetçisi `test-ui/bitirme-stratejisi.mjs`).
 - **Belge sınırını aşan DOM'da inline `onclick` kullanma.** Inline handler öğenin kendi
   belgesinin window'unda çözülür; Document PiP penceresine taşınan bir öğede o fonksiyonlar
   yoktur ve buton sessizce ölür. Ayrıntı: [Kaldırılan: Sherlock](#kaldırılan-sherlock-body-doubling).
