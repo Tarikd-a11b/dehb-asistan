@@ -28,7 +28,7 @@ before(async () => {
   sunucu = spawn(process.platform === 'win32' ? 'python' : 'python3', ['serve.py'],
     { cwd: KOK, env, stdio: 'ignore' });
   for (let i = 0; i < 50; i++) {
-    try { if ((await fetch(taban + '/manifest.json')).ok) break; } catch (e) {}
+    try { const y = await fetch(taban + '/manifest.json'); await y.arrayBuffer(); if (y.ok) break; } catch (e) {}
     await new Promise(c => setTimeout(c, 200));
   }
   tarayici = await chromium.launch({ channel: 'chrome', headless: true });
@@ -53,7 +53,11 @@ async function izliSayfa(misafir) {
 
 test('CSP başlığı gerçekten gönderiliyor ve script-src unsafe-inline içermiyor', async () => {
   for (const s of ['/index.html', '/auth.html', '/landing.html', '/']) {
-    const csp = (await fetch(taban + s)).headers.get('content-security-policy') || '';
+    // Gövdeyi OKU: okunmayan gövdede serve.py bağlantıyı kapatınca undici test bittikten
+    // sonra `assert(!this.paused)` fırlatıyor (CI'da Dependabot PR'larında 4 kez düştü).
+    const yanit = await fetch(taban + s);
+    await yanit.arrayBuffer();
+    const csp = yanit.headers.get('content-security-policy') || '';
     assert.match(csp, /object-src 'none'/, s);
     const scriptSrc = csp.split(';').find(d => d.trim().startsWith('script-src')) || '';
     assert.doesNotMatch(scriptSrc, /unsafe-inline|unsafe-eval/, `${s}: ${scriptSrc}`);

@@ -88,7 +88,9 @@ jobs:
         run: echo "v=$(grep -E '^N8N_VERSION=' infra/n8n/env.ornek | cut -d= -f2)" >> "$GITHUB_OUTPUT"
       # Kırmızı = sabitlenmiş sürümde düzeltmesi çıkmış YÜKSEK/KRİTİK açık var →
       # KURULUM.md "Sürüm güncelleme", sonra env.ornek'teki N8N_VERSION'ı yükselt.
-      - uses: aquasecurity/trivy-action@0.28.0
+      # SHA'ya sabit: Mart 2026'da bu reponun 76 sürüm etiketi zararlı commit'e kaydırıldı
+      # (GHSA-69fq-xp46-6x23; 0.28.0 dahil). v0.36.0 immutable release, Trivy v0.70.0 kuruyor.
+      - uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: n8nio/n8n:${{ steps.surum.outputs.v }}
           severity: CRITICAL,HIGH

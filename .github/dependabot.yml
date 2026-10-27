@@ -12,6 +12,12 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 3
+    ignore:
+      # Tailwind 4 düz sürüm artışı değil: CLI ayrı pakete (@tailwindcss/cli) taşındı,
+      # tailwind.config.js yerine CSS içi yapılandırma geldi, varsayılan renkler/ölçüler
+      # değişti. Geçiş ayrı bir iş (CLAUDE.md "CSS derlemesi"ndeki görsel karşılaştırmayla).
+      - dependency-name: tailwindcss
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: pip
     directory: /
     schedule:
