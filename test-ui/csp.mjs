@@ -39,10 +39,17 @@ after(async () => {
   sunucu?.kill();
 });
 
+// Bilerek engellenen, işlevi olmayan istekler. gapi rastgele örneklemeyle
+// csi.gstatic.com'a performans pikseli atıyor (CI'da 7a5ac18'de bir kez yakalandı);
+// izin vermek Google'a telemetri açmak olurdu, engellenmesi hiçbir şeyi kırmıyor.
+const YOKSAYILAN = [/^img-src ← https?:\/\/csi\.gstatic\.com\//];
+
 async function izliSayfa(misafir) {
   const sayfa = await tarayici.newPage({ viewport: { width: 1280, height: 800 } });
   sayfa.__ihlaller = [];
-  await sayfa.exposeFunction('__cspIhlal', s => sayfa.__ihlaller.push(s));
+  await sayfa.exposeFunction('__cspIhlal', s => {
+    if (!YOKSAYILAN.some(d => d.test(s))) sayfa.__ihlaller.push(s);
+  });
   await sayfa.addInitScript(m => {
     document.addEventListener('securitypolicyviolation', e =>
       window.__cspIhlal(`${e.violatedDirective} ← ${e.blockedURI} (${e.sourceFile || ''}:${e.lineNumber || ''})`));
