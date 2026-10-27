@@ -56,6 +56,7 @@ class OdaUclari(unittest.TestCase):
             return 404, {}
         serve.daily_istek = sahte_daily
         serve._presence_onbellek.update(zaman=0.0, veri=None)
+        serve._istek_kaydi.clear()          # istek siniri testler arasinda tasinmasin
 
     def tearDown(self):
         for k, v in self._yedek.items():

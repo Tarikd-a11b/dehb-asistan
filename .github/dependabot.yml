@@ -1,0 +1,22 @@
+# Bağımlılık güncellemeleri. Uygulamanın kendisi build'siz; burada izlenenler
+# geliştirme araçları (Tailwind CLI, playwright-core), CI eylemleri ve serve.py'nin
+# tek Python bağımlılığı (cryptography). CDN'den yüklenen kütüphaneler (supabase-js,
+# FullCalendar, pdf.js…) Dependabot'un göremediği yerde: index.html'deki sürüm
+# numaralarını elle takip et.
+# n8n imajı infra/n8n/.env'deki N8N_VERSION ile sabit; onu Dependabot okuyamıyor,
+# güncelleme yolu infra/n8n/KURULUM.md "Sürüm güncelleme".
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 3
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

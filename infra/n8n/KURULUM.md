@@ -85,6 +85,69 @@ Yapılması gereken: webhook node'una **Header Auth** ekleyip ön yüzün
 Caddy bu başlığa CORS'ta zaten izin veriyor. Bu ayrı bir iş — kurulum bitince
 üstünden geçelim.
 
+## Editöre erişim: yalnız SSH tüneli (2026-10-27'den beri)
+
+Caddy internete **yalnız `/webhook/*` ve `/healthz`** geçiriyor; `/signin`, `/rest`,
+`/api/v1` dışarıdan 404. Editörü açmak ya da `scripts/n8n-senkron.mjs` çalıştırmak için:
+
+```bash
+ssh -i ~/.ssh/oracle_n8n -N -L 5678:localhost:5678 ubuntu@138.2.171.36
+# tarayıcıda: http://localhost:5678   (Chrome localhost'u güvenli sayar, giriş çerezi çalışır)
+```
+
+Webhook'lar `X-Focusaid-Secret` Header Auth ile korunuyor (yanlış/eksik başlık → 403,
+2026-10-27'de dışarıdan doğrulandı).
+
+## Sürüm güncelleme
+
+İmaj `.env`'deki `N8N_VERSION` ile sabit. Ayda bir (ya da bülten çıkınca)
+community.n8n.io → *Security Advisories*'e bak:
+
+```bash
+docker compose exec n8n n8n --version          # çalışan sürüm
+nano .env                               # N8N_VERSION'ı yükselt (ASLA düşürme)
+docker compose pull n8n && docker compose up -d
+docker compose exec n8n n8n --version          # doğrula
+```
+
+⚠️ `env.ornek`'teki `N8N_VERSION`'ı sunucudaki `.env` ile **aynı** tut: CI'daki haftalık
+Trivy taraması (`.github/workflows/guvenlik.yml`) sürümü oradan okuyor.
+
+## Yedekleme ve geri yükleme denemesi
+
+```bash
+chmod +x yedekle.sh geri-yukle-dene.sh
+./yedekle.sh                          # yedek/n8n-<tarih>.sqlite.gz (sqlite .backup + integrity_check)
+crontab -e                            # 30 3 * * * cd /home/ubuntu/n8n && ./yedekle.sh >> yedek.log 2>&1
+./geri-yukle-dene.sh                  # canlıya dokunmadan geçici konteynerde açıp dener
+```
+
+- Yedek `N8N_ENCRYPTION_KEY` olmadan işe yaramaz; anahtar **bilerek** yedeğin yanında
+  değil (KVKK 2018/10: anahtar veriden ayrı). Parola yöneticisinde tut.
+- VM'deki yedek VM'le birlikte gider: haftada bir bilgisayarına çek
+  (`scp -i ~/.ssh/oracle_n8n ubuntu@138.2.171.36:n8n/yedek/n8n-SON.sqlite.gz .`).
+- **Supabase** (ücretsiz planda indirilebilir yedek yok): ayda bir
+  `npx supabase db dump --db-url "<Dashboard → Connect → Session pooler URI>" -f focusaid-<tarih>.sql`
+  — URI veritabanı parolasını içerir, dosyaya/repoya yazma.
+
+| tarih | ne denendi | sonuç |
+|---|---|---|
+| — | ilk geri yükleme denemesi henüz yapılmadı | — |
+
+## Sertleştirme kontrol listesi (KVKK 2018/10: uzaktan erişimde iki aşamalı doğrulama)
+
+VM'de:
+```bash
+sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin|kbdinteractiveauthentication)'
+# beklenen: passwordauthentication no · permitrootlogin no · kbdinteractiveauthentication no
+```
+Değilse `/etc/ssh/sshd_config.d/99-focusaid.conf` içine bu üç satırı `no` olarak yaz,
+`sudo sshd -t && sudo systemctl reload ssh` (açık oturumu kapatmadan yeni bir terminalden
+girişi dene).
+
+Hesaplarda 2FA: Supabase · Render · Oracle Cloud · GitHub · Google Cloud (Gemini anahtarı
+aynı hesapta) · DuckDNS'e bağlı Google hesabı.
+
 ## Sorun çıkarsa
 ```bash
 docker compose logs -f --tail=100   # n8n + caddy loglari

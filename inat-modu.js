@@ -10,6 +10,10 @@
   let currentTaskName = '';
   let isFighting = false;
 
+  // Görev adı LLM'den geliyor (yönerge dosyasına gömülü bir talimatla HTML
+  // üretebilir); şablona girmeden önce kaçışla.
+  const kacis = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
   const KISKITMALAR = [
     "Hadi canım, masada 3 dakika kıpırdamadan durabileceğini mi sanıyorsun? Bence yine sekmeleri gezeceksin :P",
     "Bu görevin ilk satırına bakmaya bile cesaretin yok bence. Git başka şeyle oyalan :)",
@@ -103,7 +107,7 @@
       </style>
 
       <div id="inat-card-root" class="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border border-slate-700/60 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-center animate-slide-in overflow-hidden">
-        <button onclick="closeInatModu()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2 rounded-full hover:bg-slate-800 transition">✕</button>
+        <button data-tikla="closeInatModu" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2 rounded-full hover:bg-slate-800 transition">✕</button>
 
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 text-xs font-bold uppercase tracking-wider mb-2">
           <span>🥊</span> DEHB İnat Modu: 3 Dakika Odak
@@ -122,7 +126,7 @@
         </div>
 
         <h3 id="boss-name" class="text-lg md:text-xl font-bold text-slate-200 tracking-tight">Erteleme Direnci</h3>
-        <p class="text-xs text-slate-400 font-mono mt-0.5">Hedef: "${currentTaskName}"</p>
+        <p class="text-xs text-slate-400 font-mono mt-0.5">Hedef: "${kacis(currentTaskName)}"</p>
 
         <!-- Kışkırtma / Durum Balonu -->
         <div id="boss-quote-box" class="my-4 p-3.5 rounded-2xl bg-slate-800/60 border border-slate-700/60 text-slate-300 text-xs md:text-sm italic leading-relaxed">
@@ -141,7 +145,7 @@
         </div>
 
         <div id="inat-action-area">
-          <button onclick="launchInatFight()" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-lg shadow-indigo-600/25 active:scale-98 transition-all flex items-center justify-center gap-2">
+          <button data-tikla="launchInatFight" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-base shadow-lg shadow-indigo-600/25 active:scale-98 transition-all flex items-center justify-center gap-2">
             <span>🥊</span> HODRİ MEYDAN! SÜREYİ BAŞLAT
           </button>
           <p class="text-[11px] text-slate-500 mt-2">Sadece 3 dakika masada kal ve göreve göz at. Başlama felcini kır!</p>
@@ -267,10 +271,10 @@
         </div>
 
         <div class="space-y-2.5">
-          <button onclick="closeInatModuAndStartTimer()" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2">
+          <button data-tikla="closeInatModuAndStartTimer" class="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 to-indigo-600 hover:from-emerald-400 hover:to-indigo-500 text-white font-bold text-base shadow-lg shadow-emerald-500/20 active:scale-98 transition-all flex items-center justify-center gap-2">
             <span>🚀</span> İVMEYLE DEVAM ET (25 DK ODAK SEANSI)
           </button>
-          <button onclick="closeInatModu()" class="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold transition">
+          <button data-tikla="closeInatModu" class="w-full py-2 rounded-xl text-slate-400 hover:text-white text-xs font-semibold transition">
             Pencereyi Kapat
           </button>
         </div>

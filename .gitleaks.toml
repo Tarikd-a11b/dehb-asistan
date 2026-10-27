@@ -1,0 +1,14 @@
+# gitleaks yapılandırması — CI'da (.github/workflows/guvenlik.yml) tüm git geçmişi taranır.
+# Varsayılan kurallar + aşağıdaki TEK istisna.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Bilinen ve zararsızlaştırılmış geçmiş bulguları"
+# 7339b5c (2026-06-08, ilk commit) DEVAM_INSTRUCTIONI.md içinde iki JWT:
+#  - Supabase ANON anahtarı: tasarımı gereği herkese açık (tarayıcıya iniyor, RLS koruyor).
+#  - n8n public-api anahtarı: exp 2026-07-07 (süresi doldu) ve o zamanki YEREL n8n'e ait;
+#    Oracle'daki canlı n8n ayrı kurulum. 2026-10-27'de payload çözülerek doğrulandı.
+# Yeni bir bulgu buraya EKLENMEZ: anahtar iptal edilip yenilenir (repo herkese açık,
+# geçmişten silmek yetmez).
+commits = ["7339b5c6865f3297a408bd02d04de77adc69ea05"]

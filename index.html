@@ -6,6 +6,7 @@
 <meta name="theme-color" content="#4f46e5">
 <link rel="manifest" href="manifest.json">
 <title>FocusAid | DEHB Odak Asistanı</title>
+<script src="olay.js"></script>
 <script>
 // Tema ilk boyamadan ÖNCE uygulanır (flash-of-wrong-theme önlenir).
 // Öncelik: bu tarayıcıda daha önce seçilmiş açık tercih (localStorage) →
@@ -46,8 +47,8 @@ window.supabaseClient = window.supabase.createClient(FOCUSAID_CONFIG.SUPABASE_UR
 <script src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
 <script src="doc-intake-logic.js"></script>
 <script src="doc-intake.js"></script>
-<script src="https://apis.google.com/js/api.js" defer onload="gapiLoaded()"></script>
-<script src="https://accounts.google.com/gsi/client" defer onload="gisLoaded()"></script>
+<script src="https://apis.google.com/js/api.js" defer data-yuklenince="gapiLoaded"></script>
+<script src="https://accounts.google.com/gsi/client" defer data-yuklenince="gisLoaded"></script>
 <script src="focus-audio.js"></script>
 <script src="inat-modu.js"></script>
 <script src="dopamin-carki.js"></script>
@@ -445,15 +446,15 @@ html.dark #task-deadline{color:#c7d2fe!important}
 <!-- Gün Detayları Modal -->
   <!-- Perde katmaninda `animate-slide-in` YOK: reveal 16px'lik bir transform ile
        basliyor, tam ekran perdeyi asagi kaydiriyordu. Animasyon zaten ic kutuda. -->
-  <div id="day-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" onclick="closeDayModal(event)">
+  <div id="day-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4" data-tikla="closeDayModal" data-ile="olay">
     <div class="rounded-3xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-y-auto p-8 animate-slide-in"
-         style="background:var(--glass-white);border:1px solid var(--border-light)" onclick="event.stopPropagation()">
+         style="background:var(--glass-white);border:1px solid var(--border-light)" data-durdur>
       <div class="flex justify-between items-start mb-8">
         <div>
           <p class="text-indigo-600 font-bold text-sm uppercase tracking-widest mb-2">Seçilen Gün</p>
           <h2 id="day-modal-date" class="text-3xl font-bold" style="color:var(--text-main)">-</h2>
         </div>
-        <button onclick="closeDayModal()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
+        <button data-tikla="closeDayModal" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
@@ -461,9 +462,9 @@ html.dark #task-deadline{color:#c7d2fe!important}
         <div class="text-center text-slate-400 py-8">Yükleniyor...</div>
       </div>
       <div class="mt-8 pt-6 border-t border-slate-200 flex gap-3">
-        <button onclick="closeDayModal()" class="flex-1 py-3 rounded-xl font-bold transition-all"
+        <button data-tikla="closeDayModal" class="flex-1 py-3 rounded-xl font-bold transition-all"
                 style="background:var(--card-hover-bg);color:var(--text-main)">Kapat</button>
-        <button onclick="openNewTaskForDay()" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ Yeni Görev</button>
+        <button data-tikla="openNewTaskForDay" class="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all">+ Yeni Görev</button>
       </div>
     </div>
   </div>
@@ -483,7 +484,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
         <p class="text-slate-500 italic mt-1">Sırada ne var?</p>
       </div>
       <div class="flex items-center gap-3">
-        <button onclick="rebalanceTodayTasks()" class="px-3.5 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm" title="Günün kalan görevlerini şu andan başlatıp otomatik yeniden sırala">
+        <button data-tikla="rebalanceTodayTasks" class="px-3.5 py-2 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:border-indigo-400 rounded-xl text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm" title="Günün kalan görevlerini şu andan başlatıp otomatik yeniden sırala">
           <span>⏰</span> Kalanı Dengele
         </button>
         <span id="today-progress-text" class="text-sm font-black text-indigo-600 dark:text-indigo-400 tabular-nums">0/0</span>
@@ -508,7 +509,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
   <div id="today-empty" class="hidden text-center py-20">
     <div class="text-5xl mb-4">🌤️</div>
     <p class="text-slate-500 font-medium">Bugün için planlanmış mikro görev yok.</p>
-    <button onclick="loadPage('chatbot')" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 active:scale-95 transition-all">🧩 Bir görevi parçala</button>
+    <button data-tikla="loadPage" data-args='["chatbot"]' class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 active:scale-95 transition-all">🧩 Bir görevi parçala</button>
   </div>
 
 </div>
@@ -552,7 +553,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
         </div>
       </div>
 
-      <button onclick="openNewTaskForSelectedDay()"
+      <button data-tikla="openNewTaskForSelectedDay"
               class="w-full py-3 rounded-2xl font-bold text-white transition-all active:scale-95"
               style="background:var(--indigo-main)">+ Yeni Görev</button>
     </aside>
@@ -563,7 +564,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <div id="task-form-panel" class="w-full xl:w-[480px] order-3 xl:order-none glass-card p-10 shadow-2xl border-l-4 border-indigo-500 hidden animate-slide-in">
       <div class="flex justify-between items-start mb-8">
         <h3 class="text-2xl font-bold" style="color:var(--text-main)">Görev Detayları</h3>
-        <button onclick="closeForm()" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
+        <button data-tikla="closeForm" class="text-slate-400 hover:text-red-500 transition-colors" aria-label="Kapat">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
@@ -575,18 +576,18 @@ html.dark #task-deadline{color:#c7d2fe!important}
         <div class="grid grid-cols-1 gap-6">
           <div>
             <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Planlanan Tarih</label>
-            <input type="date" id="task-date" onchange="seansNotunuGuncelle()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium"
+            <input type="date" id="task-date" data-degis="seansNotunuGuncelle" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-medium"
                    style="background:var(--input-bg);color:var(--text-main)">
           </div>
           <div class="flex gap-4">
             <div class="flex-1">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Başlangıç</label>
-              <input type="time" id="task-start" onchange="updateEndTime()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-indigo-600"
+              <input type="time" id="task-start" data-degis="updateEndTime" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold text-indigo-600"
                      style="background:var(--input-bg)">
             </div>
             <div class="flex-1">
               <label class="text-[10px] font-black text-slate-400 uppercase tracking-widest block mb-2">Tahmini Bitiş</label>
-              <input type="time" id="task-end" onchange="seansNotunuGuncelle()" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold"
+              <input type="time" id="task-end" data-degis="seansNotunuGuncelle" class="w-full p-4 rounded-2xl border border-transparent focus:border-indigo-200 outline-none font-bold"
                      style="background:var(--input-bg);color:var(--text-soft)">
             </div>
           </div>
@@ -605,14 +606,14 @@ html.dark #task-deadline{color:#c7d2fe!important}
              asıl işi parçalamak. Artık tek karar var ve varsayılanı doğru. -->
         <div class="pt-4">
           <label id="split-toggle" class="flex items-start gap-3 mb-4 cursor-pointer select-none">
-            <input type="checkbox" id="task-split" onchange="seansNotunuGuncelle()" class="mt-0.5 w-5 h-5 rounded accent-indigo-600 cursor-pointer">
+            <input type="checkbox" id="task-split" data-degis="seansNotunuGuncelle" class="mt-0.5 w-5 h-5 rounded accent-indigo-600 cursor-pointer">
             <span>
               <span class="block text-sm font-bold" style="color:var(--text-main)">🧩 AI ile mikro adımlara böl</span>
               <span class="block text-xs mt-0.5" style="color:var(--text-soft)">Büyük, belirsiz işler için. Kapalıyken basit iş tek görev olarak eklenir.</span>
               <span id="split-note" class="hidden text-xs mt-1 font-semibold text-amber-600"></span>
             </span>
           </label>
-          <button onclick="submitTaskForm()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Ekle</button>
+          <button data-tikla="submitTaskForm" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-100 hover:bg-indigo-700 active:scale-95 transition-all">Ekle</button>
         </div>
       </div>
     </div>
@@ -661,7 +662,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
         <!-- Buton mobilde input'un ALTINDA akista durur; >=768px'te eskisi gibi
              input icine mutlak konumlanir. Onceden her genislikte absolute idi
              ve dar ekranda yazinin uzerine biniyordu. -->
-        <button onclick="sendTaskToN8N()" class="w-full py-3 justify-center md:w-auto md:py-0 md:justify-start md:absolute md:right-2 md:top-2 md:bottom-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white px-8 rounded-xl font-bold active:scale-95 shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
+        <button data-tikla="sendTaskToN8N" class="w-full py-3 justify-center md:w-auto md:py-0 md:justify-start md:absolute md:right-2 md:top-2 md:bottom-2 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white px-8 rounded-xl font-bold active:scale-95 shadow-lg shadow-indigo-200 dark:shadow-none transition-all flex items-center gap-2"><span>🧩</span> Parçala</button>
       </div>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <input type="text" id="task-desc" class="w-full bg-white p-4 rounded-xl outline-none border-2 border-slate-50 text-sm text-slate-600 focus:border-indigo-200 transition-all placeholder:text-slate-400" placeholder="Ek detaylar veya notlar (opsiyonel)...">
@@ -712,11 +713,11 @@ html.dark #task-deadline{color:#c7d2fe!important}
   <div class="glass-card p-6 bg-white shadow-sm">
     <h4 class="font-bold text-slate-500 text-xs uppercase tracking-widest mb-4 flex items-center gap-2"><span>⚡</span> Bugün Nasıl Hissediyorsun?</h4>
     <div class="flex gap-3 flex-wrap">
-      <button onclick="setMood('hyper')" id="mood-hyper" class="mood-btn">🚀 Hiper Modda</button>
-      <button onclick="setMood('focused')" id="mood-focused" class="mood-btn">🎯 Odaklıyım</button>
-      <button onclick="setMood('foggy')" id="mood-foggy" class="mood-btn">🌫️ Beyin Sisi</button>
-      <button onclick="setMood('anxious')" id="mood-anxious" class="mood-btn">😰 Kaygılı</button>
-      <button onclick="setMood('crash')" id="mood-crash" class="mood-btn">💤 Enerji Düşük</button>
+      <button data-tikla="setMood" data-args='["hyper"]' id="mood-hyper" class="mood-btn">🚀 Hiper Modda</button>
+      <button data-tikla="setMood" data-args='["focused"]' id="mood-focused" class="mood-btn">🎯 Odaklıyım</button>
+      <button data-tikla="setMood" data-args='["foggy"]' id="mood-foggy" class="mood-btn">🌫️ Beyin Sisi</button>
+      <button data-tikla="setMood" data-args='["anxious"]' id="mood-anxious" class="mood-btn">😰 Kaygılı</button>
+      <button data-tikla="setMood" data-args='["crash"]' id="mood-crash" class="mood-btn">💤 Enerji Düşük</button>
     </div>
   </div>
 
@@ -730,12 +731,12 @@ html.dark #task-deadline{color:#c7d2fe!important}
       </div>
       <div class="space-y-3">
         <label class="block text-sm font-semibold text-slate-600">Odak Süresi: <span id="focus-display" class="text-purple-600 font-black">25 dk</span></label>
-        <input type="range" id="focus-period" value="25" min="10" max="90" step="5" oninput="document.getElementById('focus-display').textContent=this.value+' dk'" class="adhd-slider w-full">
+        <input type="range" id="focus-period" value="25" min="10" max="90" step="5" data-girdi="odakSuresiniGoster" data-ile="deger" class="adhd-slider w-full">
         <div class="flex justify-between text-[10px] text-slate-400"><span>10 dk</span><span>⚡ 25 Pomodoro</span><span>90 dk</span></div>
       </div>
       <div class="space-y-3">
         <label class="block text-sm font-semibold text-slate-600">Hiperfokus Uyarısı</label>
-        <select id="hyperfocus-limit" onchange="if(this.value!=='none'&&typeof hyperfocusIzniIste==='function')hyperfocusIzniIste()" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
+        <select id="hyperfocus-limit" data-degis="hiperfokusSecimiDegisti" data-ile="deger" class="w-full bg-slate-50 p-3 rounded-xl border-none font-medium outline-none cursor-pointer text-sm">
           <option value="none">⛔ Alarm Yok</option>
           <option value="60">⏰ 60 dk'da bir uyar</option>
           <option value="90">⏰ 90 dk'da bir uyar</option>
@@ -810,7 +811,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
       </div>
       <div class="space-y-4">
         <label class="block text-xs font-black uppercase text-orange-400 tracking-[0.2em]">Seni En Çok Ne Durdurur?</label>
-        <select id="main-obstacle" onchange="engelAciklamasiniYaz()" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
+        <select id="main-obstacle" data-degis="engelAciklamasiniYaz" class="w-full bg-slate-800/50 p-6 rounded-[2rem] outline-none border-2 border-slate-700 focus:border-orange-500 transition-all appearance-none text-lg cursor-pointer">
           <option value="paralysis">🧊 Başlama Felci</option>
           <option value="distraction">📱 Dikkat Dağınıklığı</option>
           <option value="perfectionism">💎 Mükemmeliyetçilik</option>
@@ -828,7 +829,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
 
   <!-- Kaydet -->
   <div class="flex justify-end">
-    <button id="save-profile-btn" onclick="saveProfile()" class="save-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-5 rounded-[2rem] font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-3 text-lg">
+    <button id="save-profile-btn" data-tikla="saveProfile" class="save-btn bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-12 py-5 rounded-[2rem] font-bold hover:scale-105 active:scale-95 transition-all flex items-center gap-3 text-lg">
       <span>💾</span> Değişiklikleri Kaydet
     </button>
   </div>
@@ -837,7 +838,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
        Bir alan değişir değişmez aşağıdan çıkar, kaydedilene kadar durur. -->
   <div id="profile-dirty-bar" class="profile-dirty-bar">
     <span class="text-sm font-semibold">✏️ Kaydedilmemiş değişikliklerin var</span>
-    <button type="button" onclick="saveProfile()" class="profile-dirty-save">💾 Kaydet</button>
+    <button type="button" data-tikla="saveProfile" class="profile-dirty-save">💾 Kaydet</button>
   </div>
 
 </div>
@@ -883,7 +884,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <!-- 1. HİKAYE: Büyük Harita -->
     <div id="story-card-0" class="story-card space-y-5 animate-slide-in">
       <div class="story-card-frame p-4 md:p-6 space-y-5">
-        <div class="story-img-container" onclick="dehbGorselAc('dehb-gorsel/infografik.jpg')">
+        <div class="story-img-container" data-tikla="dehbGorselAc" data-args='["dehb-gorsel/infografik.jpg"]'>
           <img src="dehb-gorsel/infografik.jpg" alt="DEHB Büyük Haritası" loading="eager">
           <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Büyütmek İçin Dokun
@@ -905,7 +906,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <!-- 2. HİKAYE: DEHB Nedir & Dopamin -->
     <div id="story-card-1" class="story-card hidden space-y-5 animate-slide-in">
       <div class="story-card-frame p-4 md:p-6 space-y-5">
-        <div class="story-img-container" onclick="dehbGorselAc('dehb-gorsel/temeller.jpg')">
+        <div class="story-img-container" data-tikla="dehbGorselAc" data-args='["dehb-gorsel/temeller.jpg"]'>
           <img src="dehb-gorsel/temeller.jpg" alt="DEHB Temelleri ve Yaygınlık" loading="lazy">
           <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Büyütmek İçin Dokun
@@ -927,7 +928,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <!-- 3. HİKAYE: 7 Temel Belirti -->
     <div id="story-card-2" class="story-card hidden space-y-5 animate-slide-in">
       <div class="story-card-frame p-4 md:p-6 space-y-5">
-        <div class="story-img-container" onclick="dehbGorselAc('dehb-gorsel/belirtiler.jpg')">
+        <div class="story-img-container" data-tikla="dehbGorselAc" data-args='["dehb-gorsel/belirtiler.jpg"]'>
           <img src="dehb-gorsel/belirtiler.jpg" alt="7 Temel DEHB Belirtisi" loading="lazy">
           <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Büyütmek İçin Dokun
@@ -949,7 +950,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <!-- 4. HİKAYE: 3 Sunum Tipi -->
     <div id="story-card-3" class="story-card hidden space-y-5 animate-slide-in">
       <div class="story-card-frame p-4 md:p-6 space-y-5">
-        <div class="story-img-container" onclick="dehbGorselAc('dehb-gorsel/tipler.jpg')">
+        <div class="story-img-container" data-tikla="dehbGorselAc" data-args='["dehb-gorsel/tipler.jpg"]'>
           <img src="dehb-gorsel/tipler.jpg" alt="3 DEHB Sunum Tipi" loading="lazy">
           <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Büyütmek İçin Dokun
@@ -971,7 +972,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
     <!-- 5. HİKAYE: Yaşam & Stratejiler -->
     <div id="story-card-4" class="story-card hidden space-y-5 animate-slide-in">
       <div class="story-card-frame p-4 md:p-6 space-y-5">
-        <div class="story-img-container" onclick="dehbGorselAc('dehb-gorsel/yasam.jpg')">
+        <div class="story-img-container" data-tikla="dehbGorselAc" data-args='["dehb-gorsel/yasam.jpg"]'>
           <img src="dehb-gorsel/yasam.jpg" alt="4 Boyutlu Başa Çıkma" loading="lazy">
           <div class="absolute bottom-3 right-3 bg-slate-900/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-white text-xs font-bold border border-white/10 pointer-events-none">
             🔍 Büyütmek İçin Dokun
@@ -1029,7 +1030,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
   <div class="space-y-4">
     <!-- Action Nav Buttons -->
     <div class="glass-card p-4 bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-2xl border border-slate-200 dark:border-white/10 shadow-lg flex items-center justify-between sticky bottom-4 z-20">
-      <button id="story-prev-btn" onclick="prevStory()" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 active:scale-95">
+      <button id="story-prev-btn" data-tikla="prevStory" class="px-5 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 disabled:opacity-30 disabled:pointer-events-none rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all flex items-center gap-1.5 active:scale-95">
         <span>◀</span> Önceki
       </button>
 
@@ -1037,19 +1038,19 @@ html.dark #task-deadline{color:#c7d2fe!important}
         Klavye <kbd class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono text-[10px]">←</kbd> <kbd class="px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-mono text-[10px]">→</kbd> ile geçebilirsiniz
       </span>
 
-      <button id="story-next-btn" onclick="nextStory()" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/25 transition-all flex items-center gap-1.5 active:scale-95">
+      <button id="story-next-btn" data-tikla="nextStory" class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-500/25 transition-all flex items-center gap-1.5 active:scale-95">
         Sonraki Adım <span>▶</span>
       </button>
     </div>
 
     <!-- Quick Story Pills -->
     <div class="flex items-center justify-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-      <button onclick="showStory(0)" class="story-pill-btn active-story px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="0">1. Harita</button>
-      <button onclick="showStory(1)" class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="1">2. Dopamin</button>
-      <button onclick="showStory(2)" class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="2">3. Belirtiler</button>
-      <button onclick="showStory(3)" class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="3">4. 3 Tip</button>
-      <button onclick="showStory(4)" class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="4">5. Taktikler</button>
-      <button onclick="showStory(5)" class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="5">6. Kaynaklar</button>
+      <button data-tikla="showStory" data-args='[0]' class="story-pill-btn active-story px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="0">1. Harita</button>
+      <button data-tikla="showStory" data-args='[1]' class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="1">2. Dopamin</button>
+      <button data-tikla="showStory" data-args='[2]' class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="2">3. Belirtiler</button>
+      <button data-tikla="showStory" data-args='[3]' class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="3">4. 3 Tip</button>
+      <button data-tikla="showStory" data-args='[4]' class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="4">5. Taktikler</button>
+      <button data-tikla="showStory" data-args='[5]' class="story-pill-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm" data-story-btn="5">6. Kaynaklar</button>
     </div>
   </div>
 
@@ -1161,7 +1162,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
   <div id="projects-empty" class="hidden text-center py-20">
     <div class="text-5xl mb-4">📁</div>
     <p class="text-slate-500 font-medium">Henüz parçalanmış bir projen yok.</p>
-    <button onclick="loadPage('chatbot')" class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 active:scale-95 transition-all">🧩 İlk projeni parçala</button>
+    <button data-tikla="loadPage" data-args='["chatbot"]' class="mt-6 bg-indigo-600 text-white px-8 py-3 rounded-2xl font-bold hover:bg-indigo-700 active:scale-95 transition-all">🧩 İlk projeni parçala</button>
   </div>
 
 </div>
@@ -1172,13 +1173,13 @@ html.dark #task-deadline{color:#c7d2fe!important}
      ════════════════════════════════════════ -->
 <!-- Mobil ust cubuk: sidebar cekmeceye alindigi icin gezinme girisi buradan -->
 <header id="mobile-topbar" class="md:hidden fixed top-0 inset-x-0 h-14 z-40 flex items-center gap-3 px-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur border-b border-slate-100 dark:border-slate-800">
-  <button onclick="toggleMobileSidebar()" aria-label="Menuyu ac" aria-controls="app-sidebar" aria-expanded="false" id="mobile-menu-btn"
+  <button data-tikla="toggleMobileSidebar" aria-label="Menuyu ac" aria-controls="app-sidebar" aria-expanded="false" id="mobile-menu-btn"
           class="w-10 h-10 shrink-0 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 active:scale-95 transition">
     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
   </button>
   <span class="font-bold text-indigo-600 dark:text-indigo-400">🚀 FocusAid</span>
 </header>
-<div id="sidebar-backdrop" onclick="closeMobileSidebar()" class="md:hidden hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
+<div id="sidebar-backdrop" data-tikla="closeMobileSidebar" class="md:hidden hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-40"></div>
 
 <div class="flex min-h-screen">
   <aside id="app-sidebar" class="w-64 shrink-0 bg-white dark:bg-slate-900 border-r border-slate-100 dark:border-slate-800 p-4 h-screen flex flex-col justify-between overflow-y-auto scrollbar-none shadow-sm fixed md:sticky inset-y-0 left-0 top-0 z-50 md:z-30 -translate-x-full md:translate-x-0 transition-transform duration-300 ease-out">
@@ -1188,20 +1189,20 @@ html.dark #task-deadline{color:#c7d2fe!important}
           <h1 class="text-xl font-bold text-indigo-600 dark:text-indigo-400">🚀 FocusAid</h1>
           <p class="text-[9px] text-slate-400 uppercase tracking-widest">DEHB Odak Asistanı</p>
         </div>
-        <button onclick="closeMobileSidebar()" aria-label="Menuyu kapat"
+        <button data-tikla="closeMobileSidebar" aria-label="Menuyu kapat"
                 class="md:hidden w-9 h-9 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 active:scale-95 transition">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
         </button>
       </div>
       <nav class="space-y-1">
-        <button onclick="loadPage('today')" id="nav-today" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">🎯</span> <span>Bugün</span></button>
-        <button onclick="loadPage('calendar')" id="nav-calendar" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📅</span> <span>Takvim</span></button>
-        <button onclick="loadPage('chatbot')" id="nav-chatbot" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">🧩</span> <span>Parçalayıcı</span></button>
-        <button onclick="loadPage('projects')" id="nav-projects" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📁</span> <span>Projelerim</span></button>
-        <button onclick="loadPage('profile')" id="nav-profile" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">👤</span> <span>Profil</span></button>
-        <button onclick="loadPage('dehb-info')" id="nav-dehb-info" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">ℹ️</span> <span>DEHB Bilgisi</span></button>
-        <button onclick="loadPage('study-rooms')" id="nav-study-rooms" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📺</span> <span>Çalışma Odaları</span></button>
-        <button onclick="openBrainDump()" id="nav-brain-dump" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center justify-between text-sm group">
+        <button data-tikla="loadPage" data-args='["today"]' id="nav-today" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">🎯</span> <span>Bugün</span></button>
+        <button data-tikla="loadPage" data-args='["calendar"]' id="nav-calendar" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📅</span> <span>Takvim</span></button>
+        <button data-tikla="loadPage" data-args='["chatbot"]' id="nav-chatbot" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">🧩</span> <span>Parçalayıcı</span></button>
+        <button data-tikla="loadPage" data-args='["projects"]' id="nav-projects" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📁</span> <span>Projelerim</span></button>
+        <button data-tikla="loadPage" data-args='["profile"]' id="nav-profile" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">👤</span> <span>Profil</span></button>
+        <button data-tikla="loadPage" data-args='["dehb-info"]' id="nav-dehb-info" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">ℹ️</span> <span>DEHB Bilgisi</span></button>
+        <button data-tikla="loadPage" data-args='["study-rooms"]' id="nav-study-rooms" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center gap-3 text-sm"><span class="sidebar-icon">📺</span> <span>Çalışma Odaları</span></button>
+        <button data-tikla="openBrainDump" id="nav-brain-dump" class="sidebar-item w-full text-left px-3.5 py-2.5 rounded-xl transition-all text-slate-600 hover:bg-slate-50 font-medium flex items-center justify-between text-sm group">
           <div class="flex items-center gap-3">
             <span class="sidebar-icon">🧠</span> <span>Düşünce Parkı</span>
           </div>
@@ -1228,10 +1229,10 @@ html.dark #task-deadline{color:#c7d2fe!important}
         </div>
 
         <div class="flex items-center gap-1.5">
-          <button id="focus-audio-toggle" onclick="FocusAudio.toggle()" class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white flex items-center justify-center text-[10px] font-bold transition-all active:scale-95 shadow-sm">
+          <button id="focus-audio-toggle" data-tikla="FocusAudio.toggle" class="w-6 h-6 rounded-lg bg-slate-200 dark:bg-slate-700 hover:bg-indigo-600 hover:text-white flex items-center justify-center text-[10px] font-bold transition-all active:scale-95 shadow-sm">
             ▶
           </button>
-          <select id="focus-audio-select" onchange="FocusAudio.setMode(this.value, true)" class="flex-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer">
+          <select id="focus-audio-select" data-degis="FocusAudio.setMode" data-args='[true]' data-ile="deger" class="flex-1 bg-white dark:bg-slate-900 px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-semibold text-slate-700 dark:text-slate-200 outline-none cursor-pointer">
             <option value="brown-noise">🌊 Brown Noise</option>
             <option value="binaural">🎶 40Hz Binaural</option>
             <option value="lofi">🎵 Lo-Fi Chords</option>
@@ -1243,7 +1244,7 @@ html.dark #task-deadline{color:#c7d2fe!important}
 
         <div class="flex items-center gap-1.5">
           <span class="text-[8px] text-slate-400">🔉</span>
-          <input type="range" min="0" max="1" step="0.05" value="0.5" oninput="FocusAudio.setVolume(this.value)" class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+          <input type="range" min="0" max="1" step="0.05" value="0.5" data-girdi="FocusAudio.setVolume" data-ile="deger" class="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
           <span class="text-[8px] text-slate-400">🔊</span>
         </div>
       </div>
@@ -1252,11 +1253,11 @@ html.dark #task-deadline{color:#c7d2fe!important}
       <div class="grid grid-cols-2 gap-1.5">
         <div class="flex items-center justify-between px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 rounded-xl">
           <span class="text-[8px] font-black text-slate-400 uppercase">🔊 Efekt</span>
-          <button id="sound-toggle-btn" onclick="toggleSound()" class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">Açık</button>
+          <button id="sound-toggle-btn" data-tikla="toggleSound" class="text-[9px] font-bold text-indigo-600 dark:text-indigo-400">Açık</button>
         </div>
         <div class="flex items-center justify-between px-2.5 py-1.5 bg-slate-50 rounded-xl">
           <span class="text-[8px] font-black text-slate-400 uppercase">🌗 Tema</span>
-          <button id="theme-toggle-btn" onclick="toggleTheme()" class="theme-toggle" title="Koyu/Açık tema"></button>
+          <button id="theme-toggle-btn" data-tikla="toggleTheme" class="theme-toggle" title="Koyu/Açık tema"></button>
         </div>
       </div>
 
@@ -1270,13 +1271,13 @@ html.dark #task-deadline{color:#c7d2fe!important}
               <p id="user-email" class="text-[8px] text-slate-400 truncate"></p>
             </div>
           </div>
-          <button onclick="signOut()" title="Çıkış Yap" class="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition active:scale-95">
+          <button data-tikla="signOut" title="Çıkış Yap" class="text-xs text-red-400 hover:text-red-600 hover:bg-red-50 p-1 rounded-lg transition active:scale-95">
             🚪
           </button>
         </div>
       </div>
 
-      <button onclick="signOut()" class="w-full py-2 text-[10px] font-bold border border-red-200 dark:border-red-800/50 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition uppercase tracking-wider text-red-500 dark:text-red-400 flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
+      <button data-tikla="signOut" class="w-full py-2 text-[10px] font-bold border border-red-200 dark:border-red-800/50 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 transition uppercase tracking-wider text-red-500 dark:text-red-400 flex items-center justify-center gap-1.5 active:scale-95 shadow-sm">
         <span>🚪</span> Çıkış Yap
       </button>
     </div>
@@ -1295,6 +1296,14 @@ html.dark #task-deadline{color:#c7d2fe!important}
 // ── GÜVENLİK (XSS Sanitizer) ──────────────────────────────────────────────────
 function escapeHtml(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Profil formundaki eski satır içi handler'lar (CSP 'unsafe-inline' istemesin diye, bkz. olay.js).
+function odakSuresiniGoster(deger) {
+  document.getElementById('focus-display').textContent = deger + ' dk';
+}
+function hiperfokusSecimiDegisti(deger) {
+  if (deger !== 'none' && typeof hyperfocusIzniIste === 'function') hyperfocusIzniIste();
 }
 
 // ── SUPABASE ─────────────────────────────────────────────────────────────────
@@ -1650,13 +1659,13 @@ async function loadProjectsList() {
       // onerror tema ikonuna geri döner — kart hiçbir zaman boş kutu göstermez.
       const ikon = projeIkonu(name, g.adlar);
       const ikonHTML = ikon?.tur === 'logo'
-        ? `<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm" style="background:#fff;border:1px solid #e2e8f0" title="${escapeHtml(ikon.etiket)}"><img src="${ikon.src}" alt="${escapeHtml(ikon.etiket)}" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${tema.icon}'))"></div>`
+        ? `<div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shadow-sm" style="background:#fff;border:1px solid #e2e8f0" title="${escapeHtml(ikon.etiket)}"><img src="${ikon.src}" alt="${escapeHtml(ikon.etiket)}" width="28" height="28" loading="lazy" referrerpolicy="no-referrer" data-yedek-metin="${tema.icon}"></div>`
         : `<div class="w-12 h-12 rounded-2xl ${tema.bg} ${tema.text} flex items-center justify-center text-2xl">${ikon?.tur === 'emoji' ? ikon.simge : tema.icon}</div>`;
       return `
         <div class="glass-card p-6 bg-white/90 shadow-lg hover:shadow-xl transition-all">
           <div class="flex items-start justify-between mb-4">
             ${ikonHTML}
-            <button data-proje="${escapeHtml(name)}" onclick="projeSilTiklandi(this)" class="text-slate-300 hover:text-red-500 transition-colors text-lg leading-none" title="Projeyi sil">🗑️</button>
+            <button data-proje="${escapeHtml(name)}" data-tikla="projeSilTiklandi" data-ile="oge" class="text-slate-300 hover:text-red-500 transition-colors text-lg leading-none" title="Projeyi sil">🗑️</button>
           </div>
           <h3 class="font-bold text-slate-900 text-lg mb-1 truncate" title="${escapeHtml(name)}">${escapeHtml(name)}</h3>
           <p class="text-xs text-slate-400 mb-4">${escapeHtml(aralik)}</p>
@@ -1871,11 +1880,19 @@ function restoreGoogleToken() {
  */
 async function saklaYenilemeTokeni(refreshToken) {
   try {
-    const { error } = await window.supabaseClient
-      .from('profiles')
-      .update({ google_refresh_token: refreshToken })
-      .eq('id', currentUser?.id);
-    if (error) throw error;
+    // Token sunucuda ŞİFRELENİP yazılıyor ve bir daha tarayıcıya inmiyor (bkz. serve.py
+    // /api/google/store). Profile doğrudan yazma: düz metin olarak kalırdı.
+    let sbToken = AppState.supabaseToken;
+    if (!sbToken) {
+      const { data: o } = await window.supabaseClient.auth.getSession();
+      sbToken = o?.session?.access_token || null;
+    }
+    if (!sbToken) throw new Error('oturum yok');
+    const res = await fetch('/api/google/store', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: refreshToken, supabaseToken: sbToken })
+    });
+    if (!res.ok) throw new Error('sunucu ' + res.status);
     // auth.html bunu görüp bir sonraki girişte izin ekranını atlıyor.
     try { localStorage.setItem('focusaid_gcal_offline', '1'); } catch (e) {}
     console.log('[Takvim] yenileme anahtarı saklandı');
@@ -1897,9 +1914,8 @@ async function saklaYenilemeTokeni(refreshToken) {
 async function yenilemeyiDene() {
   try {
     if (!currentUser?.id) return;                       // oturum henüz kurulmadı
-    const { data, error } = await window.supabaseClient
-      .from('profiles').select('google_refresh_token').eq('id', currentUser.id).single();
-    if (error || !data?.google_refresh_token) return;   // hiç izin alınmamış
+    // Refresh token'ı sunucu kendisi okuyor (şifreli, tarayıcıya inmiyor); hiç
+    // izin alınmamışsa uç 404 no_token döner.
 
     // Uç kimlik doğruluyor (bkz. serve.py). Oturum token'ı AppState'e session
     // olayında yazılıyor ama bu fonksiyon ondan önce koşabiliyor; o yüzden
@@ -1913,18 +1929,16 @@ async function yenilemeyiDene() {
 
     const res = await fetch('/api/google/refresh', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: data.google_refresh_token, supabaseToken: sbToken })
+      body: JSON.stringify({ supabaseToken: sbToken })
     });
     const govde = await res.json().catch(() => ({}));
     if (!res.ok || !govde.access_token) {
+      if (govde.error === 'no_token') return;            // hiç izin alınmamış
       console.warn('[Takvim] token yenilenemedi:', govde.error || res.status);
-      // invalid_grant: kullanıcı izni geri almış ya da token iptal olmuş.
-      // Ölü anahtarı temizle ki her açılışta boşuna denenmesin.
+      // invalid_grant: kullanıcı izni geri almış ya da token iptal olmuş. Ölü
+      // anahtarı sunucu sildi; bayrağı da temizle ki bir sonraki giriş izin
+      // ekranını gösterip yeni bir yenileme anahtarı alsın.
       if (govde.error === 'invalid_grant') {
-        await window.supabaseClient.from('profiles')
-          .update({ google_refresh_token: null }).eq('id', currentUser.id);
-        // Bayrağı da temizle ki bir sonraki giriş izin ekranını gösterip
-        // yeni bir yenileme anahtarı alsın.
         try { localStorage.removeItem('focusaid_gcal_offline'); } catch (e) {}
       }
       return;
@@ -2628,7 +2642,7 @@ function submitTaskForm() {
 /** Formun tek gönder butonu. İki akış da aynı butonu kilitleyip serbest bırakıyor. */
 const EKLE_ETIKETI = 'Ekle';
 function formGonderButonu() {
-  return document.querySelector('button[onclick="submitTaskForm()"]');
+  return document.querySelector('button[data-tikla="submitTaskForm"]');
 }
 
 // n8n ölçümü bu süre boyunca yeniden kullanılıyor: form her açılışta ağ turu
@@ -2869,6 +2883,11 @@ async function parcalamayiBaslat() {
     const reqEl = document.getElementById('task-requirements');
     const requirements = typeof parseRequirements === 'function' ? parseRequirements(reqEl?.value) : [];
     const res = await fetch(CONFIG.N8N_WEBHOOK, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ taskTitle: task, taskDescription: descEl?.value?.trim() ?? '', deadline: dl, requirements, userId: currentUser?.id, supabaseToken: AppState.supabaseToken, googleAccessToken: AppState.googleAccessToken || null, userProfile: planningProfile(profile) }) });
+    if (res.status === 429) {
+      // serve.py kullanıcı başı sınır (dakikada 5, günde 50): bağlantı hatası değil.
+      addMessageToChat(sinirMesaji(res), 'error');
+      return;
+    }
     if (!res.ok) throw new Error('n8n ' + res.status);
     const result = await res.json().catch(() => ({}));
     addMessageToChat(parcalamaSonucMesaji(result), 'ai');
@@ -2883,6 +2902,13 @@ async function parcalamayiBaslat() {
 // görevlerinin takvimde olduğunu sanıyordu.
 // n8n'in eski sürümü bu sayaçları göndermezse takvim hakkında İDDİA
 // ETMEYEN bir mesaja düşülür — yanlış bilgi vermektense az bilgi ver.
+/** 429 cevabındaki Retry-After'dan okunur bir bekleme mesajı (Parçalayıcı + yönerge analizi). */
+function sinirMesaji(res) {
+  const sn = Number(res.headers.get('Retry-After')) || 60;
+  const sure = sn < 90 ? `${sn} saniye` : sn < 5400 ? `${Math.ceil(sn / 60)} dakika` : `${Math.ceil(sn / 3600)} saat`;
+  return `⏳ Çok hızlı gidiyoruz — yapay zekâ isteklerinde kişi başı sınır var. ${sure} sonra tekrar dene.`;
+}
+
 function parcalamaSonucMesaji(result) {
   const ilkAdim = escapeHtml(result.firstStep || 'İlk mikro görevin hazır!');
   const kuyruk  = `<br><br>🎯 <b>İlk adım:</b><br>"<i>${ilkAdim}</i>"`;
@@ -3177,7 +3203,7 @@ function cizSuperpowerRozetleri() {
   kap.innerHTML = SUPERPOWERS.map(s =>
     `<button type="button" class="power-chip${secili.includes(s.id) ? ' active' : ''}"
              aria-pressed="${secili.includes(s.id)}"
-             onclick="toggleSuperpowerUI('${s.id}')">${s.emoji} ${s.label}</button>`
+             data-tikla="toggleSuperpowerUI" data-args='["${s.id}"]'>${s.emoji} ${s.label}</button>`
   ).join('');
 }
 

@@ -85,6 +85,12 @@ function _escape(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+/** Bugün kartındaki İnat Modu düğmesi: görev adı onclick dizesine DEĞİL data-*'ya
+ *  konuyor (LLM'den gelen ad dizeyi kırıp kod çalıştırabiliyordu). */
+function inatModuDugmesi(el) {
+  startInatModu(el.dataset.gorevId, el.dataset.gorevAd);
+}
+
 /** Profildeki engelin arayüz ayarları (karar profile-logic.js'te). */
 function _engel() {
   return engelAyarlari(typeof userProfile !== 'undefined' ? userProfile : null);
@@ -101,7 +107,7 @@ function taskRowHTML(task, todayISO) {
   const kenar = YUK_KENAR[task.cognitive_load] || 'border-indigo-400 shadow-indigo-500/5';
   return `
     <div class="group flex items-center gap-3 py-3 px-4 bg-white/90 dark:bg-slate-800/80 backdrop-blur-sm rounded-2xl border-l-[6px] ${kenar} border border-slate-100 dark:border-white/5 shadow-sm hover:shadow-md hover:translate-x-1.5 transition-all duration-200 ${task.completed ? 'opacity-40 grayscale-[40%]' : ''}">
-      <input type="checkbox" ${task.completed ? 'checked' : ''} onchange="toggleTask('${_escape(task.id)}')"
+      <input type="checkbox" ${task.completed ? 'checked' : ''} data-degis="toggleTask" data-args='["${_escape(task.id)}"]'
              class="w-5 h-5 rounded-lg accent-indigo-600 cursor-pointer shrink-0 transition-transform active:scale-125">
       <span class="text-xs font-mono font-bold text-slate-400 dark:text-slate-500 shrink-0 w-12 tabular-nums">${saatBaslangic(task)}</span>
       <p class="text-sm font-semibold text-slate-800 dark:text-slate-200 truncate flex-1 ${task.completed ? 'line-through' : ''}">${_escape(task.name || 'Görev')}</p>
@@ -581,7 +587,7 @@ function currentCardHTML(task) {
             ? `Bugünün ödülünü kazandın: <b>${escapeHtml(odul)}</b>. Çark yarın yeniden açılacak.`
             : 'Tüm odak seanslarını başarıyla tamamladın. Vicdan azabı yok, ertelenmiş yığınlar yok! Şimdi hak ettiğin ödülü almak için çarkı çevir.'}
         </p>
-        <button onclick="openDopaminCarki()" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-base md:text-lg shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto${odul ? '' : ' animate-pulse'}">
+        <button data-tikla="openDopaminCarki" class="px-8 py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-base md:text-lg shadow-xl shadow-amber-500/30 hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-2.5 mx-auto${odul ? '' : ' animate-pulse'}">
           ${odul ? '<span>🎁</span> Ödülümü Göster' : '<span>🎡</span> Dopamin Şans Çarkını Çevir!'}
         </button>
       </div>`;
@@ -606,10 +612,10 @@ function currentCardHTML(task) {
             <span class="relative flex h-2.5 w-2.5"><span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span><span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-indigo-600"></span></span>
             <p class="text-[11px] font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest">Şu Anda Odaklan</p>
             <div class="ml-2">${yukRozet}</div>
-            <button onclick="startInatModu('${task.id}', '${(task.name || 'Görevin').replace(/'/g, "\\'")}')" class="ml-auto px-3 py-1 rounded-xl font-black text-xs active:scale-95 transition-all flex items-center gap-1.5 ${inatStil}" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
+            <button data-gorev-id="${_escape(task.id)}" data-gorev-ad="${_escape(task.name || 'Görevin')}" data-tikla="inatModuDugmesi" data-ile="oge" class="ml-auto px-3 py-1 rounded-xl font-black text-xs active:scale-95 transition-all flex items-center gap-1.5 ${inatStil}" title="Başlama felcini kırmak için 3 dakikalık Boss dövüşü başlat!">
               <span>🥊</span> İnat Modu (3 Dk)
             </button>
-            <button onclick="openBrainDump()" class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all flex items-center gap-1.5 shadow-sm" title="Aklına gelen rastgele bir düşünceyi park et (Kısayol: Alt + D)">
+            <button data-tikla="openBrainDump" class="px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs active:scale-95 transition-all flex items-center gap-1.5 shadow-sm" title="Aklına gelen rastgele bir düşünceyi park et (Kısayol: Alt + D)">
               <span>🧠</span> Düşünce Parkı
             </button>
           </div>
@@ -639,10 +645,10 @@ function currentCardHTML(task) {
             </div>
           </div>
           <div class="flex flex-col gap-2">
-            <button id="timer-play-btn" onclick="toggleTaskTimer()" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 shadow-md shadow-indigo-500/20 active:scale-95 transition-all">
+            <button id="timer-play-btn" data-tikla="toggleTaskTimer" class="px-4 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white flex items-center gap-1.5 shadow-md shadow-indigo-500/20 active:scale-95 transition-all">
               <span>▶️</span> Başlat
             </button>
-            <button onclick="addBonusToTimer(5)" class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-200/80 dark:bg-slate-600/50 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 active:scale-95 transition-all">
+            <button data-tikla="addBonusToTimer" data-args='[5]' class="px-3 py-1.5 rounded-xl text-[11px] font-bold bg-slate-200/80 dark:bg-slate-600/50 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 active:scale-95 transition-all">
               +5 Dk
             </button>
             <span id="timer-overtime" class="hidden text-[11px] font-medium text-slate-400 dark:text-slate-500"></span>
@@ -653,10 +659,10 @@ function currentCardHTML(task) {
 
       <!-- Alt Butonlar -->
       <div class="flex gap-4 pt-2">
-        <button onclick="toggleTask('${task.id}')" class="flex-[2] bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white py-4 px-6 rounded-2xl font-bold shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
+        <button data-tikla="toggleTask" data-args='["${task.id}"]' class="flex-[2] bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-500 hover:to-indigo-600 text-white py-4 px-6 rounded-2xl font-bold shadow-lg shadow-indigo-500/25 active:scale-95 transition-all flex items-center justify-center gap-2 text-base">
           <span>✓</span> Tamamlandı
         </button>
-        <button onclick="snoozeTask('${task.id}')" class="flex-1 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-bold border border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all text-sm">
+        <button data-tikla="snoozeTask" data-args='["${task.id}"]' class="flex-1 bg-slate-100 dark:bg-slate-700/60 text-slate-700 dark:text-slate-200 px-6 py-4 rounded-2xl font-bold border border-slate-200 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-95 transition-all text-sm">
           Sonraya al
         </button>
       </div>
@@ -793,7 +799,7 @@ function renderToday() {
   if (_engel().sadeceSiradaki && !TodayState.tumListe) {
     const kalan = hepsi.filter(t => !t.completed).length;
     listEl.innerHTML = `
-      <button id="tum-liste-btn" onclick="tumListeyiGoster()" class="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-300 bg-white/70 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-400 transition-all">
+      <button id="tum-liste-btn" data-tikla="tumListeyiGoster" class="w-full py-3 rounded-2xl text-sm font-bold text-slate-500 dark:text-slate-300 bg-white/70 dark:bg-slate-800/60 border border-dashed border-slate-300 dark:border-slate-600 hover:border-indigo-400 transition-all">
         📋 Tüm listeyi göster (${kalan} görev kaldı)
       </button>`;
     return;
@@ -939,11 +945,11 @@ function showDurationFeedback(task) {
   const id = _escape(task.id);
   el.innerHTML = `
     <span>Tahminden</span>
-    <button onclick="answerDurationFeedback('${id}','shorter')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">kısa</button>
-    <button onclick="answerDurationFeedback('${id}','same')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">aynı</button>
-    <button onclick="answerDurationFeedback('${id}','longer')" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">uzun</button>
+    <button data-tikla="answerDurationFeedback" data-args='["${id}","shorter"]' class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">kısa</button>
+    <button data-tikla="answerDurationFeedback" data-args='["${id}","same"]' class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">aynı</button>
+    <button data-tikla="answerDurationFeedback" data-args='["${id}","longer"]' class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600">uzun</button>
     <span>sürdü</span>
-    <button onclick="hideDurationFeedback()" aria-label="Atla" class="ml-1 text-slate-400 hover:text-slate-600">✕</button>`;
+    <button data-tikla="hideDurationFeedback" aria-label="Atla" class="ml-1 text-slate-400 hover:text-slate-600">✕</button>`;
   document.body.appendChild(el);
   _durationFeedbackTimer = setTimeout(hideDurationFeedback, DURATION_FEEDBACK_MS);
 }

@@ -1,0 +1,96 @@
+# Güvenlik taramaları. test.yml'den ayrı: biri kırmızıya dönünce hangisi olduğu görünsün.
+#   - sir-taramasi : tüm git geçmişinde gitleaks (istisnalar .gitleaks.toml'da, gerekçeli)
+#   - zap          : OWASP ZAP baseline — CANLIYA DEĞİL, runner'da açılan serve.py'ye
+#   - rls          : scripts/rls-matris.mjs (RLS_* secret'ları tanımlı değilse atlanır)
+#   - n8n-imaji    : Trivy ile sabitlenmiş n8n imajı (yalnız haftalık; bülten kaçmasın)
+name: guvenlik
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+  schedule:
+    - cron: '0 6 * * 1'        # pazartesi 09:00 İstanbul
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sir-taramasi:
+    name: Sır taraması (gitleaks)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0          # TÜM geçmiş: eskiden kodda duran anahtarlar da taransın
+      - name: gitleaks indir (sürüm sabit, checksum doğrulanır)
+        run: |
+          V=8.21.2
+          curl -sSLO https://github.com/gitleaks/gitleaks/releases/download/v$V/gitleaks_${V}_linux_x64.tar.gz
+          curl -sSLO https://github.com/gitleaks/gitleaks/releases/download/v$V/gitleaks_${V}_checksums.txt
+          grep linux_x64.tar.gz gitleaks_${V}_checksums.txt | sha256sum -c -
+          tar -xzf gitleaks_${V}_linux_x64.tar.gz gitleaks
+      - run: ./gitleaks git . --config .gitleaks.toml --redact --no-banner
+
+  zap:
+    name: OWASP ZAP baseline (yerel serve.py)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - run: python3 -m pip install -r requirements.txt
+      - run: cp config.example.js config.js
+      - name: serve.py'yi başlat
+        run: |
+          python3 serve.py > serve.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:3000/manifest.json >/dev/null && break; sleep 1; done
+      # -I: uyarılar işi kırmasın (rapor artefakt olarak kalır); FAIL seviyesi kırar.
+      - name: ZAP baseline
+        run: |
+          mkdir -p zap && chmod 777 zap
+          docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:2.15.0 \
+            zap-baseline.py -t http://localhost:3000/ -r zap-rapor.html -I
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zap-rapor
+          path: zap/zap-rapor.html
+
+  rls:
+    name: RLS matrisi (canlı Supabase, test kullanıcıları)
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      RLS_A_EMAIL: ${{ secrets.RLS_A_EMAIL }}
+      RLS_A_PASSWORD: ${{ secrets.RLS_A_PASSWORD }}
+      RLS_B_EMAIL: ${{ secrets.RLS_B_EMAIL }}
+      RLS_B_PASSWORD: ${{ secrets.RLS_B_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      # Secret'lar yoksa testler "skip" olur, iş yeşil kalır (bkz. betiğin başı).
+      - run: node --test scripts/rls-matris.mjs
+
+  n8n-imaji:
+    name: n8n imaj taraması (Trivy)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Sabitlenmiş sürümü oku
+        id: surum
+        run: echo "v=$(grep -E '^N8N_VERSION=' infra/n8n/env.ornek | cut -d= -f2)" >> "$GITHUB_OUTPUT"
+      # Kırmızı = sabitlenmiş sürümde düzeltmesi çıkmış YÜKSEK/KRİTİK açık var →
+      # KURULUM.md "Sürüm güncelleme", sonra env.ornek'teki N8N_VERSION'ı yükselt.
+      - uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: n8nio/n8n:${{ steps.surum.outputs.v }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: '1'

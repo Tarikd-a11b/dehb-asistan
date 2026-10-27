@@ -54,17 +54,22 @@ function tumOdalar() {
   return CALISMA_ODALARI.concat(ozelOdalariOku());
 }
 
+// Özel odanın adı kullanıcıdan geliyor (ozelOdalariTemizle yalnız kırpıyor).
+function _odaKacis(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
 function odaKartiHtml(oda) {
   const sure = oda.dakika ? odaSuresiMetni(oda.dakika) : 'kendi eklediğin';
   const dongu = oda.dongu ? `<span class="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700/60 text-[11px] font-bold">${oda.dongu}</span>` : '';
   return `
-    <button type="button" data-oda="${oda.id}"
+    <button type="button" data-oda="${_odaKacis(oda.id)}"
             class="oda-karti group text-left p-4 rounded-2xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 hover:border-indigo-400 dark:hover:border-indigo-500 hover:shadow-lg transition-all active:scale-[0.99]">
       <div class="flex items-start gap-3">
         <span class="text-3xl shrink-0">${oda.simge}</span>
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="font-black text-slate-800 dark:text-slate-100">${oda.ad}</span>
+            <span class="font-black text-slate-800 dark:text-slate-100">${_odaKacis(oda.ad)}</span>
             ${dongu}
           </div>
           <p class="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-snug">${oda.aciklama}</p>

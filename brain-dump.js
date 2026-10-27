@@ -191,7 +191,7 @@ function getBrainDumpDrawer() {
     drawer.id = 'brain-dump-drawer';
     drawer.className = 'fixed inset-0 z-50 overflow-hidden hidden transition-all duration-300';
     drawer.innerHTML = `
-      <div id="bd-backdrop" onclick="closeBrainDump()" class="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 cursor-pointer"></div>
+      <div id="bd-backdrop" data-tikla="closeBrainDump" class="absolute inset-0 bg-black/50 backdrop-blur-sm opacity-0 transition-opacity duration-300 cursor-pointer"></div>
       <div id="bd-panel" class="absolute inset-y-0 right-0 max-w-md w-full bg-white dark:bg-slate-900 shadow-2xl border-l border-slate-100 dark:border-slate-800 p-6 flex flex-col justify-between translate-x-full transition-transform duration-300 ease-out z-10">
         <div class="space-y-4">
           <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
@@ -202,15 +202,15 @@ function getBrainDumpDrawer() {
                 <p class="text-[11px] text-slate-400">Aklına takılanı buraya yaz, unutma kaygısını sil.</p>
               </div>
             </div>
-            <button type="button" onclick="closeBrainDump()" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-xs font-bold transition active:scale-95" title="Kapat">✕</button>
+            <button type="button" data-tikla="closeBrainDump" class="w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 hover:text-slate-900 dark:hover:text-white flex items-center justify-center text-xs font-bold transition active:scale-95" title="Kapat">✕</button>
           </div>
 
           <!-- Hızlı Düşünce Girişi -->
           <div class="relative">
             <input type="text" id="bd-input" placeholder="Aklına ne takıldı? (Örn: Faturayı öde, Kedinin maması...)" 
-                   onkeydown="if(event.key==='Enter') submitBrainDumpInput()"
+                   data-enter="submitBrainDumpInput"
                    class="w-full pl-3.5 pr-20 py-3 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs md:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition shadow-inner">
-            <button type="button" onclick="submitBrainDumpInput()" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95">
+            <button type="button" data-tikla="submitBrainDumpInput" class="absolute right-1.5 top-1.5 bottom-1.5 px-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-sm transition active:scale-95">
               Ekle
             </button>
           </div>
@@ -223,7 +223,7 @@ function getBrainDumpDrawer() {
         <div class="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
           <div class="flex items-center justify-between text-[11px] text-slate-400">
             <span>💡 Kısayol: <kbd class="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded font-mono font-bold">Alt + D</kbd></span>
-            <button type="button" onclick="clearCompletedThoughts()" class="hover:text-red-500 transition font-medium">Tamamlananları Temizle</button>
+            <button type="button" data-tikla="clearCompletedThoughts" class="hover:text-red-500 transition font-medium">Tamamlananları Temizle</button>
           </div>
         </div>
       </div>
@@ -264,13 +264,13 @@ function renderBrainDumpList() {
     return `
       <div class="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-3 group transition hover:shadow-sm ${t.completed ? 'opacity-40 grayscale' : ''}">
         <div class="flex items-center gap-2.5 min-w-0 flex-1">
-          <input type="checkbox" ${t.completed ? 'checked' : ''} onchange="toggleThought('${t.id}')"
+          <input type="checkbox" ${t.completed ? 'checked' : ''} data-degis="toggleThought" data-args='["${t.id}"]'
                  class="w-4 h-4 rounded-md accent-indigo-600 cursor-pointer shrink-0">
           <span class="text-xs text-slate-800 dark:text-slate-200 font-medium truncate ${t.completed ? 'line-through text-slate-400' : ''}">${_escapeBd(t.text)}</span>
         </div>
         <div class="flex items-center gap-1 shrink-0">
-          <button type="button" onclick="convertThoughtToTask('${t.id}')" title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1.5 text-xs hover:text-indigo-600 text-slate-400 transition hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg">🧩</button>
-          <button type="button" onclick="deleteThought('${t.id}')" title="Sil" class="p-1.5 text-xs hover:text-red-500 text-slate-400 transition hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg">✕</button>
+          <button type="button" data-tikla="convertThoughtToTask" data-args='["${t.id}"]' title="Bu düşünceyi AI Görev Parçalayıcıya aktar" class="p-1.5 text-xs hover:text-indigo-600 text-slate-400 transition hover:bg-indigo-50 dark:hover:bg-indigo-950/50 rounded-lg">🧩</button>
+          <button type="button" data-tikla="deleteThought" data-args='["${t.id}"]' title="Sil" class="p-1.5 text-xs hover:text-red-500 text-slate-400 transition hover:bg-red-50 dark:hover:bg-red-950/50 rounded-lg">✕</button>
         </div>
       </div>`;
   }).join('');

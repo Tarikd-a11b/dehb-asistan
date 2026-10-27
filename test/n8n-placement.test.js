@@ -236,3 +236,47 @@ test('Save task to Supabase govdesi planned_factor alanini gonderir', () => {
   const body = wf.nodes.find(n => n.name === 'Save task to Supabase').parameters.jsonBody;
   assert.match(body, /planned_factor: \$json\.planned_factor/);
 });
+
+// ── Bozuk / kotu niyetli LLM ciktisi (OWASP LLM01 + LLM05) ──
+// Yonerge dosyasina gomulu bir talimat modelin ciktisini yonlendirebilir. Tarih ve
+// sure zaten modelden ALINMIYOR (yerlestirici hesapliyor); burada kalan yuzey
+// sayi, tur ve uzunluk.
+const hamPlan = (output) => {
+  const merged = normalize({
+    taskTitle: 'Deneme', userId: 'u', deadline: new Date(Date.now() + 7 * 86400000).toISOString(),
+    userProfile: { focusPeriod: 25, breakStyle: 'pomodoro', workHours: { start: '09:00', end: '18:00' } }
+  });
+  merged.existingEvents = [];
+  return new Function('$', '$json', nodeCode('Code in JavaScript'))(
+    () => ({ first: () => ({ json: merged }) }), { output });
+};
+test('LLM 500 gorev uretse de takvime en fazla 40 gorev gider', () => {
+  const out = hamPlan(JSON.stringify({ tasks: gorevler(500) }));
+  assert.strictEqual(out.length, 40);
+  assert.strictEqual(ortusmeVar(out), false);
+});
+test('LLM tarih/sure alanlari yok sayilir: 1970 ya da 99 saat yerlesimi bozmaz', () => {
+  const out = hamPlan(JSON.stringify({ tasks: [
+    { title: 'a', start: '1970-01-01T00:00:00Z', durationMinutes: 99 * 60, day: '1970-01-01' }] }));
+  const sure = (new Date(out[0].json.end) - new Date(out[0].json.start)) / 60000;
+  assert.strictEqual(sure, 25);
+  assert.ok(new Date(out[0].json.start) > new Date(Date.now() - 60000), 'gecmise yerlesmemeli');
+});
+test('LLM alan turleri temizlenir: nesne baslik, dev metin, uydurma yuk, bos oge', () => {
+  const out = hamPlan(JSON.stringify({ tasks: [
+    { title: { html: '<b>x</b>' }, summary: 'y'.repeat(50000), cognitiveLoad: 'extreme' },
+    null, 'duz metin', [1, 2],
+    { name: 'Satir\nkiran\u0000ad', cognitive_load: 'high' }] }));
+  assert.strictEqual(out.length, 2, 'yalniz nesne ogeler gorev olur');
+  const [a, b] = out.map(r => r.json).sort((x, y) => x.title.localeCompare(y.title));
+  assert.strictEqual(typeof a.title, 'string');
+  assert.ok(b.title === 'Satir kiran ad' || a.title === 'Satir kiran ad', 'kontrol karakterleri bosluga');
+  for (const g of [a, b]) {
+    assert.ok(g.summary.length <= 1000);
+    assert.ok(['high', 'medium', 'low'].includes(g.cognitiveLoad));
+  }
+});
+test('LLM ciktisi null ya da gorevsiz: anlasilir hata', () => {
+  assert.throws(() => hamPlan('null'), /hic gorev uretmedi/);
+  assert.throws(() => hamPlan(JSON.stringify({ tasks: [null, 3] })), /hic gorev uretmedi/);
+});

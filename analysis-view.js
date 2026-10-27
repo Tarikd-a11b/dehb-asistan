@@ -101,8 +101,8 @@ function renderAnalysisCard(container, { calibration, daily, focusPeriod, guest,
     ? `<div class="rounded-2xl bg-slate-50 dark:bg-slate-700/40 p-4 space-y-3">
          <p class="text-sm text-slate-600 dark:text-slate-300">Ortalama ${c.focusSuggestion} dk kesintisiz odaklanıyorsun. Odak süreni <b>${fp} → ${c.focusSuggestion} dk</b> yapalım mı?</p>
          <div class="flex gap-2">
-           <button data-analysis-apply onclick="analysisApplySuggestion()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white">Uygula</button>
-           <button onclick="analysisDismissSuggestion()" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-200/80 dark:bg-slate-600/50 text-slate-700 dark:text-slate-200">Şimdilik değil</button>
+           <button data-analysis-apply data-tikla="analysisApplySuggestion" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white">Uygula</button>
+           <button data-tikla="analysisDismissSuggestion" class="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-200/80 dark:bg-slate-600/50 text-slate-700 dark:text-slate-200">Şimdilik değil</button>
          </div>
        </div>`
     : '';

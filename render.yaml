@@ -24,7 +24,7 @@ services:
     region: virginia
     branch: main
     autoDeploy: true            # yalnızca servis Blueprint'e bağlanırsa geçerli olur (yukarıdaki nota bak)
-    buildCommand: pip install -r requirements.txt   # bağımlılık yok, serve.py sadece standart kütüphane kullanıyor
+    buildCommand: pip install -r requirements.txt   # tek bağımlılık: cryptography (token şifreleme)
     startCommand: python serve.py                   # PORT'u Render veriyor, serve.py onu okuyor
 
     envVars:
@@ -45,6 +45,13 @@ services:
       # Google token'ının sessizce yenilenmesi için gerekli (/api/google/refresh).
       # Tanımlı değilse uygulama çalışır, sadece otomatik yenileme devre dışı kalır.
       - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      # Refresh token'ı veritabanında şifreleyen anahtar (base64, 32 bayt). Üret:
+      #   python -c "import os,base64;print(base64.b64encode(os.urandom(32)).decode())"
+      # Tanımsızsa yeni girişlerde refresh token SAKLANMAZ (düz metin yazılmaz).
+      # ⚠️ DEĞİŞTİRİRSEN saklı token'lar çözülemez: kullanıcılar bir kez yeniden
+      # giriş yapıp izin verir. Yedeğini parola yöneticisinde tut.
+      - key: GOOGLE_TOKEN_KEY
         sync: false
       # n8n'in gerçek webhook adresleri. Tanımlı değilse serve.py sessizce
       # localhost:5678 varsayılanına düşer ve Parçalayıcı canlıda çalışmaz.

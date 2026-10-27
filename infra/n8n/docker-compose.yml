@@ -19,11 +19,19 @@ services:
       - n8n
 
   n8n:
-    image: n8nio/n8n:latest
+    # Sürüm SABİT (.env'deki N8N_VERSION). `latest` çekildiği günde donup kalıyordu ve
+    # sürüm bildirimleri de kapalı olduğu için güncelleme gerektiğini hiçbir şey söylemiyordu.
+    # Güncelleme: n8n güvenlik bültenini oku (community.n8n.io → Security Advisories),
+    # .env'de N8N_VERSION'ı yükselt, `docker compose pull n8n && docker compose up -d`.
+    # ⚠️ ASLA düşürme: n8n veritabanı göçleri geri alınmıyor.
+    image: n8nio/n8n:${N8N_VERSION:?N8N_VERSION .env icinde tanimli olmali}
     restart: unless-stopped
-    # Port DIŞARIYA açılmıyor; sadece Caddy erişiyor.
+    # Port internete açılmıyor: Caddy ağ içinden erişiyor, editör için yalnız
+    # makinenin KENDİ loopback'ine bağlı (SSH tüneli: ssh -L 5678:localhost:5678 ...).
     expose:
       - "5678"
+    ports:
+      - "127.0.0.1:5678:5678"
     environment:
       # --- Adres / webhook ---
       - N8N_HOST=${DOMAIN}

@@ -23,7 +23,19 @@
 	# eklersek baslik iki kez donuyor ve tarayici cevabi tamamen reddediyor
 	# ("contains multiple values"). Preflight'i yukarida biz karsiliyoruz,
 	# gercek istegin CORS'unu n8n'e birakiyoruz.
-	handle {
+	#
+	# Internete YALNIZ webhook'lar acik (her biri Header Auth ile korunuyor).
+	# Editor, giris ekrani, /rest ve /api/v1 disaridan 404: n8n'in 2026'daki
+	# kimliksiz aciklarinin cogu bu yuzeylerden geliyordu. Editore ve public
+	# API'ye (scripts/n8n-senkron.mjs) SSH tuneliyle eris — bkz. KURULUM.md.
+	@webhook path /webhook/*
+	handle @webhook {
 		reverse_proxy n8n:5678
+	}
+	handle /healthz {
+		reverse_proxy n8n:5678
+	}
+	handle {
+		respond "Not Found" 404
 	}
 }

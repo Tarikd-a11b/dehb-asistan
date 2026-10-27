@@ -189,7 +189,7 @@
 
     modal.innerHTML = `
       <div class="relative w-full max-w-lg bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 border-2 border-amber-500/50 rounded-3xl p-6 md:p-8 text-white shadow-2xl text-center animate-slide-in overflow-hidden">
-        <button onclick="closeDopaminCarki()" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2 rounded-full hover:bg-slate-800 transition">✕</button>
+        <button data-tikla="closeDopaminCarki" class="absolute top-4 right-4 text-slate-400 hover:text-white text-lg p-2 rounded-full hover:bg-slate-800 transition">✕</button>
 
         <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/30 text-amber-400 text-xs font-black uppercase tracking-widest mb-2">
           <span>🎡</span> Günün Zafer Ödülü
@@ -210,7 +210,7 @@
         </div>
 
         <div id="wheel-action-area">
-          <button id="spin-wheel-btn" onclick="spinWheel()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-lg shadow-xl shadow-amber-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
+          <button id="spin-wheel-btn" data-tikla="spinWheel" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-600 hover:from-amber-400 hover:to-rose-500 text-white font-black text-lg shadow-xl shadow-amber-500/30 hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2">
             <span>🎡</span> ÇARKI ÇEVİR & ÖDÜLÜNÜ AL!
           </button>
         </div>
@@ -309,7 +309,7 @@
               ? 'Bugünün ödülünü zaten kazandın — çark günde bir kez döner. Yarın yeni bir zafer seni bekliyor!'
               : 'Tüm hedeflerini tamamladın. Vicdan azabı yok, ertelenmiş yük yok. Şimdi bu ödülün tadını çıkar!'}
           </p>
-          <button onclick="closeDopaminCarki()" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition active:scale-95">
+          <button data-tikla="closeDopaminCarki" class="w-full py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm shadow-md transition active:scale-95">
             Harika! Ödülümü Almaya Gidiyorum ➔
           </button>
         </div>

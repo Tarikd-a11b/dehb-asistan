@@ -74,6 +74,7 @@ async function analyzeDocument(text, fileName) {
     body: JSON.stringify({ documentText: text, fileName, today: bugun,
                            supabaseToken: (typeof AppState !== 'undefined') ? AppState.supabaseToken : null })
   });
+  if (res.status === 429 && typeof sinirMesaji === 'function') throw new Error(sinirMesaji(res));
   if (!res.ok) throw new Error('analiz ' + res.status);
 
   const ham = await res.text();

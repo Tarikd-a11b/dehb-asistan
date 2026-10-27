@@ -113,6 +113,99 @@ def n8n_ilet(hedef, govde):
         return 502, 'application/json', json.dumps({'error': 'n8n_unreachable'}).encode('utf-8')
 
 
+# ── Google refresh token: sifreli saklama ────────────────────────
+# Token profiles.google_refresh_token'da SIFRELI duruyor ve tarayiciya hic
+# geri inmiyor: tarayici yalniz giris aninda /api/google/store'a yollar, yenilemeyi
+# /api/google/refresh sunucuda yapar. Tek bir XSS ya da veritabani dokumu artik
+# kullanicinin takvimine kalici erisim vermez; anahtar (GOOGLE_TOKEN_KEY) yalniz
+# Render ortaminda, veriden ayri (KVKK 2018/10).
+# Bicim: 'v1:' + base64url(12 bayt nonce + AES-256-GCM sifreli metin). AAD =
+# kullanici id'si: baska bir satira kopyalanan sifreli metin cozulmez.
+TOKEN_ONEK = 'v1:'
+
+
+def _token_anahtari():
+    """GOOGLE_TOKEN_KEY (base64, 32 bayt) -> bayt; tanimsiz/bozuksa None."""
+    import base64
+    ham = (os.environ.get('GOOGLE_TOKEN_KEY') or '').strip().replace('-', '+').replace('_', '/')
+    try:
+        anahtar = base64.b64decode(ham + '=' * (-len(ham) % 4), validate=True)
+    except Exception:
+        return None
+    return anahtar if len(anahtar) == 32 else None
+
+
+def token_sifrele(duz, kullanici_id):
+    """Sifreli metin; anahtar ya da kutuphane yoksa None (cagiran 503 doner)."""
+    anahtar = _token_anahtari()
+    if not anahtar:
+        return None
+    try:
+        import base64
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+    except ImportError:
+        return None
+    nonce = os.urandom(12)
+    sifreli = AESGCM(anahtar).encrypt(nonce, duz.encode('utf-8'), kullanici_id.encode('utf-8'))
+    return TOKEN_ONEK + base64.urlsafe_b64encode(nonce + sifreli).decode('ascii')
+
+
+def token_coz(saklanan, kullanici_id):
+    """Saklanan degeri duz token'a cevirir. Doner: (duz, eski_bicim_mi).
+
+    Onek yoksa bu, sifreleme oncesinden kalma DUZ METIN bir token'dir: oldugu
+    gibi kullanilir ve cagiran onu sifreleyip geri yazar (kendiliginden tasima).
+    Cozulemezse (anahtar degisti / satir kopyalandi) (None, False).
+    """
+    if not saklanan.startswith(TOKEN_ONEK):
+        return saklanan, True
+    anahtar = _token_anahtari()
+    if not anahtar:
+        return None, False
+    try:
+        import base64
+        from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+        ham = base64.urlsafe_b64decode(saklanan[len(TOKEN_ONEK):])
+        duz = AESGCM(anahtar).decrypt(ham[:12], ham[12:], kullanici_id.encode('utf-8'))
+        return duz.decode('utf-8'), False
+    except Exception as e:
+        print('[refresh] token cozulemedi:', type(e).__name__)
+        return None, False
+
+
+def _profil_istegi(token, kullanici_id, yontem='GET', govde=None):
+    """profiles satirina KULLANICININ KENDI token'iyla erisim (RLS: yalniz kendi
+    satiri) -- service_role gerekmiyor. Doner: (ok, satir_listesi)."""
+    base = os.environ.get('SUPABASE_URL')
+    anon = os.environ.get('SUPABASE_ANON_KEY')
+    if not base or not anon:
+        return False, None
+    sorgu = urllib.parse.urlencode({'id': 'eq.' + kullanici_id, 'select': 'google_refresh_token'})
+    basliklar = {'apikey': anon, 'Authorization': 'Bearer ' + token,
+                 'Content-Type': 'application/json', 'Prefer': 'return=minimal'}
+    veri = json.dumps(govde).encode('utf-8') if govde is not None else None
+    istek = urllib.request.Request(base.rstrip('/') + '/rest/v1/profiles?' + sorgu,
+                                   data=veri, method=yontem, headers=basliklar)
+    try:
+        with urllib.request.urlopen(istek, timeout=10) as yanit:
+            ham = yanit.read().decode('utf-8')
+            return True, (json.loads(ham) if ham else [])
+    except Exception as e:
+        print('[refresh] profil erisimi basarisiz:', yontem, type(e).__name__)
+        return False, None
+
+
+def saklanan_tokeni_oku(token, kullanici_id):
+    ok, satirlar = _profil_istegi(token, kullanici_id)
+    if not ok:
+        return False, None
+    return True, ((satirlar or [{}])[0] or {}).get('google_refresh_token')
+
+
+def saklanan_tokeni_yaz(token, kullanici_id, deger):
+    return _profil_istegi(token, kullanici_id, 'PATCH', {'google_refresh_token': deger})[0]
+
+
 def refresh_google_access_token(refresh_token):
     """Refresh token'i yeni bir access token'a cevirir.
 
@@ -278,10 +371,135 @@ def oda_doluluklari():
     return veri
 
 
+# ── Istek siniri (kullanici basina) ──────────────────────────────
+# Vekil uclar kimlik istiyor ama giris yapmis TEK bir kullanici dongu ile istek
+# atip Gemini kotasini/faturasini tuketebilirdi (OWASP LLM10). Sinir kimlik
+# dogrulandiktan SONRA, dogrulanan kullanici id'sine gore sayiliyor.
+# Bellekte tutuluyor: Render tek ornek calisiyor; uyuyup uyaninca sayac sifirlanir
+# (kabul edilen takas — amac kotu niyetli donguyu kesmek, muhasebe degil).
+# n8n kovasi split + analyze ORTAK: bir yonerge = 1 analyze + 1 split.
+ISTEK_SINIRLARI = {
+    'n8n': ((60, 5), (86400, 50)),        # dakikada 5, gunde 50
+    'google': ((60, 10),),
+    'oda': ((60, 10),),
+}
+_istek_kaydi = {}
+_istek_kilit = threading.Lock()
+
+
+def sinir_asildi(kova, kullanici_id, simdi=None):
+    """Sinir asildiysa beklenecek saniyeyi (>=1) doner; asilmadiysa istegi
+    sayar ve None doner. Reddedilen istek SAYILMAZ (bekleyen tekrar deneyebilsin)."""
+    simdi = time.time() if simdi is None else simdi
+    kurallar = ISTEK_SINIRLARI[kova]
+    en_uzun = max(p for p, _ in kurallar)
+    with _istek_kilit:
+        kayit = [t for t in _istek_kaydi.get((kova, kullanici_id), []) if simdi - t < en_uzun]
+        for pencere, limit in kurallar:
+            icindekiler = [t for t in kayit if simdi - t < pencere]
+            if len(icindekiler) >= limit:
+                _istek_kaydi[(kova, kullanici_id)] = kayit
+                return max(1, int(icindekiler[0] + pencere - simdi) + 1)
+        kayit.append(simdi)
+        _istek_kaydi[(kova, kullanici_id)] = kayit
+    return None
+
+
+# ── Guvenlik basliklari ──────────────────────────────────────────
+# CSP bir beyaz liste: sayfalarin gercekten yukledigi dis kaynaklar disinda hicbir
+# yere script yuklenemez, istek atilamaz, resim cekilemez. Bir XSS olsa bile veriyi
+# fetch/img ile disari tasimak boylece kapanir. Yeni bir CDN/servis eklersen buraya
+# da ekle — yoksa o kaynak sessizce engellenir (konsolda "Refused to load ...").
+#
+# script-src'te 'unsafe-inline' YOK (2026-10-27): enjekte edilmis <img onerror> /
+# <script> calismaz. Bunun iki sarti var:
+#   - inline on*="..." handler yok; handler'lar olay.js ile data-* uzerinden
+#     (bekcisi test/olay-baglama.test.js),
+#   - sayfanin KENDI inline <script> bloklari {inline} yerine, servis edilen
+#     dosyadan o an hesaplanan sha256 ozetleriyle izinli (inline_script_ozetleri).
+#     Blogu degistirince ozet kendiliginden degisir; elle bir sey yapma.
+# style-src 'unsafe-inline' kaliyor: style="" oznitelikleri her yerde ve CSS
+# enjeksiyonu kod calistirmaz.
+CSP_SABLON = '; '.join((
+    "default-src 'self'",
+    "script-src 'self' {inline} https://cdn.jsdelivr.net https://apis.google.com"
+    " https://accounts.google.com https://unpkg.com https://*.daily.co",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://accounts.google.com",
+    "font-src 'self' data: https://fonts.gstatic.com",
+    "img-src 'self' data: blob: https://*.googleusercontent.com https://i.ytimg.com https://cdn.jsdelivr.net",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.googleapis.com"
+    " https://content.googleapis.com https://accounts.google.com https://cdn.jsdelivr.net"
+    " https://*.daily.co wss://*.daily.co",
+    "frame-src https://www.youtube-nocookie.com https://www.youtube.com https://accounts.google.com"
+    " https://content.googleapis.com https://*.daily.co",
+    "worker-src 'self' blob: https://cdn.jsdelivr.net",
+    "media-src 'self' blob: data:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'self'",
+))
+# HTML olmayan yanitlar (JS, JSON, resim) inline script tasimaz.
+CSP = CSP_SABLON.replace(' {inline}', '')
+
+_INLINE_SCRIPT = re.compile(rb'<script(?![^>]*\bsrc\s*=)[^>]*>(.*?)</script\s*>', re.S | re.I)
+_ozet_onbellek = {}
+
+
+def inline_script_ozetleri(dosya):
+    """HTML dosyasindaki inline <script> bloklarinin CSP ozetleri ('sha256-...').
+
+    Tarayici ozeti blogun METNI uzerinden hesaplar ve HTML ayristirici satir
+    sonlarini once LF'ye cevirir; Windows'ta CRLF ile kaydedilmis dosyada da ayni
+    ozet ciksin diye burada da cevriliyor. (yol, mtime) ile onbellekli."""
+    import base64
+    import hashlib
+    try:
+        damga = os.path.getmtime(dosya)
+    except OSError:
+        return []
+    kayit = _ozet_onbellek.get(dosya)
+    if kayit and kayit[0] == damga:
+        return kayit[1]
+    with open(dosya, 'rb') as f:
+        ham = f.read()
+    ozetler = []
+    for m in _INLINE_SCRIPT.finditer(ham):
+        metin = m.group(1).replace(b'\r\n', b'\n').replace(b'\r', b'\n')
+        ozet = "'sha256-" + base64.b64encode(hashlib.sha256(metin).digest()).decode() + "'"
+        if ozet not in ozetler:
+            ozetler.append(ozet)
+    _ozet_onbellek[dosya] = (damga, ozetler)
+    return ozetler
+# Kamera/mikrofon yalniz kendi sayfamiza (Jitsi yeni sekmede aciliyor, ihtiyaci yok).
+# ⚠️ Daily yolu (iframe) yeniden acilirsa Daily alan adini buraya eklemek gerekir.
+PERMISSIONS_POLICY = 'camera=(self), microphone=(self), display-capture=(), geolocation=(), payment=(), usb=()'
+
+
 class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
-    def _json_yanit(self, durum, govde):
+    def _sinirla(self, kova, kullanici_id):
+        """Sinir asildiysa 429 yazar ve True doner (cagiran hemen cikmali)."""
+        self._kullanici = kullanici_id        # erisim loguna (log_request)
+        bekle = sinir_asildi(kova, kullanici_id)
+        if bekle is None:
+            return False
+        self._json_yanit(429, {'error': 'rate_limited', 'retryAfter': bekle},
+                         {'Retry-After': str(bekle)})
+        return True
+
+    def log_request(self, code='-', size='-'):
+        """Erisim logu + kimligi dogrulanmis isteklerde kullanici id'si (KVKK 2018/10:
+        kisisel veri uzerindeki islemler kayit altinda). Yalniz UUID; e-posta, token,
+        govde ASLA loglanmaz. Render loglari kisa omurlu — kalici denetim izi degil."""
+        kim = getattr(self, '_kullanici', None)
+        self.log_message('"%s" %s %s%s', self.requestline, str(getattr(code, 'value', code)), str(size),
+                         (' kullanici=' + kim) if kim else '')
+
+    def _json_yanit(self, durum, govde, ek_basliklar=None):
         cikti = json.dumps(govde).encode('utf-8')
         self.send_response(durum)
+        for ad, deger in (ek_basliklar or {}).items():
+            self.send_header(ad, deger)
         self.send_header('Content-type', 'application/json')
         self.send_header('Content-Length', str(len(cikti)))
         self.end_headers()
@@ -301,7 +519,7 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         if self.path in (N8N_SPLIT_PATH, N8N_ANALYZE_PATH):
             self._n8n_vekil()
             return
-        if self.path != '/api/google/refresh':
+        if self.path not in ('/api/google/refresh', '/api/google/store'):
             self._json_yanit(404, {'error': 'not_found'})
             return
         try:
@@ -309,23 +527,66 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
             if uzunluk <= 0 or uzunluk > 8192:      # refresh token birkac yuz bayt
                 self._json_yanit(400, {'error': 'bad_request'})
                 return
-            govde = json.loads(self.rfile.read(uzunluk).decode('utf-8'))
-            refresh_token = (govde or {}).get('refresh_token')
-            if not refresh_token or not isinstance(refresh_token, str):
-                self._json_yanit(400, {'error': 'refresh_token_required'})
-                return
+            govde = json.loads(self.rfile.read(uzunluk).decode('utf-8')) or {}
         except Exception:
             self._json_yanit(400, {'error': 'bad_request'})
             return
 
-        # Bu uc GOOGLE_CLIENT_SECRET ile token uretiyor; kimliksiz birakilirsa
+        # Bu uclar GOOGLE_CLIENT_SECRET ile token uretiyor; kimliksiz birakilirsa
         # herkese acik bir "token yenileme servisi" olur ve Google kotasi/Render
         # kaynagi somurulebilir. n8n vekilindeki ayni kontrol burada da olmali.
-        if not dogrula_supabase_kullanicisi((govde or {}).get('supabaseToken')):
+        sb_token = govde.get('supabaseToken')
+        kullanici_id = dogrula_supabase_kullanicisi(sb_token)
+        if not kullanici_id:
             self._json_yanit(401, {'error': 'unauthorized'})
+            return
+        if self._sinirla('google', kullanici_id):
+            return
+
+        if self.path == '/api/google/store':
+            self._google_store(sb_token, kullanici_id, govde.get('refresh_token'))
+        else:
+            self._google_refresh(sb_token, kullanici_id)
+
+    def _google_store(self, sb_token, kullanici_id, refresh_token):
+        """Giris aninda gelen refresh token'i sifreleyip kullanicinin satirina yazar."""
+        if not refresh_token or not isinstance(refresh_token, str):
+            self._json_yanit(400, {'error': 'refresh_token_required'})
+            return
+        sifreli = token_sifrele(refresh_token, kullanici_id)
+        if not sifreli:
+            self._json_yanit(503, {'error': 'not_configured'})
+            return
+        if not saklanan_tokeni_yaz(sb_token, kullanici_id, sifreli):
+            self._json_yanit(502, {'error': 'store_failed'})
+            return
+        self._json_yanit(200, {'ok': True})
+
+    def _google_refresh(self, sb_token, kullanici_id):
+        """Token'i istemciden ALMAZ: kullanicinin kendi satirindan okur, cozer,
+        Google'a yeniletir. Istemci yalniz kisa omurlu access token'i gorur."""
+        ok, saklanan = saklanan_tokeni_oku(sb_token, kullanici_id)
+        if not ok:
+            self._json_yanit(502, {'error': 'upstream_failure'})
+            return
+        if not saklanan:
+            self._json_yanit(404, {'error': 'no_token'})       # hic izin alinmamis
+            return
+        refresh_token, eski_bicim = token_coz(saklanan, kullanici_id)
+        if not refresh_token:
+            self._json_yanit(503, {'error': 'not_configured'})
             return
 
         durum, yanit = refresh_google_access_token(refresh_token)
+        if durum == 400 and yanit.get('error') == 'invalid_grant':
+            # Kullanici izni geri almis ya da token iptal olmus: olu anahtari
+            # temizle ki her acilista bosuna denenmesin.
+            saklanan_tokeni_yaz(sb_token, kullanici_id, None)
+        elif durum == 200 and eski_bicim:
+            # Sifreleme oncesinden kalan duz metin token: simdi sifrele.
+            sifreli = token_sifrele(refresh_token, kullanici_id)
+            if sifreli:
+                saklanan_tokeni_yaz(sb_token, kullanici_id, sifreli)
         self._json_yanit(durum, yanit)
 
     def _n8n_vekil(self):
@@ -351,6 +612,8 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
             self._json_yanit(401, {'error': 'unauthorized'})
             return
         govde['userId'] = kullanici_id      # istemcinin yolladigina guvenme
+        if self._sinirla('n8n', kullanici_id):
+            return
 
         if self.path == N8N_SPLIT_PATH:
             hedef = os.environ.get('N8N_WEBHOOK',
@@ -378,6 +641,8 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         kullanici = supabase_kullanicisi(token)
         if not kullanici:
             self._json_yanit(401, {'error': 'unauthorized'})
+            return
+        if self._sinirla('oda', kullanici['id']):
             return
         oda = govde.get('room')
         if oda not in CANLI_ODALAR:            # serbest metin Daily'ye gitmez
@@ -425,13 +690,22 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
             self._oda_presence()
             return
         blocked_exts = ('.py', '.sql', '.env', '.md', '.bak')
-        if clean_path.startswith('/.') or clean_path.endswith(blocked_exts) or (clean_path.endswith('.json') and clean_path != '/manifest.json'):
+        # '.yedek': yerel yedek HTML'ler (gitignored, canlıda yok) yerelde de servis edilmesin.
+        if (clean_path.startswith('/.') or clean_path.endswith(blocked_exts) or '.yedek' in clean_path
+                or (clean_path.endswith('.json') and clean_path != '/manifest.json')):
             self.send_error(403, "Forbidden")
             return
 
         # Kök adres tanitim sayfasini acar.
         if self.path == '/':
             self.path = '/landing.html'
+
+        # HTML sayfasi: kendi inline <script> bloklarina izin veren CSP (bkz. CSP_SABLON).
+        dosya = self.translate_path(self.path)
+        self._csp = None
+        if dosya.endswith('.html'):
+            ozetler = ' '.join(inline_script_ozetleri(dosya))
+            self._csp = CSP_SABLON.replace(' {inline}', (' ' + ozetler) if ozetler else '')
 
         # Render'da SUPABASE_URL env var'ı tanımlı olduğu için config.js oradan
         # üretilir. Yerelde bu env var yok — o zaman diskteki gerçek config.js
@@ -453,6 +727,10 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header('X-Content-Type-Options', 'nosniff')
         self.send_header('X-Frame-Options', 'SAMEORIGIN')
         self.send_header('Referrer-Policy', 'strict-origin-when-cross-origin')
+        self.send_header('Content-Security-Policy', getattr(self, '_csp', None) or CSP)
+        # HTTP uzerinden (localhost) tarayici bunu yok sayar; yalniz HTTPS'te etkili.
+        self.send_header('Strict-Transport-Security', 'max-age=31536000')
+        self.send_header('Permissions-Policy', PERMISSIONS_POLICY)
         super().end_headers()
 
 

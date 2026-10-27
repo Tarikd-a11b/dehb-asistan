@@ -6,6 +6,8 @@
  *   node scripts/n8n-senkron.mjs yukle --uygula    # canlıya yazar
  *
  * Ortam: N8N_API_KEY (n8n → Settings → n8n API → Create API key), isteğe bağlı N8N_URL.
+ * /api/v1 artık internete KAPALI (Caddy yalnız /webhook/* geçiriyor); önce tüneli aç:
+ *   ssh -i ~/.ssh/oracle_n8n -N -L 5678:localhost:5678 ubuntu@138.2.171.36
  * Workflow'lar ADLA eşlenir (repo JSON'larında id yok). Canlının JSON'ı diske YAZILMAZ:
  * içinde service_role anahtarı var. Hangi alanların izlendiği: n8n-senkron-logic.js.
  */
@@ -18,7 +20,7 @@ const require = createRequire(import.meta.url);
 const { karsilastir, yamala, putGovdesi } = require('./n8n-senkron-logic.js');
 
 const KOK = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const TABAN = (process.env.N8N_URL || 'https://focusaid-n8n.duckdns.org').replace(/\/$/, '');
+const TABAN = (process.env.N8N_URL || 'http://localhost:5678').replace(/\/$/, '');
 const ANAHTAR = process.env.N8N_API_KEY;
 const [komut, ...bayraklar] = process.argv.slice(2);
 
