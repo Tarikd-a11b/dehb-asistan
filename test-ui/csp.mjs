@@ -39,10 +39,14 @@ after(async () => {
   sunucu?.kill();
 });
 
-// Bilerek engellenen, işlevi olmayan istekler. gapi rastgele örneklemeyle
-// csi.gstatic.com'a performans pikseli atıyor (CI'da 7a5ac18'de bir kez yakalandı);
-// izin vermek Google'a telemetri açmak olurdu, engellenmesi hiçbir şeyi kırmıyor.
-const YOKSAYILAN = [/^img-src ← https?:\/\/csi\.gstatic\.com\//];
+// Bilerek engellenen, işlevi olmayan istekler: gapi rastgele örneklemeyle Google'a
+// ölçüm pingi atıyor — csi.gstatic.com pikseli (7a5ac18'in CI koşusu) ve
+// apis.google.com/js/gen_204 (#4'ün CI koşusu). İzin vermek Google'a telemetri açmak
+// olurdu; engellenmeleri hiçbir şeyi kırmıyor. CSP aynı kalıyor, yalnız test saymıyor.
+const YOKSAYILAN = [
+  /^img-src ← https?:\/\/csi\.gstatic\.com\//,
+  /^connect-src ← https:\/\/apis\.google\.com\/js\/gen_204\?/,
+];
 
 async function izliSayfa(misafir) {
   const sayfa = await tarayici.newPage({ viewport: { width: 1280, height: 800 } });
