@@ -17,7 +17,7 @@ jobs:
     name: Birim testleri (node --test)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: 24
@@ -31,7 +31,7 @@ jobs:
     name: Arayüz testleri (npm run test:ui)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v5
         with:
           node-version: 24
