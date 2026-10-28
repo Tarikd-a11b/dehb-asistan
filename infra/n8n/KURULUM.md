@@ -132,7 +132,7 @@ crontab -e                            # 30 3 * * * cd /home/ubuntu/n8n && ./yede
 
 | tarih | ne denendi | sonuç |
 |---|---|---|
-| — | ilk geri yükleme denemesi henüz yapılmadı | — |
+| 2026-10-28 | 2.36.7 → 2.45.4 yükseltmesinden önce alınan yedek (952 KB), `geri-yukle-dene.sh` | ✅ workflow'lar listelendi, credential'lar çözüldü |
 
 ## Sertleştirme kontrol listesi (KVKK 2018/10: uzaktan erişimde iki aşamalı doğrulama)
 
@@ -141,7 +141,7 @@ VM'de:
 sudo sshd -T | grep -E '^(passwordauthentication|permitrootlogin|kbdinteractiveauthentication)'
 # beklenen: passwordauthentication no · permitrootlogin no · kbdinteractiveauthentication no
 ```
-Değilse `/etc/ssh/sshd_config.d/99-focusaid.conf` içine bu üç satırı `no` olarak yaz,
+Değilse `/etc/ssh/sshd_config.d/01-focusaid.conf` içine (⚠️ `01`, `99` değil: sshd her ayarda İLK bulduğu değeri kullanır, dosyalar alfabetik okunur) bu üç satırı `no` olarak yaz,
 `sudo sshd -t && sudo systemctl reload ssh` (açık oturumu kapatmadan yeni bir terminalden
 girişi dene).
 
