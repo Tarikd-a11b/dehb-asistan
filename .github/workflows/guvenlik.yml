@@ -71,7 +71,7 @@ jobs:
       RLS_B_PASSWORD: ${{ secrets.RLS_B_PASSWORD }}
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
       # Secret'lar yoksa testler "skip" olur, iş yeşil kalır (bkz. betiğin başı).
