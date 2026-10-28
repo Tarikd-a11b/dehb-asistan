@@ -1,3 +1,3 @@
 # serve.py standart kutuphane + yalniz bu: Google refresh token'i AES-GCM ile
 # sifrelemek icin (bkz. serve.py token_sifrele). Python stdlib'de AES yok.
-cryptography>=44
+cryptography>=50.0.2
