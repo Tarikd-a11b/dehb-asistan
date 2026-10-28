@@ -21,9 +21,9 @@
    ══════════════════════════════════════════════════════════════ */
 
 const CANLI_ODALAR = [
-  { id: 'canli-kutuphane', ad: 'Sessiz Kütüphane', simge: '📚', aciklama: 'Herkes kendi işinde. Kamera açık, mikrofon kapalı.', jitsi: 'FocusAid-SessizKutuphane-h4tfy4' },
-  { id: 'canli-sabah', ad: 'Sabah Kulübü', simge: '☀️', aciklama: 'Güne birlikte başlamak isteyenler için.', jitsi: 'FocusAid-SabahKulubu-8cndjj' },
-  { id: 'canli-gece', ad: 'Gece Kuşları', simge: '🌙', aciklama: 'Akşam ve gece çalışanların odası.', jitsi: 'FocusAid-GeceKuslari-da6ytv' }
+  { id: 'canli-kutuphane', ad: 'Sessiz Kütüphane', simge: '📚', aciklama: 'Herkes kendi işinde. Kamera açık, mikrofon kapalı.' },
+  { id: 'canli-sabah', ad: 'Sabah Kulübü', simge: '☀️', aciklama: 'Güne birlikte başlamak isteyenler için.' },
+  { id: 'canli-gece', ad: 'Gece Kuşları', simge: '🌙', aciklama: 'Akşam ve gece çalışanların odası.' }
 ];
 
 /**
@@ -256,12 +256,13 @@ function canliIlkAd(kullanici) {
 }
 
 /**
- * Jitsi oda adresi. Ayarlar hash'te (sunucuya gitmez); değerler JSON olarak
+ * Jitsi oda adresi. `jitsiAd` sunucudan gelir (/api/rooms/jitsi, haftalık değişir;
+ * repoda/JS'te durmaz). Ayarlar hash'te (sunucuya gitmez); değerler JSON olarak
  * okunduğu için ad JSON.stringify + encodeURIComponent ile geçer.
  * disableDeepLinking: telefonda "uygulamayı indir" sayfası yerine tarayıcıda açılsın.
  */
-function canliJitsiUrl(oda, ad) {
-  if (!oda || !/^[A-Za-z0-9-]{8,80}$/.test(String(oda.jitsi || ''))) return null;
+function canliJitsiUrl(oda, jitsiAd, ad) {
+  if (!oda || !/^[A-Za-z0-9-]{8,80}$/.test(String(jitsiAd || ''))) return null;
   const ayar = [
     'config.startWithAudioMuted=true',
     'config.startWithVideoMuted=false',
@@ -272,7 +273,7 @@ function canliJitsiUrl(oda, ad) {
   ];
   const temiz = canliIlkAd({ user_metadata: { full_name: ad } });
   if (temiz) ayar.push('userInfo.displayName=' + encodeURIComponent(JSON.stringify(temiz)));
-  return CANLI_JITSI_TABAN + oda.jitsi + '#' + ayar.join('&');
+  return CANLI_JITSI_TABAN + jitsiAd + '#' + ayar.join('&');
 }
 
 /** Görünen ad → baş harf(ler) (kamerasız kart). */

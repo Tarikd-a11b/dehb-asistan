@@ -20,6 +20,8 @@ trap 'docker volume rm -f "$GECICI" >/dev/null' EXIT
 gunzip -c "$YEDEK" | docker run --rm -i -v "$GECICI:/data" alpine:3.20 sh -c \
   'cat > /data/database.sqlite && chown -R 1000:1000 /data'
 
+# Imajin giris betigi argumanlari zaten `n8n "$@"` olarak calistiriyor: komutun
+# basina `n8n` YAZMA (yoksa `n8n n8n list:workflow` -> "Command n8n not found").
 calistir() {
   docker run --rm --network none -v "$GECICI:/home/node/.n8n" \
     -e DB_TYPE=sqlite -e N8N_ENCRYPTION_KEY="$N8N_ENCRYPTION_KEY" \
@@ -28,9 +30,10 @@ calistir() {
 }
 
 echo "== workflow'lar (FocusAid Weekly Processor vb. görünmeli)"
-calistir n8n list:workflow
+calistir list:workflow
 echo "== credential'lar şifresi çözülerek dışa aktarılabiliyor mu"
-SAYI=$(calistir n8n export:credentials --all --decrypted 2>/dev/null | grep -c '"name"' || true)
+# Cikti tek satirlik JSON dizisi: satir degil eslesme say (grep -c hep 1 derdi).
+SAYI=$(calistir export:credentials --all --decrypted 2>/dev/null | grep -o '"name":' | wc -l || true)
 [ "$SAYI" -gt 0 ] || { echo "HATA: credential çözülemedi (yanlış N8N_ENCRYPTION_KEY?)"; exit 1; }
 echo "credential sayısı: $SAYI"
 echo "GERİ YÜKLEME DENEMESİ BAŞARILI — tarihi KURULUM.md'deki tabloya yaz."

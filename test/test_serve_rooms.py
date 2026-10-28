@@ -1,4 +1,4 @@
-"""serve.py — canli oda uclari (/api/rooms/token, /api/rooms/presence).
+"""serve.py — canli oda uclari (/api/rooms/token, /api/rooms/presence, /api/rooms/jitsi).
 
     python -m unittest discover -s test -p "test_*.py"
 
@@ -73,10 +73,10 @@ class OdaUclari(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read())
 
-    def get(self, token=None):
+    def get(self, token=None, yol='/api/rooms/presence'):
         h = {'Authorization': 'Bearer ' + token} if token else {}
         try:
-            with urllib.request.urlopen(urllib.request.Request(self.taban + '/api/rooms/presence', headers=h)) as y:
+            with urllib.request.urlopen(urllib.request.Request(self.taban + yol, headers=h)) as y:
                 return y.status, json.loads(y.read())
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read())
@@ -135,6 +135,46 @@ class OdaUclari(unittest.TestCase):
         self.assertEqual(govde['rooms'], {'canli-kutuphane': 0, 'canli-sabah': 1, 'canli-gece': 6})
         self.get('iyi')
         self.assertEqual(len(self.daily_cagrilari), 1)   # ikinci istek onbellekten
+
+    # ── jitsi oda adlari ──
+    def test_jitsi_kimliksiz_401(self):
+        self.assertEqual(self.get(yol='/api/rooms/jitsi'), (401, {'error': 'unauthorized'}))
+        self.assertEqual(self.get('kotu', '/api/rooms/jitsi')[0], 401)
+
+    def test_jitsi_sirli_adlar(self):
+        os.environ['JITSI_ODA_SIRRI'] = 'test-sirri'
+        durum, govde = self.get('iyi', '/api/rooms/jitsi')
+        self.assertEqual(durum, 200)
+        adlar = govde['rooms']
+        self.assertEqual(set(adlar), set(serve.CANLI_ODALAR))
+        self.assertEqual(len(set(adlar.values())), 3)
+        for oda, ad in adlar.items():
+            self.assertRegex(ad, r'^FocusAid-[A-Za-z]+-[0-9a-f]{16}$')
+            self.assertNotEqual(ad, serve.JITSI_SABIT_ADLAR[oda], 'sir varken eski ad kullanilmamali')
+        os.environ['JITSI_ODA_SIRRI'] = 'baska-sir'
+        self.assertNotEqual(self.get('iyi', '/api/rooms/jitsi')[1]['rooms'], adlar, 'ad sirdan turemeli')
+
+    def test_jitsi_sirsiz_sabit_adlar(self):
+        os.environ.pop('JITSI_ODA_SIRRI', None)
+        self.assertEqual(self.get('iyi', '/api/rooms/jitsi'), (200, {'rooms': serve.JITSI_SABIT_ADLAR}))
+
+    def test_jitsi_istek_siniri_429(self):
+        for _ in range(10):
+            self.assertEqual(self.get('iyi', '/api/rooms/jitsi')[0], 200)
+        self.assertEqual(self.get('iyi', '/api/rooms/jitsi')[0], 429)
+
+    def test_jitsi_haftalik_degisim(self):
+        os.environ['JITSI_ODA_SIRRI'] = 'test-sirri'
+        ist = serve._ISTANBUL
+        pzt_03 = datetime.datetime(2026, 11, 2, 3, 59, tzinfo=ist)    # Pazartesi 03:59: hala onceki hafta
+        pzt_04 = datetime.datetime(2026, 11, 2, 4, 0, tzinfo=ist)
+        cuma = datetime.datetime(2026, 10, 30, 15, 0, tzinfo=ist)
+        self.assertEqual(serve.jitsi_hafta(pzt_03), serve.jitsi_hafta(cuma))
+        self.assertNotEqual(serve.jitsi_hafta(pzt_04), serve.jitsi_hafta(cuma))
+        self.assertEqual(serve.jitsi_oda_adlari(pzt_03), serve.jitsi_oda_adlari(cuma))
+        self.assertNotEqual(serve.jitsi_oda_adlari(pzt_04), serve.jitsi_oda_adlari(cuma))
+        utc = datetime.datetime(2026, 11, 2, 0, 30, tzinfo=datetime.timezone.utc)   # Istanbul 03:30
+        self.assertEqual(serve.jitsi_hafta(utc), serve.jitsi_hafta(cuma))
 
     # ── yardimcilar ──
     def test_daily_oda_url(self):

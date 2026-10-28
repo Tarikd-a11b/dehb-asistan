@@ -48,8 +48,13 @@ const CanliState = {
   cikiliyor: false,
   gizlenenler: new Set(),
   sonFaz: null,
-  onayVar: null
+  onayVar: null,
+  jitsiAdlari: null,
+  jitsiAdZamani: 0
 };
+
+// Ad haftada bir değişir (Pazartesi 04:00); açık kalan sekme eskisini tutmasın.
+const CANLI_JITSI_AD_ONBELLEK_MS = 30 * 60 * 1000;
 
 function _canliSaglayici() {
   const z = typeof window !== 'undefined' && window.FOCUSAID_CANLI_SAGLAYICI;
@@ -117,6 +122,7 @@ async function initCanliOdalar() {
     if (not) not.textContent = 'Oda Jitsi Meet\'te yeni sekmede açılır; sayacın bu sekmede işler. Odaya ilk giren bir kez Google ile giriş yapar.';
     _canliSonOdaDugmesi(kap);
     _canliKartlariCiz(kap, canliOdaSirala(null), false, true);
+    _canliJitsiAdlariGetir();       // girişe kadar hazır olsun
     return;
   }
   _canliKartlariCiz(kap, canliOdaSirala(null), false);
@@ -157,6 +163,32 @@ async function _canliPresenceGetir() {
   } catch (e) {
     return null;
   }
+}
+
+/** Jitsi oda adları sunucudan (giriş şart). Dönüş: { odaId: ad } ya da null. */
+async function _canliJitsiAdlariGetir() {
+  if (CanliState.jitsiAdlari && Date.now() - CanliState.jitsiAdZamani < CANLI_JITSI_AD_ONBELLEK_MS) {
+    return CanliState.jitsiAdlari;
+  }
+  const token = await _canliToken();
+  if (!token) return null;
+  try {
+    const y = await fetch('/api/rooms/jitsi', { headers: { Authorization: 'Bearer ' + token } });
+    if (!y.ok) return null;
+    const adlar = (await y.json()).rooms;
+    if (!adlar || typeof adlar !== 'object') return null;
+    CanliState.jitsiAdlari = adlar;
+    CanliState.jitsiAdZamani = Date.now();
+    return adlar;
+  } catch (e) {
+    return null;
+  }
+}
+
+/** Tıklama anında await'siz okunur (sekme kullanıcı etkinliği içinde açılmalı). */
+function _canliJitsiAdi(odaId) {
+  const adlar = CanliState.jitsiAdlari;
+  return adlar && Date.now() - CanliState.jitsiAdZamani < CANLI_JITSI_AD_ONBELLEK_MS ? adlar[odaId] : null;
 }
 
 function _canliKartlariCiz(kap, odalar, kapali, ekle) {
@@ -207,7 +239,8 @@ async function canliGirisPaneliAc(odaId) {
   if (!oda || _canliMisafir()) return;
   document.getElementById('canli-giris')?.remove();
 
-  const [onay, gorevler] = await Promise.all([_canliOnayVarMi(), _canliBugunGorevleri()]);
+  const [onay, gorevler] = await Promise.all([_canliOnayVarMi(), _canliBugunGorevleri(),
+    _canliJitsiMi() ? _canliJitsiAdlariGetir() : null]);
   const profil = (typeof userProfile !== 'undefined' && userProfile) || {};
   let secilenSure = canliVarsayilanSure(profil.focusPeriod);
   let secilenGorev = null;
@@ -332,6 +365,7 @@ async function canliSonOdayaDon() {
   // Onay önbellekteyse await'siz geç: Jitsi sekmesi tıklamayla aynı anda açılsın.
   const onay = CanliState.onayVar !== null ? CanliState.onayVar : await _canliOnayVarMi();
   if (!onay) return canliGirisPaneliAc(son.oda);
+  if (_canliJitsiMi() && !_canliJitsiAdi(son.oda)) await _canliJitsiAdlariGetir();
   return canliOdayaGir(son.oda, { hedef: '', planDk: son.planDk, kamera: son.kamera !== false });
 }
 
@@ -368,8 +402,13 @@ function canliOdayaGir(odaId, secenek) {
   const oda = canliOdaBul(odaId);
   if (!oda || CanliState.call) return Promise.resolve(false);
   if (_canliJitsiMi()) {
-    const url = canliJitsiUrl(oda, canliIlkAd(typeof currentUser !== 'undefined' ? currentUser : null));
-    if (!url) return Promise.resolve(false);
+    const url = canliJitsiUrl(oda, _canliJitsiAdi(oda.id),
+      canliIlkAd(typeof currentUser !== 'undefined' ? currentUser : null));
+    if (!url) {
+      _canliJitsiAdlariGetir();     // bir sonraki denemeye hazır olsun
+      _canliToast('Oda adresi alınamadı. Birkaç saniye sonra tekrar dene.', 'error');
+      return Promise.resolve(false);
+    }
     // SENKRON: await'ten önce, tıklamanın kullanıcı etkinliği içinde.
     _canliJitsiAc(url);
     return _canliOdayiBaslat(oda, _canliJitsiOturumu(url), { ...secenek, kamera: false });

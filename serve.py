@@ -22,6 +22,8 @@ import datetime
 import re
 import threading
 import time
+import hmac
+import hashlib
 
 PORT = int(os.environ.get('PORT', 3000))
 
@@ -258,6 +260,7 @@ DAILY_API = 'https://api.daily.co/v1'
 CANLI_ODALAR = ('canli-kutuphane', 'canli-sabah', 'canli-gece')
 ODA_TOKEN_PATH = '/api/rooms/token'
 ODA_PRESENCE_PATH = '/api/rooms/presence'
+ODA_JITSI_PATH = '/api/rooms/jitsi'
 CANLI_MAKS_KISI = 6
 PRESENCE_ONBELLEK_SN = 15
 # Turkiye 2016'dan beri yaz saati uygulamiyor: sabit +03. zoneinfo Windows'ta
@@ -295,6 +298,44 @@ def daily_oda_url(oda):
     if not re.fullmatch(r'[a-z0-9-]+', alan) or oda not in CANLI_ODALAR:
         return None
     return 'https://%s.daily.co/%s' % (alan, oda)
+
+
+# Jitsi oda adlari repoda/JS'te durmaz: giris yapmis kullaniciya sunucu verir ve
+# her hafta (Pazartesi 04:00, Istanbul) degisir. Ad JITSI_ODA_SIRRI ile HMAC'ten
+# turetilir; sir yoksa eski sabit adlar (git gecmisinde zaten acik) — odalar
+# kapanmasin diye. meet.jit.si odalari herkese acik: bu yalniz rastgele girisi
+# zorlastirir, bir erisim kontrolu degildir.
+JITSI_ODA_ONEKLERI = {
+    'canli-kutuphane': 'FocusAid-SessizKutuphane',
+    'canli-sabah': 'FocusAid-SabahKulubu',
+    'canli-gece': 'FocusAid-GeceKuslari',
+}
+JITSI_SABIT_ADLAR = {
+    'canli-kutuphane': 'FocusAid-SessizKutuphane-h4tfy4',
+    'canli-sabah': 'FocusAid-SabahKulubu-8cndjj',
+    'canli-gece': 'FocusAid-GeceKuslari-da6ytv',
+}
+
+
+def jitsi_hafta(simdi=None):
+    """'2026-W44' bicimi. Gece 04:00'e kadar onceki gun sayilir: Pazar gecesi
+    calisanlar gece yarisi ayri odalara bolunmesin."""
+    simdi = (simdi or datetime.datetime.now(_ISTANBUL)).astimezone(_ISTANBUL)
+    yil, hafta, _ = (simdi - datetime.timedelta(hours=4)).isocalendar()
+    return '%d-W%02d' % (yil, hafta)
+
+
+def jitsi_oda_adlari(simdi=None):
+    sir = (os.environ.get('JITSI_ODA_SIRRI') or '').strip()
+    if not sir:
+        return dict(JITSI_SABIT_ADLAR)
+    hafta = jitsi_hafta(simdi)
+    adlar = {}
+    for oda, onek in JITSI_ODA_ONEKLERI.items():
+        ozet = hmac.new(sir.encode('utf-8'), ('%s:%s' % (oda, hafta)).encode('utf-8'),
+                        hashlib.sha256).hexdigest()
+        adlar[oda] = '%s-%s' % (onek, ozet[:16])
+    return adlar
 
 
 def gunluk_limit_sn():
@@ -683,11 +724,26 @@ class NoCacheHandler(http.server.SimpleHTTPRequestHandler):
             return
         self._json_yanit(200, {'rooms': veri})
 
+    def _oda_jitsi(self):
+        """Jitsi oda adlari yalniz giris yapmis kullaniciya (bkz. jitsi_oda_adlari)."""
+        baslik = self.headers.get('Authorization') or ''
+        token = baslik[7:] if baslik.startswith('Bearer ') else None
+        kullanici_id = dogrula_supabase_kullanicisi(token)
+        if not kullanici_id:
+            self._json_yanit(401, {'error': 'unauthorized'})
+            return
+        if self._sinirla('oda', kullanici_id):
+            return
+        self._json_yanit(200, {'rooms': jitsi_oda_adlari()})
+
     def do_GET(self):
         # 1. Güvenlik: Hassas dosyalara (kod, ortam değişkenleri, veritabanı şemaları) erişimi engelle
         clean_path = self.path.split('?')[0].split('#')[0]
         if clean_path == ODA_PRESENCE_PATH:
             self._oda_presence()
+            return
+        if clean_path == ODA_JITSI_PATH:
+            self._oda_jitsi()
             return
         blocked_exts = ('.py', '.sql', '.env', '.md', '.bak')
         # '.yedek': yerel yedek HTML'ler (gitignored, canlıda yok) yerelde de servis edilmesin.
