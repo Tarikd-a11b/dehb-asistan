@@ -52,7 +52,7 @@ jobs:
           mkdir -p zap && chmod 777 zap
           docker run --rm --network host -v "$PWD/zap:/zap/wrk:rw" ghcr.io/zaproxy/zaproxy:2.15.0 \
             zap-baseline.py -t http://localhost:3000/ -r zap-rapor.html -I
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zap-rapor
