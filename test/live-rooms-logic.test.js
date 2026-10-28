@@ -156,19 +156,19 @@ test('canliIlkAd: yalnız ilk ad, kontrol karakteri yok, e-posta kullanılmaz', 
 
 test('canliJitsiUrl: meet.jit.si, mikrofon kapalı, ad JSON olarak kodlu', () => {
   const oda = L.canliOdaBul('canli-gece');
-  const url = L.canliJitsiUrl(oda, 'Ayşe "x" Yılmaz');
-  assert.ok(url.startsWith('https://meet.jit.si/' + oda.jitsi + '#'));
+  const AD = 'FocusAid-GeceKuslari-0123456789abcdef';
+  const url = L.canliJitsiUrl(oda, AD, 'Ayşe "x" Yılmaz');
+  assert.ok(url.startsWith('https://meet.jit.si/' + AD + '#'));
   assert.match(url, /config\.startWithAudioMuted=true/);
   assert.match(url, /config\.disableDeepLinking=true/);
   const baslik = url.split('config.localSubject=')[1].split('&')[0];
   assert.strictEqual(JSON.parse(decodeURIComponent(baslik)), '🌙 Gece Kuşları · FocusAid');
   const ad = url.split('userInfo.displayName=')[1];
   assert.strictEqual(JSON.parse(decodeURIComponent(ad)), 'Ayşe');
-  assert.ok(!L.canliJitsiUrl(oda, '').includes('displayName'), 'ad yoksa Jitsi kendisi sorar');
-  assert.strictEqual(L.canliJitsiUrl({ jitsi: 'x/../y' }, 'A'), null);
-  assert.strictEqual(L.canliJitsiUrl(null, 'A'), null);
-  // Her odanın adresi farklı ve tahmin edilmesi zor bir son ek taşıyor.
-  const adlar = L.CANLI_ODALAR.map(o => o.jitsi);
-  assert.strictEqual(new Set(adlar).size, 3);
-  adlar.forEach(a => assert.match(a, /^FocusAid-[A-Za-z]+-[a-z0-9]{6}$/));
+  assert.ok(!L.canliJitsiUrl(oda, AD, '').includes('displayName'), 'ad yoksa Jitsi kendisi sorar');
+  assert.strictEqual(L.canliJitsiUrl(oda, 'x/../y', 'A'), null);
+  assert.strictEqual(L.canliJitsiUrl(oda, null, 'A'), null, 'sunucudan ad gelmediyse adres yok');
+  assert.strictEqual(L.canliJitsiUrl(null, AD, 'A'), null);
+  // Oda adları sunucuda (/api/rooms/jitsi): istemci kodunda durmamalı.
+  L.CANLI_ODALAR.forEach(o => assert.strictEqual(o.jitsi, undefined));
 });

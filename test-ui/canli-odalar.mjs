@@ -126,6 +126,10 @@ async function odalar({ ekran = MASAUSTU, misafirKal = false, onay = false, sagl
   await sayfa.clock.install();
   await sayfa.route(/youtube(-nocookie)?\.com|ytimg\.com|unpkg\.com\/@daily-co/, r => r.abort());
   await sayfa.route('**/api/rooms/presence', r => { istekler.push('presence'); r.fulfill({ json: { rooms: { 'canli-gece': 2, 'canli-sabah': 0, 'canli-kutuphane': 0 } } }); });
+  await sayfa.route('**/api/rooms/jitsi', r => {
+    istekler.push('jitsi:' + (r.request().headers().authorization || ''));
+    r.fulfill({ json: { rooms: { 'canli-gece': 'FocusAid-GeceKuslari-0123456789abcdef', 'canli-sabah': 'FocusAid-SabahKulubu-0123456789abcdef', 'canli-kutuphane': 'FocusAid-SessizKutuphane-0123456789abcdef' } } });
+  });
   await sayfa.route('**/api/rooms/token', r => {
     istekler.push('token:' + JSON.parse(r.request().postData()).room);
     r.fulfill({ json: { url: 'https://ornek.daily.co/canli-gece', token: 'daily-tok', kalanDk: 200 } });
@@ -312,17 +316,33 @@ test('jitsi: kartlar Jitsi der, doluluk/token isteği yok; giriş sekmeyi açar 
   await odayaGir(sayfa);
   const acilan = await sayfa.evaluate(() => window.__acilan);
   assert.strictEqual(acilan.length, 1, 'tek sekme açılmalı');
-  assert.match(acilan[0].url, /^https:\/\/meet\.jit\.si\/FocusAid-GeceKuslari-[a-z0-9]{6}#/);
+  assert.match(acilan[0].url, /^https:\/\/meet\.jit\.si\/FocusAid-GeceKuslari-0123456789abcdef#/, 'ad sunucudan');
   assert.match(acilan[0].url, /startWithAudioMuted=true/);
   assert.match(acilan[0].url, /displayName=%22Ay%C5%9Fe%22/, 'yalnız ilk ad');
   assert.ok(!acilan[0].url.includes('gizli'), "e-posta Jitsi'ye gitmez");
   assert.strictEqual(acilan[0].ozellik, 'noopener');
-  assert.deepStrictEqual(istekler, [], "Jitsi'de /api/rooms isteği olmamalı");
+  assert.deepStrictEqual([...new Set(istekler)], ['jitsi:Bearer tok'], "Jitsi'de yalnız kimlikli oda adı isteği");
   assert.strictEqual(await sayfa.getAttribute('[data-co="jitsi-ac"]', 'href'), acilan[0].url);
   assert.strictEqual(await sayfa.isVisible('[data-co="kamera"]'), false);
   const sb = await sayfa.evaluate(() => window.__sb);
   assert.ok(sb.some(k => k.tablo === 'room_sessions' && k.islem === 'insert' && k.veri.room === 'canli-gece'));
   assert.ok(sb.some(k => k.tablo === 'profiles' && k.islem === 'update' && k.veri.room_consent_at), 'onay yazılmalı');
+  await sayfa.close();
+});
+
+test('jitsi: oda adı alınamazsa sekme açılmaz, oturum kaydı yok', async () => {
+  const { sayfa } = await odalar({ saglayici: 'jitsi', onay: true });
+  await sayfa.route('**/api/rooms/jitsi', r => r.fulfill({ status: 500, json: { error: 'x' } }));
+  await sayfa.evaluate("CanliState.jitsiAdlari = null; 1");
+  await sayfa.click('[data-canli-oda="canli-gece"]');
+  await sayfa.waitForSelector('#canli-giris');
+  await sayfa.click('#canli-gir-btn');
+  await sayfa.clock.runFor(500);
+  assert.deepStrictEqual(await sayfa.evaluate(() => window.__acilan), []);
+  assert.strictEqual(await sayfa.$('#canli-oda-katman'), null);
+  assert.ok(await sayfa.$('#canli-giris'), 'panel açık kalır, tekrar denenebilir');
+  const sb = await sayfa.evaluate(() => window.__sb);
+  assert.ok(!sb.some(k => k.tablo === 'room_sessions' && k.islem === 'insert'));
   await sayfa.close();
 });
 

@@ -70,6 +70,11 @@ services:
         sync: false
       - key: DAILY_DOMAIN
         sync: false
+      # Jitsi oda adlarını her hafta değiştiren sır (/api/rooms/jitsi). Üret:
+      #   python -c "import secrets;print(secrets.token_urlsafe(32))"
+      # Tanımsızsa eski sabit oda adları kullanılır (odalar kapanmaz).
+      - key: JITSI_ODA_SIRRI
+        sync: false
       # Kişi başı günlük oda dakikası (varsayılan 240). Ücretsiz kotayı korur.
       - key: GUNLUK_LIMIT_DK
         value: "240"
